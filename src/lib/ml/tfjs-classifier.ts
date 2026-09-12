@@ -1,0 +1,182 @@
+/**
+ * TensorFlow.js classifier for Round 2.
+ *
+ * Loads the model produced by notebooks/train_drawing_model.ipynb from
+ * /public/models/quickdraw/. Labels are read from labels.json rather than
+ * hardcoded, so retraining with a different class list cannot silently
+ * mislabel every prediction.
+ *
+ * tfjs is imported dynamically so its ~1MB never lands in the initial bundle.
+ * The sign-in screens must load fast on venue wifi; the model only needs to be
+ * there by the time the device check runs.
+ */
+
+import type { Classifier, Prediction } from './classifier';
+
+const MODEL_URL = process.env.NEXT_PUBLIC_MODEL_URL ?? '/models/quickdraw/model.json';
+const LABELS_URL = MODEL_URL.replace(/model\.json$/, 'labels.json');
+
+type TfModule = typeof import('@tensorflow/tfjs');
+type TfGraphModel = Awaited<ReturnType<TfModule['loadLayersModel']>>;
+
+export class TfjsClassifier implements Classifier {
+  readonly kind = 'tfjs' as const;
+
+  private tf: TfModule | null = null;
+  private model: TfGraphModel | null = null;
+  private labels: string[] = [];
+  private loading: Promise<void> | null = null;
+  private _ready = false;
+
+  get ready() {
+    return this._ready;
+  }
+
+  get classLabels(): string[] {
+    return this.labels;
+  }
+
+  async load(): Promise<void> {
+    if (this._ready) return;
+    // Concurrent callers share one download rather than racing.
+    if (this.loading) return this.loading;
+
+    this.loading = (async () => {
+      const tf = await import('@tensorflow/tfjs');
+      this.tf = tf;
+
+      // WebGL is far faster, but some older Android browsers expose a broken
+      // context. Falling back to CPU keeps those devices playable instead of
+      // sending them to a booth tablet unnecessarily.
+      try {
+        await tf.setBackend('webgl');
+        await tf.ready();
+      } catch {
+        await tf.setBackend('cpu');
+        await tf.ready();
+      }
+
+      const [model, labelsRes] = await Promise.all([
+        tf.loadLayersModel(MODEL_URL),
+        fetch(LABELS_URL),
+      ]);
+
+      this.model = model;
+      this.labels = await labelsRes.json();
+
+      if (!Array.isArray(this.labels) || this.labels.length === 0) {
+        throw new Error('labels.json is missing or empty');
+      }
+
+      // One warm-up pass. The first inference compiles shaders and can take
+      // hundreds of milliseconds; doing it here means the student's actual
+      // submission is fast.
+      const warm = tf.zeros([1, 28, 28, 1]);
+      const out = model.predict(warm) as { dispose: () => void };
+      out.dispose();
+      warm.dispose();
+
+      this._ready = true;
+    })();
+
+    try {
+      await this.loading;
+    } finally {
+      this.loading = null;
+    }
+  }
+
+  async selfTest(): Promise<boolean> {
+    try {
+      if (typeof document === 'undefined') return false;
+
+      // Canvas readback is the capability Round 2 actually depends on.
+      const canvas = document.createElement('canvas');
+      canvas.width = 28;
+      canvas.height = 28;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (!ctx) return false;
+      ctx.fillRect(0, 0, 4, 4);
+      if (ctx.getImageData(0, 0, 28, 28).data.length !== 28 * 28 * 4) return false;
+
+      await this.load();
+
+      const probe = new Float32Array(784);
+      probe[400] = 1;
+      const result = await this.predict(probe);
+      return result.length > 0 && result.every((p) => Number.isFinite(p.confidence));
+    } catch {
+      return false;
+    }
+  }
+
+  async predict(bitmap28: Float32Array): Promise<Prediction[]> {
+    if (!this._ready) await this.load();
+    if (!this.tf || !this.model) return [];
+
+    const tf = this.tf;
+
+    // tidy() disposes intermediate tensors. Without it, a student drawing for
+    // twenty seconds leaks GPU memory on every inference.
+    const scores = tf.tidy(() => {
+      const input = tf.tensor(bitmap28, [1, 28, 28, 1]);
+      const output = this.model!.predict(input) as ReturnType<TfModule['tensor']>;
+      return output.dataSync();
+    });
+
+    return this.labels
+      .map((label, i) => ({ label, confidence: scores[i] ?? 0 }))
+      .sort((a, b) => b.confidence - a.confidence);
+  }
+}
+
+export interface ModelProbe {
+  installed: boolean;
+  /** Human-readable explanation, surfaced on /debug/draw. */
+  reason: string;
+}
+
+/**
+ * Checks whether a real exported model is present.
+ *
+ * Uses GET rather than HEAD: Next's dev server does not reliably answer HEAD
+ * for files in /public, so a HEAD probe reported "missing" for a model that was
+ * sitting right there. The file is ~20KB and the browser caches it, so tfjs
+ * reuses this fetch rather than downloading twice.
+ */
+export async function probeModel(): Promise<ModelProbe> {
+  try {
+    const res = await fetch(MODEL_URL, { cache: 'force-cache' });
+
+    if (!res.ok) {
+      return {
+        installed: false,
+        reason: `model.json returned HTTP ${res.status}. Expected it at public${MODEL_URL}`,
+      };
+    }
+
+    const json = await res.json();
+
+    // Guard against a truncated or wrong-format file looking like success.
+    if (!json.modelTopology && !json.format) {
+      return { installed: false, reason: 'model.json is not a TensorFlow.js model file' };
+    }
+
+    const labelsRes = await fetch(LABELS_URL, { cache: 'force-cache' });
+    if (!labelsRes.ok) {
+      return { installed: false, reason: 'labels.json is missing next to model.json' };
+    }
+
+    const labels = await labelsRes.json();
+    if (!Array.isArray(labels) || labels.length === 0) {
+      return { installed: false, reason: 'labels.json is empty or not an array' };
+    }
+
+    return { installed: true, reason: `model + ${labels.length} labels found` };
+  } catch (err) {
+    return {
+      installed: false,
+      reason: err instanceof Error ? err.message : 'unknown error probing the model',
+    };
+  }
+}
