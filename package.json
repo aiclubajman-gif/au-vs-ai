@@ -15,6 +15,8 @@
     "check:resend": "node --env-file=.env.local scripts/check-resend.mjs",
     "seed:dev": "node --env-file=.env.local scripts/seed-dev.mjs",
     "seed:clear": "node --env-file=.env.local scripts/seed-dev.mjs --clear",
+    "seed:dataset": "node --env-file=.env.local scripts/seed-dataset.mjs",
+    "seed:dataset:sql": "node scripts/seed-dataset.mjs --sql",
     "make:admin": "node --env-file=.env.local scripts/make-admin.mjs",
     "check:push": "node scripts/pre-push-check.mjs"
   },
