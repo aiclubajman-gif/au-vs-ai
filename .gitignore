@@ -43,3 +43,11 @@ yarn-error.log*
 # .bin means the deployed site has no model and every student silently gets the
 # fallback. It is ~440KB, which is fine to version.
 # (Previously ignored here; removed deliberately.)
+
+# Source images are loaded into Supabase Storage, not committed. Forty photos
+# would bloat the repo, and swapping one should not need a redeploy.
+# The README and folder structure ARE committed.
+/images/real/*
+/images/ai/*
+/images/manifest.csv
+!/images/README.md

@@ -18,7 +18,9 @@
     "seed:dataset": "node --env-file=.env.local scripts/seed-dataset.mjs",
     "seed:dataset:sql": "node scripts/seed-dataset.mjs --sql",
     "make:admin": "node --env-file=.env.local scripts/make-admin.mjs",
-    "check:push": "node scripts/pre-push-check.mjs"
+    "check:push": "node scripts/pre-push-check.mjs",
+    "load:images": "node --env-file=.env.local scripts/load-images.mjs",
+    "load:images:dry": "node --env-file=.env.local scripts/load-images.mjs --dry"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

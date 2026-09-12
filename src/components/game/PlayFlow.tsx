@@ -5,6 +5,7 @@ import { OtpInput } from '@/components/game/OtpInput';
 import { Screen, Title, Hint, Button, ErrorBanner, Spacer } from '@/components/ui';
 import { resolveClassifier } from '@/lib/ml/classifier';
 import { isAuEmail, AU_DOMAIN_HINT } from '@/lib/client/email';
+import { Interstitial, ROUND_INTROS, ROUND_OUTROS } from '@/components/game/Interstitial';
 import { Round1 } from '@/components/game/Round1';
 import { Round2 } from '@/components/game/Round2';
 import { Round3 } from '@/components/game/Round3';
@@ -14,7 +15,10 @@ import type { College, AttemptAssignment, PublicAttemptResult, EventSettings } f
 
 type Step =
   | 'loading' | 'email' | 'otp' | 'profile' | 'device' | 'blocked' | 'ready'
-  | 'round1' | 'round2' | 'round3' | 'submitting' | 'result' | 'completed';
+  | 'intro1' | 'round1' | 'outro1'
+  | 'intro2' | 'round2' | 'outro2'
+  | 'intro3' | 'round3'
+  | 'submitting' | 'result' | 'completed';
 
 interface ApiError {
   message: string;
@@ -200,8 +204,11 @@ export function PlayFlow({
           // Placement comes from the frozen server state, so a refresh resumes
           // exactly where the student was rather than replaying Round 1.
           const next = resumeStep(data);
+          // A fresh game gets the Round 1 explainer. A resuming student goes
+          // straight back to their round — they have already read it.
+          const landing = data.resumed ? next : 'intro1';
           setTimeout(() => {
-            if (!cancelled) setStep(next);
+            if (!cancelled) setStep(landing as Step);
           }, 500);
         }
       } catch {
@@ -457,13 +464,37 @@ export function PlayFlow({
     );
   }
 
+  if (step === 'intro1') {
+    return (
+      <Interstitial
+        intro={ROUND_INTROS[1]}
+        timerValue={Math.round(timings.round1MsPerImage / 1000)}
+        onDone={() => setStep('round1')}
+      />
+    );
+  }
+
   if (step === 'round1' && assignment) {
     return (
       <Round1
         attemptId={assignment.attemptId}
         slots={assignment.round1}
         msPerImage={timings.round1MsPerImage}
-        onComplete={() => setStep('round2')}
+        onComplete={() => setStep('outro1')}
+      />
+    );
+  }
+
+  if (step === 'outro1') {
+    return <Interstitial outro={ROUND_OUTROS[1]} onDone={() => setStep('intro2')} />;
+  }
+
+  if (step === 'intro2') {
+    return (
+      <Interstitial
+        intro={ROUND_INTROS[2]}
+        timerValue={Math.round(timings.round2DrawMs / 1000)}
+        onDone={() => setStep('round2')}
       />
     );
   }
@@ -474,7 +505,21 @@ export function PlayFlow({
         attemptId={assignment.attemptId}
         assignment={assignment.round2}
         drawMs={timings.round2DrawMs}
-        onComplete={() => setStep('round3')}
+        onComplete={() => setStep('outro2')}
+      />
+    );
+  }
+
+  if (step === 'outro2') {
+    return <Interstitial outro={ROUND_OUTROS[2]} onDone={() => setStep('intro3')} />;
+  }
+
+  if (step === 'intro3') {
+    return (
+      <Interstitial
+        intro={ROUND_INTROS[3]}
+        timerValue={Math.round(timings.round3Ms / 1000)}
+        onDone={() => setStep('round3')}
       />
     );
   }

@@ -71,12 +71,20 @@ export default async function Landing() {
           </p>
         )}
 
-        <Link
-          href="/leaderboard"
-          className="mt-6 block text-center text-sm text-[var(--color-cyan)] underline underline-offset-4"
-        >
-          View leaderboard
-        </Link>
+        <nav className="mt-6 grid grid-cols-2 gap-3">
+          <Link
+            href="/leaderboard"
+            className="rounded-lg border border-[var(--color-edge)] py-3 text-center text-sm transition-colors hover:border-[var(--color-cyan-dim)]"
+          >
+            Leaderboard
+          </Link>
+          <Link
+            href="/club"
+            className="rounded-lg border border-[var(--color-edge)] py-3 text-center text-sm transition-colors hover:border-[var(--color-cyan-dim)]"
+          >
+            Join AIDA
+          </Link>
+        </nav>
       </section>
     </main>
   );
