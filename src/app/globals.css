@@ -1,30 +1,44 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   AU vs AI — design tokens (§37)
-   Dark navy / near-black · electric cyan · white · green/red outcomes.
-   Contrast is pushed harder than feels necessary on a laptop, because this
-   is read on phones under exhibition-hall lighting (§36).
+   AU vs AI — Design Tokens & Humans vs AI Arena
+   Dual-clash palette:
+     Humans (AU): Radiant Amber / Fiery Orange / Gold Metallic
+     AI: Electric Cyan / Cyber Blue / Neon Sapphire
+   Optimized for 60fps/120fps mobile devices and 4K booth displays.
    ========================================================================== */
 
 @theme {
-  --color-void: #05070f;
-  --color-navy: #0a0f1e;
-  --color-surface: #111827;
-  --color-edge: #1e293b;
+  --color-void: #030712;
+  --color-navy: #090d1f;
+  --color-surface: #0e152d;
+  --color-edge: #1b2649;
 
-  --color-cyan: #22d3ee;
-  --color-cyan-bright: #67e8f9;
-  --color-cyan-dim: #0e7490;
+  /* Legacy cyan aliases for backwards compatibility */
+  --color-cyan: #06b6d4;
+  --color-cyan-bright: #38bdf8;
+  --color-cyan-dim: #0891b2;
 
   --color-ink: #f8fafc;
   --color-muted: #94a3b8;
 
-  --color-win: #34d399;
-  --color-lose: #f87171;
+  --color-win: #10b981;
+  --color-lose: #f43f5e;
 
-  /* System stack: zero webfont download on venue mobile data (§35).
-     Renders as SF Pro on iOS, Roboto on Android, Segoe on Windows. */
+  /* Humans / AU Palette */
+  --color-human-gold: #f59e0b;
+  --color-human-orange: #ea580c;
+  --color-human-amber: #d97706;
+  --color-human-glow: #fbbf24;
+  --color-human-deep: #78350f;
+
+  /* AI Palette */
+  --color-ai-cyan: #00f0ff;
+  --color-ai-blue: #2563eb;
+  --color-ai-sapphire: #1d4ed8;
+  --color-ai-glow: #60a5fa;
+  --color-ai-deep: #172554;
+
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
@@ -70,6 +84,91 @@ button {
 /* A drawing canvas must never scroll the page under a finger (§13). */
 .canvas-surface {
   touch-action: none;
+}
+
+/* ==========================================================================
+   Arena Animations & Effects (GPU-composited for mobile performance)
+   ========================================================================== */
+
+@keyframes clashPulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.18);
+    opacity: 1;
+  }
+}
+
+@keyframes sparkRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes circuitPulse {
+  0%, 100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.animate-clash-pulse {
+  animation: clashPulse 2s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.animate-spark-rotate {
+  animation: sparkRotate 14s linear infinite;
+  will-change: transform;
+}
+
+.animate-circuit-pulse {
+  animation: circuitPulse 4s ease-in-out infinite;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+
+/* Beveled metallic 3D bar styling matching the mockup */
+.bevel-human-bar {
+  background: linear-gradient(180deg, #ff9f1c 0%, #f77f00 45%, #d62828 100%);
+  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.45),
+              inset 0 -3px 4px rgba(0, 0, 0, 0.5),
+              0 0 20px rgba(247, 127, 0, 0.45);
+}
+
+.bevel-ai-bar {
+  background: linear-gradient(180deg, #00b4d8 0%, #0077b6 45%, #03045e 100%);
+  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.45),
+              inset 0 -3px 4px rgba(0, 0, 0, 0.5),
+              0 0 20px rgba(0, 180, 216, 0.45);
+}
+
+/* Glassmorphic Cyber Cards */
+.cyber-card {
+  background: rgba(14, 21, 45, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(37, 99, 235, 0.25);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
 }
 
 @media (prefers-reduced-motion: reduce) {
