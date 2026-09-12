@@ -119,19 +119,43 @@ button {
   }
 }
 
-.animate-clash-pulse {
-  animation: clashPulse 2s ease-in-out infinite;
-  will-change: transform, opacity;
+@keyframes animeClashPulse {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+    filter: brightness(1.1) drop-shadow(0 0 35px rgba(255, 255, 255, 0.9));
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.15) rotate(2deg);
+    filter: brightness(1.35) drop-shadow(0 0 60px rgba(0, 240, 255, 1));
+  }
 }
 
-.animate-spark-rotate {
-  animation: sparkRotate 14s linear infinite;
+@keyframes raySpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes electricJitter {
+  0%, 100% { opacity: 0.9; transform: scale(1); }
+  25% { opacity: 1; transform: scale(1.02) translate(1px, -1px); }
+  50% { opacity: 0.85; transform: scale(0.99) translate(-1px, 1px); }
+  75% { opacity: 1; transform: scale(1.03) translate(1px, 0); }
+}
+
+.animate-clash-shockwave {
+  animation: animeClashPulse 1.8s ease-in-out infinite;
+  will-change: transform, filter;
+}
+
+.animate-ray-spin {
+  animation: raySpin 16s linear infinite;
   will-change: transform;
 }
 
-.animate-circuit-pulse {
-  animation: circuitPulse 4s ease-in-out infinite;
+.animate-jitter {
+  animation: electricJitter 0.15s ease-in-out infinite alternate;
 }
+
 
 @keyframes fadeIn {
   from {

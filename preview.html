@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AU vs AI — High-Energy Arena Leaderboard</title>
+  <style>
+    :root {
+      --color-void: #030712;
+      --color-navy: #050b1d;
+      --color-human-gold: #ffbe0b;
+      --color-human-orange: #fb5607;
+      --color-human-amber: #f77f00;
+      --color-ai-cyan: #00f0ff;
+      --color-ai-blue: #0072ff;
+      --color-ai-deep: #002244;
+      --font-display: 'Impact', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: #02050e;
+      color: #ffffff;
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .tabular {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ==========================================================================
+       KEYFRAME ANIMATIONS (HIGH VOLTAGE ANIME FX)
+       ========================================================================== */
+    @keyframes animeClashPulse {
+      0%, 100% {
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+        filter: brightness(1.1) drop-shadow(0 0 35px rgba(255, 255, 255, 0.9));
+      }
+      50% {
+        transform: translate(-50%, -50%) scale(1.15) rotate(2deg);
+        filter: brightness(1.35) drop-shadow(0 0 60px rgba(0, 240, 255, 1));
+      }
+    }
+
+    @keyframes raySpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes electricJitter {
+      0%, 100% { opacity: 0.9; transform: scale(1); }
+      25% { opacity: 1; transform: scale(1.02) translate(1px, -1px); }
+      50% { opacity: 0.85; transform: scale(0.99) translate(-1px, 1px); }
+      75% { opacity: 1; transform: scale(1.03) translate(1px, 0); }
+    }
+
+    @keyframes circuitPulse {
+      0%, 100% { opacity: 0.65; }
+      50% { opacity: 0.95; }
+    }
+
+    .animate-clash-shockwave {
+      animation: animeClashPulse 1.8s ease-in-out infinite;
+      will-change: transform, filter;
+    }
+
+    .animate-ray-spin {
+      animation: raySpin 16s linear infinite;
+      will-change: transform;
+    }
+
+    .animate-jitter {
+      animation: electricJitter 0.15s ease-in-out infinite alternate;
+    }
+
+    /* ==========================================================================
+       DEMO TOOLBAR
+       ========================================================================== */
+    #demo-toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      background: rgba(3, 7, 18, 0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(0, 240, 255, 0.35);
+      padding: 10px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.8);
+    }
+
+    .btn-tab {
+      background: #090e24;
+      color: #94a3b8;
+      border: 1px solid #1e293b;
+      padding: 7px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-tab:hover {
+      color: #fff;
+      border-color: #00f0ff;
+    }
+
+    .btn-tab.active {
+      background: linear-gradient(135deg, #0072ff, #00f0ff);
+      color: #020617;
+      border-color: #00f0ff;
+      box-shadow: 0 0 16px rgba(0, 240, 255, 0.6);
+    }
+
+    .view-panel {
+      display: none;
+      width: 100%;
+      min-height: calc(100vh - 65px);
+      position: relative;
+    }
+
+    .view-panel.active {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ==========================================================================
+       MAIN TV ARENA STAGE (16:9 THEATER)
+       ========================================================================== */
+    .arena-tv-container {
+      position: relative;
+      width: 100%;
+      max-width: 1280px;
+      min-height: 720px;
+      margin: 16px auto;
+      border: 6px solid #071536;
+      border-radius: 28px;
+      overflow: hidden;
+      background: radial-gradient(circle at 50% 30%, #081b47 0%, #03091b 50%, #010309 100%);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 114, 255, 0.25);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px 30px;
+    }
+
+    /* Flank Artworks */
+    .flank-left {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 440px;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.85;
+      mix-blend-mode: screen;
+      mask-image: linear-gradient(to right, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 100%);
+      -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 100%);
+    }
+
+    .flank-right {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 440px;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.85;
+      mix-blend-mode: screen;
+      mask-image: linear-gradient(to left, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 100%);
+      -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 100%);
+    }
+
+    /* Top Stadium Banner */
+    .stadium-banner {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+      border-radius: 18px;
+      padding: 10px 24px;
+      text-align: center;
+      background: linear-gradient(180deg, #092a6b 0%, #04143a 50%, #01081a 100%);
+      border: 3px solid #1e5dd8;
+      box-shadow: 0 0 25px rgba(30, 93, 216, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.5), inset 0 -2px 6px rgba(0, 0, 0, 0.8);
+    }
+
+    .stadium-banner h1 {
+      font-family: var(--font-display);
+      font-size: 42px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-style: italic;
+      color: #ffe600;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 230, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+    }
+
+    .stadium-banner h1 span.vs {
+      font-size: 28px;
+      color: #ffffff;
+      text-shadow: 0 0 12px rgba(0, 240, 255, 0.9);
+    }
+
+    /* ==========================================================================
+       THE MAIN CLASH ARENA BAR
+       ========================================================================== */
+    .clash-battle-station {
+      position: relative;
+      z-index: 15;
+      width: 100%;
+      max-width: 1080px;
+      margin: 20px auto 10px;
+    }
+
+    .clash-header-scores {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 0 20px;
+      margin-bottom: 6px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .clash-header-scores .human-score {
+      font-size: 20px;
+      color: #ffffff;
+      text-shadow: 0 0 10px rgba(255, 190, 11, 0.6);
+    }
+
+    .clash-header-scores .ai-score {
+      font-size: 20px;
+      color: #ffffff;
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+    }
+
+    .clash-bar-frame {
+      position: relative;
+      display: flex;
+      width: 100%;
+      height: 96px;
+      align-items: center;
+      overflow: visible;
+    }
+
+    /* Human Bar (Left) */
+    .chevron-human {
+      position: relative;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding-left: 36px;
+      transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      background: linear-gradient(180deg, #ffde59 0%, #ff9100 35%, #e54b00 70%, #9e1a00 100%);
+      clip-path: polygon(0% 0%, calc(100% - 38px) 0%, 100% 50%, calc(100% - 38px) 100%, 0% 100%);
+      box-shadow: inset 0 4px 6px rgba(255, 255, 255, 0.7), inset 0 -4px 8px rgba(0, 0, 0, 0.7), 0 0 35px rgba(255, 145, 0, 0.5);
+      border-top: 3px solid #fff399;
+      border-bottom: 3px solid #661000;
+      border-left: 3px solid #ffbe0b;
+      border-radius: 20px 0 0 20px;
+      z-index: 2;
+    }
+
+    .chevron-human .label-text {
+      font-family: var(--font-display);
+      font-size: 52px;
+      font-style: italic;
+      letter-spacing: 0.06em;
+      color: #ffffff;
+      text-shadow: 0 4px 6px rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 240, 150, 0.8), -2px -2px 0 #541000, 2px 2px 0 #541000;
+    }
+
+    /* AI Bar (Right) */
+    .chevron-ai {
+      position: relative;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 36px;
+      transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      background: linear-gradient(180deg, #60efff 0%, #00a2ff 35%, #0051e6 70%, #001f7a 100%);
+      clip-path: polygon(38px 0%, 100% 0%, 100% 100%, 38px 100%, 0% 50%);
+      box-shadow: inset 0 4px 6px rgba(255, 255, 255, 0.7), inset 0 -4px 8px rgba(0, 0, 0, 0.7), 0 0 35px rgba(0, 162, 255, 0.5);
+      border-top: 3px solid #c2fbff;
+      border-bottom: 3px solid #001247;
+      border-right: 3px solid #00f0ff;
+      border-radius: 0 20px 20px 0;
+      z-index: 2;
+    }
+
+    .chevron-ai .label-text {
+      font-family: var(--font-display);
+      font-size: 52px;
+      font-style: italic;
+      letter-spacing: 0.06em;
+      color: #ffffff;
+      text-shadow: 0 4px 6px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 240, 255, 0.9), -2px -2px 0 #002266, 2px 2px 0 #002266;
+    }
+
+    /* THE ANIME COLLISION EXPLOSION (EPIC VFX) */
+    .clash-epic-explosion {
+      pointer-events: none;
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 580px;
+      height: 380px;
+      z-index: 30;
+      transition: left 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .explosion-img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      mix-blend-mode: screen;
+      filter: contrast(1.2) brightness(1.2);
+    }
+
+    /* Extra rotating starburst rays overlay */
+    .clash-ray-overlay {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(255, 200, 0, 0.6) 25%, rgba(0, 240, 255, 0.4) 50%, transparent 70%);
+      mix-blend-mode: screen;
+    }
+
+    .clash-sub-pct {
+      display: flex;
+      justify-content: space-between;
+      padding: 0 20px;
+      margin-top: 6px;
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+    }
+
+    /* ==========================================================================
+       TOP HUMAN CHALLENGERS TABLE
+       ========================================================================== */
+    .challengers-arena-card {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      max-width: 820px;
+      margin: 10px auto 0;
+      text-align: center;
+    }
+
+    .challengers-arena-card h2 {
+      font-size: 26px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 12px;
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+      letter-spacing: 0.02em;
+    }
+
+    .challenger-table-header {
+      display: grid;
+      grid-template-columns: 90px 1fr 140px;
+      padding: 0 24px 8px;
+      font-size: 15px;
+      font-weight: 800;
+      color: #93c5fd;
+      text-align: left;
+    }
+
+    .challenger-table-header div:first-child { text-align: center; }
+    .challenger-table-header div:last-child { text-align: right; }
+
+    /* Rank 1 — Gold Pill */
+    .row-rank1-gold {
+      display: grid;
+      grid-template-columns: 90px 1fr 140px;
+      align-items: center;
+      padding: 10px 24px;
+      border-radius: 18px;
+      margin-bottom: 10px;
+      background: linear-gradient(180deg, #ffeb80 0%, #ffc107 40%, #e09400 85%, #b26a00 100%);
+      box-shadow: 0 0 28px rgba(255, 193, 7, 0.7), inset 0 2px 3px rgba(255, 255, 255, 0.8), inset 0 -2px 4px rgba(0, 0, 0, 0.6);
+      border: 2px solid #fff59d;
+    }
+
+    .row-rank1-gold .rank-num {
+      text-align: center;
+      font-size: 22px;
+      font-weight: 900;
+      color: #020617;
+    }
+
+    .row-rank1-gold .player-name {
+      text-align: left;
+      font-size: 20px;
+      font-weight: 900;
+      color: #020617;
+    }
+
+    .row-rank1-gold .player-score {
+      text-align: right;
+      font-size: 24px;
+      font-weight: 900;
+      color: #020617;
+    }
+
+    /* Ranks 2-4 — Deep Cyber Blue Metallic Bars */
+    .row-cyber-blue {
+      display: grid;
+      grid-template-columns: 90px 1fr 140px;
+      align-items: center;
+      padding: 8px 24px;
+      border-radius: 16px;
+      margin-bottom: 8px;
+      background: linear-gradient(180deg, #16408f 0%, #0c2661 50%, #07163c 100%);
+      border: 1.5px solid #2563eb;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(96, 165, 250, 0.4);
+    }
+
+    .row-cyber-blue .rank-num {
+      text-align: center;
+      font-size: 18px;
+      font-weight: 800;
+      color: #60a5fa;
+    }
+
+    .row-cyber-blue .player-name {
+      text-align: left;
+      font-size: 18px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    .row-cyber-blue .player-score {
+      text-align: right;
+      font-size: 20px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+
+    /* ==========================================================================
+       MOBILE FRAME PREVIEW (FOR PHONES)
+       ========================================================================== */
+    .mobile-screen-simulator {
+      width: 100%;
+      max-width: 440px;
+      margin: 16px auto;
+      border: 4px solid #00f0ff;
+      border-radius: 36px;
+      padding: 16px;
+      background: #020617;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 240, 255, 0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Interactive Toolbar -->
+  <header id="demo-toolbar">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span style="font-size: 12px; font-weight: 900; color: #00f0ff; text-transform: uppercase;">Preview Mode:</span>
+      <button class="btn-tab active" onclick="switchView('dashboard')">🖥️ 16:9 Booth TV</button>
+      <button class="btn-tab" onclick="switchView('leaderboard')">📱 Mobile Leaderboard</button>
+      <button class="btn-tab" onclick="switchView('game')">🎮 Mobile Round 1 Game</button>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800;">
+        <span style="color: #94a3b8;">Clash Ratio:</span>
+        <input type="range" id="scoreSlider" min="20" max="80" value="66" oninput="updateClashSeam(this.value)" style="cursor: pointer; accent-color: #00f0ff;" />
+        <span id="sliderDisplay" style="color: #ffbe0b; width: 44px; text-align: right;">66%</span>
+      </div>
+      <button class="btn-tab" id="simToggleBtn" onclick="toggleClashSim()">⚡ Anime Battle Sim</button>
+    </div>
+  </header>
+
+  <!-- ======================================================================
+       VIEW 1: THE 16:9 BOOTH TV ARENA
+       ====================================================================== -->
+  <section id="view-dashboard" class="view-panel active">
+    <div class="arena-tv-container">
+      
+      <!-- LEFT FLANK: Detailed Glowing Orange Human Crowds & Circuit Traces -->
+      <img src="./public/assets/humans_flank.jpg" class="flank-left" alt="Human crowd circuit artwork" />
+
+      <!-- RIGHT FLANK: Futuristic Glowing Blue AI Microchips & Motherboard Traces -->
+      <img src="./public/assets/ai_flank.jpg" class="flank-right" alt="AI CPU motherboard artwork" />
+
+      <!-- 1. Top Beveled Stadium Banner -->
+      <div class="stadium-banner">
+        <h1>
+          HUMANS <span class="vs">vs</span> AI LEADERBOARD
+        </h1>
+      </div>
+
+      <!-- 2. The Main Epic Clash Bar -->
+      <div class="clash-battle-station">
+        <div class="clash-header-scores">
+          <div class="human-score">HUMANS TOTAL: <span id="dash-score-human" class="tabular" style="color: #ffbe0b;">24,150</span></div>
+          <div class="ai-score">AI TOTAL: <span id="dash-score-ai" class="tabular" style="color: #00f0ff;">19,800</span></div>
+        </div>
+
+        <div class="clash-bar-frame">
+          <!-- Left Human Chevron -->
+          <div id="human-chevron" class="chevron-human" style="width: 66%;">
+            <span class="label-text">HUMANS</span>
+          </div>
+
+          <!-- Right AI Chevron -->
+          <div id="ai-chevron" class="chevron-ai" style="width: 34%;">
+            <span class="label-text">AI</span>
+          </div>
+
+          <!-- EPIC ANIME EXPLOSION AT THE SEAM -->
+          <div id="anime-explosion-seam" class="clash-epic-explosion animate-clash-shockwave" style="left: 66%;">
+            <div class="clash-ray-overlay animate-ray-spin"></div>
+            <img src="./public/assets/anime_clash_explosion.jpg" class="explosion-img animate-jitter" alt="Anime clash energy explosion" />
+          </div>
+        </div>
+
+        <div class="clash-sub-pct">
+          <div id="human-pct-label" style="color: #ffbe0b; font-weight: 900;">HUMANS: 66%</div>
+          <div id="ai-pct-label" style="color: #00f0ff; font-weight: 900;">AI: 32%</div>
+        </div>
+      </div>
+
+      <!-- 3. Top Human Challengers Table -->
+      <div class="challengers-arena-card">
+        <h2>Top Human Challengers</h2>
+
+        <div class="challenger-table-header">
+          <div>Rank</div>
+          <div>Player Name</div>
+          <div>Score</div>
+        </div>
+
+        <!-- Rank 1 (Gold Pill) -->
+        <div class="row-rank1-gold">
+          <div class="rank-num">1</div>
+          <div class="player-name">Alfinan 7beca <span style="font-size: 13px; font-weight: 600; opacity: 0.7;">••••2084</span></div>
+          <div class="tabular player-score">2330</div>
+        </div>
+
+        <!-- Ranks 2-4 (Cyber Blue Metallic Pills) -->
+        <div class="row-cyber-blue">
+          <div class="rank-num">2</div>
+          <div class="player-name">Åoer.60 <span style="font-size: 13px; color: #94a3b8;">••••9412</span></div>
+          <div class="tabular player-score">1600</div>
+        </div>
+
+        <div class="row-cyber-blue">
+          <div class="rank-num">3</div>
+          <div class="player-name">Renockeho <span style="font-size: 13px; color: #94a3b8;">••••3156</span></div>
+          <div class="tabular player-score">750</div>
+        </div>
+
+        <div class="row-cyber-blue">
+          <div class="rank-num">4</div>
+          <div class="player-name">Remzeckál <span style="font-size: 13px; color: #94a3b8;">••••8841</span></div>
+          <div class="tabular player-score">380</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       VIEW 2: MOBILE LEADERBOARD
+       ====================================================================== -->
+  <section id="view-leaderboard" class="view-panel">
+    <div class="mobile-screen-simulator">
+      <div style="text-align: center; margin-bottom: 14px;">
+        <div style="font-size: 10px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase; color: #00f0ff;">AIDA · AU vs AI</div>
+        <h1 style="font-family: var(--font-display); font-size: 28px; font-style: italic; text-transform: uppercase; color: #ffe600; margin-top: 2px;">
+          HUMANS <span style="font-size: 20px; color: #fff;">vs</span> AI
+        </h1>
+        <p style="font-size: 11px; color: #94a3b8;">Official Booth Standings</p>
+      </div>
+
+      <!-- Compact Mobile Clash Bar with Explosion -->
+      <div style="position: relative; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 900; margin-bottom: 4px;">
+          <span style="color: #ffbe0b;">HUMANS: <strong id="mob-human-pts">24,150</strong></span>
+          <span style="color: #00f0ff;">AI: <strong id="mob-ai-pts">19,800</strong></span>
+        </div>
+
+        <div style="position: relative; display: flex; height: 60px; width: 100%; border-radius: 16px; overflow: visible;">
+          <div id="mob-chevron-human" class="chevron-human" style="width: 66%; padding-left: 14px; clip-path: polygon(0% 0%, calc(100% - 20px) 0%, 100% 50%, calc(100% - 20px) 100%, 0% 100%);">
+            <span style="font-family: var(--font-display); font-size: 26px; font-style: italic; color: #fff;">HUMANS</span>
+          </div>
+          <div id="mob-chevron-ai" class="chevron-ai" style="width: 34%; padding-right: 14px; clip-path: polygon(20px 0%, 100% 0%, 100% 100%, 20px 100%, 0% 50%);">
+            <span style="font-family: var(--font-display); font-size: 26px; font-style: italic; color: #fff;">AI</span>
+          </div>
+
+          <div id="mob-explosion-seam" class="clash-epic-explosion animate-clash-shockwave" style="left: 66%; width: 280px; height: 200px;">
+            <img src="./public/assets/anime_clash_explosion.jpg" class="explosion-img animate-jitter" alt="Anime clash explosion" />
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 900; margin-top: 4px;">
+          <span id="mob-pct-human" style="color: #ffbe0b;">HUMANS: 66%</span>
+          <span id="mob-pct-ai" style="color: #00f0ff;">AI: 32%</span>
+        </div>
+      </div>
+
+      <!-- Mobile Top Challengers -->
+      <div style="text-align: center; margin-top: 14px;">
+        <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 10px; color: #fff;">Top Human Challengers</h3>
+
+        <div class="row-rank1-gold" style="grid-template-columns: 50px 1fr 90px; padding: 8px 14px; border-radius: 14px;">
+          <div class="rank-num" style="font-size: 18px;">1</div>
+          <div class="player-name" style="font-size: 15px;">Alfinan 7beca <small style="font-size: 10px; opacity: 0.7;">••••2084</small></div>
+          <div class="tabular player-score" style="font-size: 18px;">2330</div>
+        </div>
+
+        <div class="row-cyber-blue" style="grid-template-columns: 50px 1fr 90px; padding: 7px 14px; border-radius: 12px;">
+          <div class="rank-num" style="font-size: 15px;">2</div>
+          <div class="player-name" style="font-size: 14px;">Åoer.60 <small style="font-size: 10px; color: #94a3b8;">••••9412</small></div>
+          <div class="tabular player-score" style="font-size: 15px;">1600</div>
+        </div>
+
+        <div class="row-cyber-blue" style="grid-template-columns: 50px 1fr 90px; padding: 7px 14px; border-radius: 12px;">
+          <div class="rank-num" style="font-size: 15px;">3</div>
+          <div class="player-name" style="font-size: 14px;">Renockeho <small style="font-size: 10px; color: #94a3b8;">••••3156</small></div>
+          <div class="tabular player-score" style="font-size: 15px;">750</div>
+        </div>
+      </div>
+
+      <button style="width: 100%; margin-top: 16px; padding: 14px; border-radius: 16px; border: none; background: linear-gradient(90deg, #ffbe0b, #fb5607); color: #020617; font-size: 16px; font-weight: 900; text-transform: uppercase; cursor: pointer; box-shadow: 0 0 25px rgba(251, 86, 7, 0.5);">
+        Play Challenge →
+      </button>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       VIEW 3: MOBILE ROUND 1 GAME
+       ====================================================================== -->
+  <section id="view-game" class="view-panel">
+    <div class="mobile-screen-simulator" style="display: flex; flex-direction: column; justify-content: space-between; min-height: 580px;">
+      <div>
+        <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; color: #94a3b8;">
+          <span>Image <strong style="color: #fff;">1</strong> of 3</span>
+          <span class="tabular" style="color: #00f0ff; font-size: 15px; font-weight: 900;">7s</span>
+        </div>
+
+        <div style="width: 100%; height: 6px; border-radius: 999px; background: #1e293b; margin-top: 6px; overflow: hidden;">
+          <div style="width: 70%; height: 100%; background: linear-gradient(90deg, #ffbe0b, #00f0ff); box-shadow: 0 0 12px #00f0ff;"></div>
+        </div>
+
+        <div style="text-align: center; margin-top: 16px;">
+          <h2 style="font-size: 22px; font-weight: 900;">Real or AI Generated?</h2>
+        </div>
+
+        <div style="width: 100%; aspect-ratio: 1 / 1; border-radius: 20px; border: 2px solid #00f0ff; background: #000; margin-top: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);">
+          <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#00f0ff" stroke-width="1.5">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px;">
+        <button onclick="alert('Locked REAL!')" style="min-height: 64px; border-radius: 16px; border: 2px solid #ffbe0b; background: linear-gradient(180deg, #3d2000, #140800); color: #ffeb80; font-size: 18px; font-weight: 900; text-transform: uppercase; cursor: pointer; box-shadow: 0 0 20px rgba(255, 190, 11, 0.3);">
+          REAL
+        </button>
+        <button onclick="alert('Locked AI!')" style="min-height: 64px; border-radius: 16px; border: 2px solid #00f0ff; background: linear-gradient(180deg, #00254d, #000b1a); color: #00f0ff; font-size: 18px; font-weight: 900; text-transform: uppercase; cursor: pointer; box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);">
+          AI GENERATED
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    let simInterval = null;
+
+    function switchView(viewName) {
+      document.querySelectorAll('.view-panel').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.btn-tab').forEach(el => el.classList.remove('active'));
+      document.getElementById('view-' + viewName).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    function updateClashSeam(val) {
+      const humanPct = parseInt(val, 10);
+      const aiPct = 100 - humanPct;
+      document.getElementById('sliderDisplay').innerText = humanPct + '%';
+
+      // 16:9 TV Dashboard Elements
+      document.getElementById('human-chevron').style.width = humanPct + '%';
+      document.getElementById('ai-chevron').style.width = aiPct + '%';
+      document.getElementById('anime-explosion-seam').style.left = humanPct + '%';
+      document.getElementById('human-pct-label').innerText = 'HUMANS: ' + humanPct + '%';
+      document.getElementById('ai-pct-label').innerText = 'AI: ' + aiPct + '%';
+      document.getElementById('dash-score-human').innerText = (humanPct * 365).toLocaleString();
+      document.getElementById('dash-score-ai').innerText = (aiPct * 300).toLocaleString();
+
+      // Mobile Elements
+      document.getElementById('mob-chevron-human').style.width = humanPct + '%';
+      document.getElementById('mob-chevron-ai').style.width = aiPct + '%';
+      document.getElementById('mob-explosion-seam').style.left = humanPct + '%';
+      document.getElementById('mob-pct-human').innerText = 'HUMANS: ' + humanPct + '%';
+      document.getElementById('mob-pct-ai').innerText = 'AI: ' + aiPct + '%';
+      document.getElementById('mob-human-pts').innerText = (humanPct * 365).toLocaleString();
+      document.getElementById('mob-ai-pts').innerText = (aiPct * 300).toLocaleString();
+    }
+
+    function toggleClashSim() {
+      const btn = document.getElementById('simToggleBtn');
+      if (simInterval) {
+        clearInterval(simInterval);
+        simInterval = null;
+        btn.innerText = '⚡ Anime Battle Sim';
+        btn.style.boxShadow = '';
+      } else {
+        btn.innerText = '⏹ Stop Sim';
+        btn.style.boxShadow = '0 0 16px #ff0055';
+        simInterval = setInterval(() => {
+          // Dynamic battle shifts
+          const shift = Math.floor(Math.random() * 46) + 28; // 28% to 74%
+          document.getElementById('scoreSlider').value = shift;
+          updateClashSeam(shift);
+        }, 1400);
+      }
+    }
+  </script>
+</body>
+</html>

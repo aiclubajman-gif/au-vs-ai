@@ -16,20 +16,16 @@ interface ClashBarProps {
 }
 
 /**
- * ClashBar — The core Humans vs AI dynamic battle meter.
+ * ClashBar — High-Energy Anime-Style Humans vs AI Battle Station
  *
- * Left side: Glowing beveled Amber/Orange "HUMANS" chevron.
- * Right side: Glowing beveled Cyber Cyan/Blue "AI" chevron.
- * Center: Explosive animated collision sparks and lens flare.
- *
- * Dynamic width: The leading team's bar expands proportionally, pushing
- * the collision point into the opponent's territory.
+ * Left: Glowing 3D Golden-Orange Chevron with metallic bevel & HUMANS bold italic lettering.
+ * Right: Glowing 3D Electric-Cyan Chevron with metallic bevel & AI bold italic lettering.
+ * Center: Enormous anime energy beam clash explosion (Dragon Ball / Mecha style) with
+ *         crackling gold & blue lightning, rotating rays, and particle shards.
  */
 export function ClashBar({ stats, compact = false, className = '' }: ClashBarProps) {
   const { humanTotal, aiTotal, humanPercentage, aiPercentage } = stats;
 
-  // Calculate dynamic split ratio with a safety clamp (20% min to 80% max)
-  // so labels are never crushed off-screen.
   const splitPct = useMemo(() => {
     const total = humanTotal + aiTotal;
     if (total <= 0) return 50;
@@ -46,19 +42,19 @@ export function ClashBar({ stats, compact = false, className = '' }: ClashBarPro
           STATS ROW (Top of the bar)
           HUMANS TOTAL vs AI TOTAL
           ------------------------------------------------------------------- */}
-      <div className="mb-2 flex items-center justify-between px-2 text-xs font-black tracking-wider uppercase sm:text-base sm:tracking-widest md:text-lg">
+      <div className="mb-2 flex items-center justify-between px-3 text-xs font-black tracking-wider uppercase sm:text-base sm:tracking-widest md:text-lg">
         {/* Human Stat */}
-        <div className="flex flex-col items-start sm:flex-row sm:items-baseline sm:gap-2">
-          <span className="text-[var(--color-muted)]">HUMANS TOTAL:</span>
-          <span className="tabular font-black text-[var(--color-human-glow)] text-sm sm:text-xl md:text-2xl drop-shadow-[0_0_10px_rgba(245,158,11,0.5)]">
+        <div className="flex items-baseline gap-1.5 sm:gap-2">
+          <span className="text-white/90">HUMANS TOTAL:</span>
+          <span className="tabular font-black text-[var(--color-human-gold)] text-sm sm:text-xl md:text-2xl drop-shadow-[0_0_12px_rgba(255,190,11,0.7)]">
             {formattedHumanTotal}
           </span>
         </div>
 
         {/* AI Stat */}
-        <div className="flex flex-col items-end sm:flex-row sm:items-baseline sm:gap-2">
-          <span className="text-[var(--color-muted)]">AI TOTAL:</span>
-          <span className="tabular font-black text-[var(--color-ai-cyan)] text-sm sm:text-xl md:text-2xl drop-shadow-[0_0_10px_rgba(0,240,255,0.5)]">
+        <div className="flex items-baseline gap-1.5 sm:gap-2">
+          <span className="text-white/90">AI TOTAL:</span>
+          <span className="tabular font-black text-[var(--color-ai-cyan)] text-sm sm:text-xl md:text-2xl drop-shadow-[0_0_12px_rgba(0,240,255,0.7)]">
             {formattedAiTotal}
           </span>
         </div>
@@ -68,38 +64,38 @@ export function ClashBar({ stats, compact = false, className = '' }: ClashBarPro
           THE MAIN CLASH BAR CONTAINER
           ------------------------------------------------------------------- */}
       <div
-        className={`relative flex w-full items-center overflow-visible rounded-2xl p-1 sm:rounded-3xl ${
-          compact ? 'h-14 sm:h-16' : 'h-16 sm:h-20 md:h-24'
+        className={`relative flex w-full items-center overflow-visible ${
+          compact ? 'h-14 sm:h-16' : 'h-20 sm:h-24 md:h-28'
         }`}
-        style={{
-          background: 'linear-gradient(180deg, #020617 0%, #090e24 100%)',
-          boxShadow: '0 10px 40px rgba(0, 0, 0, 0.7), 0 0 1px 1px rgba(255, 255, 255, 0.1)',
-        }}
       >
         {/* =================================================================
-            HUMANS (LEFT BAR)
+            HUMANS (LEFT CHEVRON)
             ================================================================= */}
         <div
-          className="relative flex h-full items-center justify-start overflow-hidden rounded-l-xl pl-4 transition-[width] duration-700 ease-out sm:rounded-l-2xl sm:pl-8"
+          className="relative flex h-full items-center justify-start rounded-l-2xl pl-4 sm:pl-8 md:pl-10 transition-[width] duration-500 ease-out z-10"
           style={{
             width: `${splitPct}%`,
-            background: 'linear-gradient(180deg, #fbbf24 0%, #ea580c 45%, #991b1b 100%)',
-            clipPath: 'polygon(0% 0%, calc(100% - 24px) 0%, 100% 50%, calc(100% - 24px) 100%, 0% 100%)',
-            boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.5), inset 0 -3px 6px rgba(0, 0, 0, 0.6), 0 0 24px rgba(245, 158, 11, 0.35)',
+            background: 'linear-gradient(180deg, #ffde59 0%, #ff9100 35%, #e54b00 70%, #9e1a00 100%)',
+            clipPath: compact
+              ? 'polygon(0% 0%, calc(100% - 20px) 0%, 100% 50%, calc(100% - 20px) 100%, 0% 100%)'
+              : 'polygon(0% 0%, calc(100% - 36px) 0%, 100% 50%, calc(100% - 36px) 100%, 0% 100%)',
+            boxShadow:
+              'inset 0 4px 6px rgba(255, 255, 255, 0.7), inset 0 -4px 8px rgba(0, 0, 0, 0.7), 0 0 35px rgba(255, 145, 0, 0.5)',
+            borderTop: '3px solid #fff399',
+            borderBottom: '3px solid #661000',
+            borderLeft: '3px solid #ffbe0b',
           }}
         >
-          {/* Subtle metallic bevel highlight */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/35 to-transparent" />
-
           {/* Text: HUMANS */}
           <span
-            className={`font-black tracking-wider uppercase italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] ${
+            className={`font-black tracking-wider uppercase italic drop-shadow-[0_4px_6px_rgba(0,0,0,0.9)] ${
               compact
-                ? 'text-base sm:text-xl'
-                : 'text-lg sm:text-2xl md:text-3xl lg:text-4xl'
+                ? 'text-lg sm:text-2xl'
+                : 'text-2xl sm:text-4xl md:text-5xl lg:text-6xl'
             } text-white`}
             style={{
-              textShadow: '0 0 12px rgba(254, 240, 138, 0.8), 0 2px 4px rgba(0,0,0,0.9)',
+              textShadow:
+                '0 4px 6px rgba(0,0,0,0.9), 0 0 24px rgba(255, 240, 150, 0.8), -2px -2px 0 #541000, 2px 2px 0 #541000',
             }}
           >
             HUMANS
@@ -107,29 +103,33 @@ export function ClashBar({ stats, compact = false, className = '' }: ClashBarPro
         </div>
 
         {/* =================================================================
-            AI (RIGHT BAR)
+            AI (RIGHT CHEVRON)
             ================================================================= */}
         <div
-          className="relative flex h-full items-center justify-end overflow-hidden rounded-r-xl pr-4 transition-[width] duration-700 ease-out sm:rounded-r-2xl sm:pr-8"
+          className="relative flex h-full items-center justify-end rounded-r-2xl pr-4 sm:pr-8 md:pr-10 transition-[width] duration-500 ease-out z-10"
           style={{
             width: `${100 - splitPct}%`,
-            background: 'linear-gradient(180deg, #38bdf8 0%, #0284c7 45%, #1e3a8a 100%)',
-            clipPath: 'polygon(24px 0%, 100% 0%, 100% 100%, 24px 100%, 0% 50%)',
-            boxShadow: 'inset 0 2px 4px rgba(255, 255, 255, 0.5), inset 0 -3px 6px rgba(0, 0, 0, 0.6), 0 0 24px rgba(0, 240, 255, 0.35)',
+            background: 'linear-gradient(180deg, #60efff 0%, #00a2ff 35%, #0051e6 70%, #001f7a 100%)',
+            clipPath: compact
+              ? 'polygon(20px 0%, 100% 0%, 100% 100%, 20px 100%, 0% 50%)'
+              : 'polygon(36px 0%, 100% 0%, 100% 100%, 36px 100%, 0% 50%)',
+            boxShadow:
+              'inset 0 4px 6px rgba(255, 255, 255, 0.7), inset 0 -4px 8px rgba(0, 0, 0, 0.7), 0 0 35px rgba(0, 162, 255, 0.5)',
+            borderTop: '3px solid #c2fbff',
+            borderBottom: '3px solid #001247',
+            borderRight: '3px solid #00f0ff',
           }}
         >
-          {/* Subtle metallic bevel highlight */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/35 to-transparent" />
-
           {/* Text: AI */}
           <span
-            className={`font-black tracking-wider uppercase italic drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] ${
+            className={`font-black tracking-wider uppercase italic drop-shadow-[0_4px_6px_rgba(0,0,0,0.9)] ${
               compact
-                ? 'text-base sm:text-xl'
-                : 'text-lg sm:text-2xl md:text-3xl lg:text-4xl'
+                ? 'text-lg sm:text-2xl'
+                : 'text-2xl sm:text-4xl md:text-5xl lg:text-6xl'
             } text-white`}
             style={{
-              textShadow: '0 0 12px rgba(56, 189, 248, 0.8), 0 2px 4px rgba(0,0,0,0.9)',
+              textShadow:
+                '0 4px 6px rgba(0,0,0,0.9), 0 0 24px rgba(0, 240, 255, 0.9), -2px -2px 0 #002266, 2px 2px 0 #002266',
             }}
           >
             AI
@@ -137,34 +137,25 @@ export function ClashBar({ stats, compact = false, className = '' }: ClashBarPro
         </div>
 
         {/* =================================================================
-            CENTER CLASH ENERGY (SPARKS & LENS FLARE)
+            EPIC ANIME CLASH EXPLOSION AT THE SEAM (Z-INDEX 30)
             Follows the exact seam splitPct
             ================================================================= */}
         <div
-          className="pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 transition-[left] duration-700 ease-out z-20"
+          className={`pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 transition-[left] duration-500 ease-out z-30 animate-clash-shockwave ${
+            compact ? 'w-[280px] h-[200px]' : 'w-[520px] h-[340px] sm:w-[620px] sm:h-[400px]'
+          }`}
           style={{ left: `${splitPct}%` }}
         >
-          {/* Central Bright Hotspot */}
-          <div className="h-10 w-10 sm:h-14 sm:w-14 rounded-full bg-white blur-[4px] animate-clash-pulse" />
+          {/* Rotating starburst flare aura */}
+          <div className="absolute inset-0 m-auto h-[75%] w-[75%] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.9)_0%,rgba(255,190,11,0.5)_30%,rgba(0,240,255,0.4)_55%,transparent_75%)] mix-blend-screen animate-ray-spin" />
 
-          {/* Core White Star */}
-          <div className="absolute inset-0 m-auto h-4 w-4 rounded-full bg-white shadow-[0_0_20px_10px_#ffffff]" />
-
-          {/* Dual Flare Rings */}
-          <div className="absolute inset-0 m-auto -h-16 -w-16 h-20 w-20 sm:h-28 sm:w-28 rounded-full border border-amber-300/40 blur-[2px] animate-clash-pulse" />
-
-          {/* Rotating Spark Rays */}
-          <div className="absolute inset-0 m-auto flex h-24 w-24 sm:h-36 sm:w-36 items-center justify-center animate-spark-rotate">
-            {/* Spark Rays */}
-            <div className="absolute h-full w-[2px] bg-gradient-to-t from-transparent via-amber-300 to-transparent" />
-            <div className="absolute h-[2px] w-full bg-gradient-to-r from-transparent via-cyan-300 to-transparent" />
-            <div className="absolute h-full w-[1.5px] rotate-45 bg-gradient-to-t from-transparent via-white to-transparent opacity-80" />
-            <div className="absolute h-full w-[1.5px] -rotate-45 bg-gradient-to-t from-transparent via-white to-transparent opacity-80" />
-            <div className="absolute h-full w-[1px] rotate-[22deg] bg-gradient-to-t from-transparent via-amber-200 to-transparent opacity-60" />
-            <div className="absolute h-full w-[1px] -rotate-[22deg] bg-gradient-to-t from-transparent via-cyan-200 to-transparent opacity-60" />
-            <div className="absolute h-full w-[1px] rotate-[68deg] bg-gradient-to-t from-transparent via-amber-200 to-transparent opacity-60" />
-            <div className="absolute h-full w-[1px] -rotate-[68deg] bg-gradient-to-t from-transparent via-cyan-200 to-transparent opacity-60" />
-          </div>
+          {/* Epic anime explosion image asset */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/assets/anime_clash_explosion.jpg"
+            alt="Clash Explosion"
+            className="h-full w-full object-contain mix-blend-screen filter contrast-125 brightness-125 animate-jitter"
+          />
         </div>
       </div>
 
@@ -172,11 +163,11 @@ export function ClashBar({ stats, compact = false, className = '' }: ClashBarPro
           PERCENTAGES ROW (Bottom of the bar)
           HUMANS: 66% vs AI: 32%
           ------------------------------------------------------------------- */}
-      <div className="mt-2 flex items-center justify-between px-2 text-xs font-black tracking-wider sm:text-base sm:tracking-widest md:text-lg">
-        <span className="text-[var(--color-human-glow)] drop-shadow-[0_0_8px_rgba(245,158,11,0.4)]">
+      <div className="mt-2 flex items-center justify-between px-3 text-xs font-black tracking-wider sm:text-base sm:tracking-widest md:text-lg">
+        <span className="text-[var(--color-human-gold)] drop-shadow-[0_0_10px_rgba(255,190,11,0.6)]">
           HUMANS: {humanPercentage}%
         </span>
-        <span className="text-[var(--color-ai-cyan)] drop-shadow-[0_0_8px_rgba(0,240,255,0.4)]">
+        <span className="text-[var(--color-ai-cyan)] drop-shadow-[0_0_10px_rgba(0,240,255,0.6)]">
           AI: {aiPercentage}%
         </span>
       </div>
