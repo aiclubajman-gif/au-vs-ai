@@ -107,6 +107,16 @@ export function ImageReview({ images }: { images: ReviewImage[] }) {
           </span>
         </header>
 
+        {/*
+          The composition of this sample, stated up front. A sample that is all
+          one label means the query is biased, not that the bank is broken —
+          which is exactly the confusion this caused once already.
+        */}
+        <p className="mt-2 text-center text-xs text-[var(--color-muted)]">
+          This sample: {items.filter((i) => i.label === 'real').length} real ·{' '}
+          {items.filter((i) => i.label === 'ai_generated').length} AI
+        </p>
+
         {accuracy !== null && (
           <div className="mt-3 rounded-lg border border-[var(--color-edge)] bg-[var(--color-navy)] px-4 py-2">
             <p className="text-xs text-[var(--color-muted)]">

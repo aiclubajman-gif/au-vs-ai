@@ -17,15 +17,26 @@ export default async function AdminImagesPage() {
 
   const supabase = createAdminSupabase();
 
-  // Random order, so reviewing a few gives a fair read on the whole bank
-  // rather than whichever images happened to upload first.
-  const { data } = await supabase
-    .from('round1_images')
-    .select('id, storage_path, label, active, explanation, times_shown, times_correct')
-    .limit(60);
+  /**
+   * Randomised in SQL, not after the fetch.
+   *
+   * A plain .limit(60) returns rows in insertion order, and the loader inserts
+   * every real image before any AI one — so the sample came back 100% real and
+   * looked like a labelling disaster. Shuffling client-side cannot fix a sample
+   * that is already biased.
+   */
+  const { data } = await supabase.rpc('random_round1_images', { p_limit: 60 });
 
-  const images: ReviewImage[] = (data ?? [])
-    .map((r) => ({
+  const images: ReviewImage[] = (data ?? []).map(
+    (r: {
+      id: string;
+      storage_path: string;
+      label: 'real' | 'ai_generated';
+      active: boolean;
+      explanation: string | null;
+      times_shown: number;
+      times_correct: number;
+    }) => ({
       id: r.id,
       storagePath: r.storage_path,
       label: r.label,
@@ -33,8 +44,8 @@ export default async function AdminImagesPage() {
       explanation: r.explanation,
       timesShown: r.times_shown,
       timesCorrect: r.times_correct,
-    }))
-    .sort(() => Math.random() - 0.5);
+    }),
+  );
 
   return <ImageReview images={images} />;
 }
