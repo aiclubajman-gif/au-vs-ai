@@ -33,6 +33,7 @@ const RED = '\x1b[31m', GREEN = '\x1b[32m', YELLOW = '\x1b[33m', CYAN = '\x1b[36
 const DRY = process.argv.includes('--dry');
 const ROOT = join(process.cwd(), 'images');
 const MAX_BYTES = 250 * 1024;   // beyond this, venue wifi starts to hurt
+const MIN_EDGE = 512;           // below this, images look like mush on a phone
 const MIME = { '.webp': 'image/webp', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png' };
 
 if (!URL_ || !SERVICE) {
@@ -77,6 +78,66 @@ if (existsSync(manifestPath)) {
 // ---------------------------------------------------------------------------
 // Gather and validate
 // ---------------------------------------------------------------------------
+/**
+ * Reads pixel dimensions straight from the file header — no image library.
+ *
+ * This exists because ML datasets are often tiny. CIFAKE, one of the most
+ * downloaded real-vs-AI datasets, is 32x32. Those are fine for training a
+ * classifier and useless for asking a human to judge on a phone screen.
+ * Checking 400 images by eye is not realistic, so it happens here.
+ */
+function dimensions(path) {
+  let fd;
+  try {
+    const buf = readFileSync(path);
+
+    // PNG: width/height are big-endian uint32 at bytes 16 and 20.
+    if (buf.length > 24 && buf[0] === 0x89 && buf[1] === 0x50) {
+      return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
+    }
+
+    // WebP (VP8X / VP8L / VP8 ) — RIFF container.
+    if (buf.length > 30 && buf.toString('ascii', 0, 4) === 'RIFF') {
+      const fourcc = buf.toString('ascii', 12, 16);
+      if (fourcc === 'VP8X') {
+        return {
+          w: 1 + (buf.readUIntLE(24, 3) & 0xffffff),
+          h: 1 + (buf.readUIntLE(27, 3) & 0xffffff),
+        };
+      }
+      if (fourcc === 'VP8 ') {
+        return { w: buf.readUInt16LE(26) & 0x3fff, h: buf.readUInt16LE(28) & 0x3fff };
+      }
+      if (fourcc === 'VP8L') {
+        const bits = buf.readUInt32LE(21);
+        return { w: (bits & 0x3fff) + 1, h: ((bits >> 14) & 0x3fff) + 1 };
+      }
+    }
+
+    // JPEG: walk the markers to the first Start-Of-Frame.
+    if (buf.length > 4 && buf[0] === 0xff && buf[1] === 0xd8) {
+      let i = 2;
+      while (i < buf.length - 9) {
+        if (buf[i] !== 0xff) { i++; continue; }
+        const marker = buf[i + 1];
+        // SOF0..SOF3, SOF5..SOF7, SOF9..SOF11, SOF13..SOF15
+        if (
+          (marker >= 0xc0 && marker <= 0xc3) ||
+          (marker >= 0xc5 && marker <= 0xc7) ||
+          (marker >= 0xc9 && marker <= 0xcb) ||
+          (marker >= 0xcd && marker <= 0xcf)
+        ) {
+          return { h: buf.readUInt16BE(i + 5), w: buf.readUInt16BE(i + 7) };
+        }
+        i += 2 + buf.readUInt16BE(i + 2);
+      }
+    }
+  } catch {
+    // Unreadable header is reported as unknown rather than crashing the run.
+  }
+  return null;
+}
+
 function gather(folder, label) {
   const dir = join(ROOT, folder);
   if (!existsSync(dir)) return [];
@@ -90,6 +151,7 @@ function gather(folder, label) {
         path,
         label,
         bytes: statSync(path).size,
+        dim: dimensions(path),
         mime: MIME[extname(f).toLowerCase()],
         explanation: explanations.get(f) ?? null,
       };
@@ -138,6 +200,40 @@ if (items.length < 40) {
   console.log(`        neighbours will often see the same ones. Aim for 40+.\n`);
 }
 
+// ---- Resolution -------------------------------------------------------
+const tooSmall = items.filter((i) => i.dim && Math.min(i.dim.w, i.dim.h) < MIN_EDGE);
+const unknownDim = items.filter((i) => !i.dim);
+
+if (items.length > 0) {
+  const known = items.filter((i) => i.dim);
+  if (known.length > 0) {
+    const edges = known.map((i) => Math.min(i.dim.w, i.dim.h)).sort((a, b) => a - b);
+    const median = edges[Math.floor(edges.length / 2)];
+    console.log(`  ${DIM}shortest edge: min ${edges[0]}px, median ${median}px, max ${edges[edges.length - 1]}px${RESET}\n`);
+  }
+}
+
+if (tooSmall.length > 0) {
+  const worst = Math.min(...tooSmall.map((i) => Math.min(i.dim.w, i.dim.h)));
+
+  // Below ~128px this is not a judgement call, the round simply does not work.
+  if (worst < 128) {
+    console.log(`  ${RED}FAIL${RESET}  ${tooSmall.length} image(s) under ${MIN_EDGE}px, smallest is ${worst}px.`);
+    console.log(`        At ${worst}px these are unreadable on a phone. Students would be`);
+    console.log(`        guessing at blurry squares, not judging AI images.`);
+    console.log(`        Many ML datasets (CIFAKE is 32x32) are built for training,`);
+    console.log(`        not for human judgement. Find a higher-resolution set.\n`);
+    blocked = true;
+  } else {
+    console.log(`  ${YELLOW}WARN${RESET}  ${tooSmall.length} image(s) under ${MIN_EDGE}px on the short edge.`);
+    console.log(`        Smallest is ${worst}px. These will look soft full-screen.\n`);
+  }
+}
+
+if (unknownDim.length > 0) {
+  console.log(`  ${YELLOW}WARN${RESET}  Could not read dimensions for ${unknownDim.length} file(s).\n`);
+}
+
 if (oversize.length > 0) {
   console.log(`  ${YELLOW}WARN${RESET}  ${oversize.length} image(s) over 250KB:`);
   for (const i of oversize.slice(0, 5)) {
@@ -148,9 +244,14 @@ if (oversize.length > 0) {
 }
 
 if (noExplanation.length > 0) {
-  console.log(`  ${YELLOW}WARN${RESET}  ${noExplanation.length} image(s) have no explanation.`);
-  console.log(`        The giveaway detail is most of the educational value.`);
-  console.log(`        Add images/manifest.csv with: filename,explanation\n`);
+  // Deliberately low-key. Explanations are NEVER shown during the competition
+  // (§11 keeps Round 1 answers secret while entries are open), so a bank with
+  // none still runs a perfectly fair event. They matter afterwards, for the
+  // reveal and any follow-up session. Writing 400 is not a good use of the
+  // last week; writing 30 good ones is.
+  console.log(`  ${DIM}note  ${noExplanation.length} image(s) have no explanation.`);
+  console.log(`        Not needed for the fair — explanations are only shown after`);
+  console.log(`        entries close. Worth writing for 30-40 of the best ones.\n`);
 }
 
 if (blocked) {
