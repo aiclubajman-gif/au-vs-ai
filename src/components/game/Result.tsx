@@ -59,16 +59,16 @@ export function Result({
           </p>
 
           <div className="mt-10 rounded-2xl border border-[var(--color-cyan-dim)] bg-[var(--color-navy)] p-5">
-            <h2 className="text-lg font-semibold">Want another chance to win?</h2>
+            <h2 className="text-lg font-semibold">Want to join AIDA?</h2>
             <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">
-              Your score is already in the running for the leaderboard prize. Register with
-              AIDA and you&apos;re also entered into our subscription raffle.
+              Your score is already in the running for the leaderboard prize. If you want to
+              join the club, membership goes through the university&apos;s ORS system.
             </p>
             <a
-              href="/register"
+              href="/club"
               className="mt-5 block w-full rounded-xl bg-[var(--color-cyan)] px-6 py-4 text-center font-semibold text-[var(--color-void)]"
             >
-              Register with AIDA
+              How to join
             </a>
           </div>
 

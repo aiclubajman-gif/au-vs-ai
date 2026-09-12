@@ -16,7 +16,9 @@
     "seed:dev": "node --env-file=.env.local scripts/seed-dev.mjs",
     "seed:clear": "node --env-file=.env.local scripts/seed-dev.mjs --clear",
     "make:admin": "node --env-file=.env.local scripts/make-admin.mjs",
-    "check:push": "node scripts/pre-push-check.mjs"
+    "check:push": "node scripts/pre-push-check.mjs",
+    "load:images": "node --env-file=.env.local scripts/load-images.mjs",
+    "load:images:dry": "node --env-file=.env.local scripts/load-images.mjs --dry"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
