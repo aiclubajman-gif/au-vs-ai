@@ -3,19 +3,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AU vs AI — High-Energy Arena Leaderboard</title>
+  <title>Humans vs AI — Arena Leaderboard</title>
   <style>
+    /* ==========================================================================
+       DESIGN TOKENS & RESET
+       No external webfonts or assets allowed. System font stack only.
+       ========================================================================== */
     :root {
-      --color-void: #030712;
-      --color-navy: #050b1d;
+      --color-void: #02050e;
       --color-human-gold: #ffbe0b;
       --color-human-orange: #fb5607;
       --color-human-amber: #f77f00;
+      --color-human-core: #ffd9a0;
       --color-ai-cyan: #00f0ff;
       --color-ai-blue: #0072ff;
-      --color-ai-deep: #002244;
-      --font-display: 'Impact', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --color-ai-deep: #050b1d;
+      --color-ai-core: #a0b8ff;
+      --split-pct: 66%;
+      --font-display: Impact, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
 
     * {
@@ -25,733 +31,1340 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    body {
-      font-family: var(--font-body);
-      background: #02050e;
-      color: #ffffff;
-      min-height: 100vh;
+    html, body {
+      width: 100%;
+      height: 100%;
       overflow-x: hidden;
+      background: var(--color-void);
+      color: #ffffff;
+      font-family: var(--font-body);
       -webkit-font-smoothing: antialiased;
     }
 
     .tabular {
       font-variant-numeric: tabular-nums;
+      font-feature-settings: "tnum";
     }
 
     /* ==========================================================================
-       KEYFRAME ANIMATIONS (HIGH VOLTAGE ANIME FX)
-       ========================================================================== */
-    @keyframes animeClashPulse {
-      0%, 100% {
-        transform: translate(-50%, -50%) scale(1) rotate(0deg);
-        filter: brightness(1.1) drop-shadow(0 0 35px rgba(255, 255, 255, 0.9));
-      }
-      50% {
-        transform: translate(-50%, -50%) scale(1.15) rotate(2deg);
-        filter: brightness(1.35) drop-shadow(0 0 60px rgba(0, 240, 255, 1));
-      }
-    }
-
-    @keyframes raySpin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    @keyframes electricJitter {
-      0%, 100% { opacity: 0.9; transform: scale(1); }
-      25% { opacity: 1; transform: scale(1.02) translate(1px, -1px); }
-      50% { opacity: 0.85; transform: scale(0.99) translate(-1px, 1px); }
-      75% { opacity: 1; transform: scale(1.03) translate(1px, 0); }
-    }
-
-    @keyframes circuitPulse {
-      0%, 100% { opacity: 0.65; }
-      50% { opacity: 0.95; }
-    }
-
-    .animate-clash-shockwave {
-      animation: animeClashPulse 1.8s ease-in-out infinite;
-      will-change: transform, filter;
-    }
-
-    .animate-ray-spin {
-      animation: raySpin 16s linear infinite;
-      will-change: transform;
-    }
-
-    .animate-jitter {
-      animation: electricJitter 0.15s ease-in-out infinite alternate;
-    }
-
-    /* ==========================================================================
-       DEMO TOOLBAR
+       DEMO HARNESS TOOLBAR (Toggles simulated frame size, not duplicated DOM)
        ========================================================================== */
     #demo-toolbar {
-      position: sticky;
+      position: fixed;
       top: 0;
-      z-index: 200;
-      background: rgba(3, 7, 18, 0.95);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(0, 240, 255, 0.35);
-      padding: 10px 20px;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: rgba(5, 11, 29, 0.95);
+      border-bottom: 1px solid rgba(0, 240, 255, 0.3);
+      padding: 8px 16px;
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.8);
+      gap: 10px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
     }
 
-    .btn-tab {
-      background: #090e24;
+    .tool-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tool-btn {
+      background: #0d1a38;
       color: #94a3b8;
-      border: 1px solid #1e293b;
-      padding: 7px 16px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 800;
+      border: 1px solid #1e3a8a;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 700;
       cursor: pointer;
       transition: all 0.2s ease;
     }
 
-    .btn-tab:hover {
-      color: #fff;
+    .tool-btn:hover {
+      color: #ffffff;
       border-color: #00f0ff;
     }
 
-    .btn-tab.active {
+    .tool-btn.active {
       background: linear-gradient(135deg, #0072ff, #00f0ff);
       color: #020617;
       border-color: #00f0ff;
-      box-shadow: 0 0 16px rgba(0, 240, 255, 0.6);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.5);
     }
 
-    .view-panel {
-      display: none;
-      width: 100%;
-      min-height: calc(100vh - 65px);
-      position: relative;
-    }
-
-    .view-panel.active {
+    .slider-box {
       display: flex;
-      flex-direction: column;
       align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    input[type="range"] {
+      cursor: pointer;
+      accent-color: #00f0ff;
+      width: 140px;
+    }
+
+    /* Outer stage that resizes when previewing mobile vs 16:9 TV */
+    #viewport-stage {
+      width: 100%;
+      min-height: 100dvh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 50px;
+      transition: max-width 0.3s ease;
+      margin: 0 auto;
+    }
+
+    #viewport-stage.mode-tv {
+      max-width: 100%;
+    }
+
+    #viewport-stage.mode-mobile {
+      max-width: 410px;
+      border-left: 2px solid rgba(0, 240, 255, 0.3);
+      border-right: 2px solid rgba(0, 240, 255, 0.3);
+      box-shadow: 0 0 40px rgba(0, 0, 0, 0.9);
     }
 
     /* ==========================================================================
-       MAIN TV ARENA STAGE (16:9 THEATER)
+       SCREEN 1: FULL-BLEED ARENA LEADERBOARD
        ========================================================================== */
-    .arena-tv-container {
+    #leaderboard-screen {
       position: relative;
       width: 100%;
-      max-width: 1280px;
-      min-height: 720px;
-      margin: 16px auto;
-      border: 6px solid #071536;
-      border-radius: 28px;
-      overflow: hidden;
-      background: radial-gradient(circle at 50% 30%, #081b47 0%, #03091b 50%, #010309 100%);
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 114, 255, 0.25);
+      min-height: calc(100dvh - 50px);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 20px 30px;
+      overflow: hidden;
+      background: var(--color-void);
     }
 
-    /* Flank Artworks */
-    .flank-left {
+    /* -------------------------------------------------------------------------
+       SPLIT BACKGROUND (Syncs with the exact score split point)
+       ------------------------------------------------------------------------- */
+    .split-bg-layer {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 440px;
-      height: 100%;
+      inset: 0;
       pointer-events: none;
       z-index: 1;
-      opacity: 0.85;
-      mix-blend-mode: screen;
-      mask-image: linear-gradient(to right, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 100%);
-      -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 100%);
+      display: flex;
     }
 
-    .flank-right {
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 440px;
-      height: 100%;
-      pointer-events: none;
-      z-index: 1;
-      opacity: 0.85;
-      mix-blend-mode: screen;
-      mask-image: linear-gradient(to left, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 100%);
-      -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 45%, rgba(0,0,0,0) 100%);
-    }
-
-    /* Top Stadium Banner */
-    .stadium-banner {
+    .bg-half-human {
       position: relative;
-      z-index: 10;
-      width: 100%;
-      max-width: 900px;
-      margin: 0 auto;
-      border-radius: 18px;
-      padding: 10px 24px;
-      text-align: center;
-      background: linear-gradient(180deg, #092a6b 0%, #04143a 50%, #01081a 100%);
-      border: 3px solid #1e5dd8;
-      box-shadow: 0 0 25px rgba(30, 93, 216, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.5), inset 0 -2px 6px rgba(0, 0, 0, 0.8);
+      height: 100%;
+      width: var(--split-pct, 66%);
+      background: linear-gradient(135deg, #4a1208 0%, #1a0500 100%);
+      overflow: hidden;
+      transition: width 0.05s linear;
     }
 
-    .stadium-banner h1 {
+    .bg-half-ai {
+      position: relative;
+      height: 100%;
+      flex: 1;
+      background: linear-gradient(225deg, #0b1240 0%, #05081f 100%);
+      overflow: hidden;
+    }
+
+    .circuit-overlay {
+      position: absolute;
+      inset: 0;
+      opacity: 0.16;
+    }
+
+    /* -------------------------------------------------------------------------
+       TITLE BANNER (§2.1)
+       ------------------------------------------------------------------------- */
+    .title-banner {
+      position: relative;
+      z-index: 20;
+      width: 100%;
+      background: linear-gradient(180deg, #1640a0 0%, #0a1c50 100%);
+      border-bottom: 3px solid var(--color-human-gold);
+      box-shadow: 0 4px 25px rgba(0, 0, 0, 0.8), 0 0 20px rgba(22, 64, 160, 0.4);
+      padding: clamp(8px, 1.6dvh, 16px) 16px;
+      text-align: center;
+    }
+
+    .title-banner h1 {
       font-family: var(--font-display);
-      font-size: 42px;
-      letter-spacing: 0.04em;
+      font-size: clamp(22px, 4vw, 42px);
+      font-weight: 900;
       text-transform: uppercase;
       font-style: italic;
-      color: #ffe600;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 230, 0, 0.6);
+      letter-spacing: 0.04em;
+      color: #ffd23f;
+      -webkit-text-stroke: 1.5px #020617;
+      paint-order: stroke fill;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 14px;
+      gap: clamp(8px, 1.5vw, 16px);
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
     }
 
-    .stadium-banner h1 span.vs {
-      font-size: 28px;
+    .title-banner h1 span.vs {
+      font-size: clamp(16px, 2.8vw, 28px);
       color: #ffffff;
-      text-shadow: 0 0 12px rgba(0, 240, 255, 0.9);
+      -webkit-text-stroke: 1px #020617;
     }
 
-    /* ==========================================================================
-       THE MAIN CLASH ARENA BAR
-       ========================================================================== */
-    .clash-battle-station {
+    /* -------------------------------------------------------------------------
+       SIDE ICONOGRAPHY (§2.3 — Inline SVG <use> Only)
+       ------------------------------------------------------------------------- */
+    .side-iconography {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .human-icons-flank {
+      position: absolute;
+      top: 14%;
+      left: 2%;
+      width: clamp(140px, 26vw, 360px);
+      height: 72%;
+      opacity: 0.85;
+      filter: drop-shadow(0 0 10px rgba(255, 140, 26, 0.6));
+      transition: opacity 0.3s ease;
+    }
+
+    .ai-icons-flank {
+      position: absolute;
+      top: 14%;
+      right: 2%;
+      width: clamp(140px, 26vw, 360px);
+      height: 72%;
+      opacity: 0.85;
+      filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.6));
+      transition: opacity 0.3s ease;
+    }
+
+    /* -------------------------------------------------------------------------
+       CENTERPIECE: BEAM BAND (§2.4, §3)
+       ------------------------------------------------------------------------- */
+    .centerpiece-station {
       position: relative;
-      z-index: 15;
+      z-index: 20;
       width: 100%;
-      max-width: 1080px;
-      margin: 20px auto 10px;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 clamp(12px, 3vw, 28px);
     }
 
-    .clash-header-scores {
+    .score-readouts-top {
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      padding: 0 20px;
       margin-bottom: 6px;
       font-weight: 900;
       text-transform: uppercase;
       letter-spacing: 0.04em;
+      font-size: clamp(13px, 1.8vw, 20px);
     }
 
-    .clash-header-scores .human-score {
-      font-size: 20px;
+    .readout-left {
       color: #ffffff;
-      text-shadow: 0 0 10px rgba(255, 190, 11, 0.6);
+      text-shadow: 0 0 10px rgba(255, 140, 26, 0.5);
     }
 
-    .clash-header-scores .ai-score {
-      font-size: 20px;
+    .readout-right {
       color: #ffffff;
-      text-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
     }
 
-    .clash-bar-frame {
+    /* The canvas container */
+    #vs-beam-mount {
       position: relative;
-      display: flex;
       width: 100%;
-      height: 96px;
-      align-items: center;
+      height: clamp(64px, 12dvh, 96px);
       overflow: visible;
     }
 
-    /* Human Bar (Left) */
-    .chevron-human {
-      position: relative;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      padding-left: 36px;
-      transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-      background: linear-gradient(180deg, #ffde59 0%, #ff9100 35%, #e54b00 70%, #9e1a00 100%);
-      clip-path: polygon(0% 0%, calc(100% - 38px) 0%, 100% 50%, calc(100% - 38px) 100%, 0% 100%);
-      box-shadow: inset 0 4px 6px rgba(255, 255, 255, 0.7), inset 0 -4px 8px rgba(0, 0, 0, 0.7), 0 0 35px rgba(255, 145, 0, 0.5);
-      border-top: 3px solid #fff399;
-      border-bottom: 3px solid #661000;
-      border-left: 3px solid #ffbe0b;
-      border-radius: 20px 0 0 20px;
-      z-index: 2;
-    }
-
-    .chevron-human .label-text {
-      font-family: var(--font-display);
-      font-size: 52px;
-      font-style: italic;
-      letter-spacing: 0.06em;
-      color: #ffffff;
-      text-shadow: 0 4px 6px rgba(0, 0, 0, 0.9), 0 0 20px rgba(255, 240, 150, 0.8), -2px -2px 0 #541000, 2px 2px 0 #541000;
-    }
-
-    /* AI Bar (Right) */
-    .chevron-ai {
-      position: relative;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      padding-right: 36px;
-      transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-      background: linear-gradient(180deg, #60efff 0%, #00a2ff 35%, #0051e6 70%, #001f7a 100%);
-      clip-path: polygon(38px 0%, 100% 0%, 100% 100%, 38px 100%, 0% 50%);
-      box-shadow: inset 0 4px 6px rgba(255, 255, 255, 0.7), inset 0 -4px 8px rgba(0, 0, 0, 0.7), 0 0 35px rgba(0, 162, 255, 0.5);
-      border-top: 3px solid #c2fbff;
-      border-bottom: 3px solid #001247;
-      border-right: 3px solid #00f0ff;
-      border-radius: 0 20px 20px 0;
-      z-index: 2;
-    }
-
-    .chevron-ai .label-text {
-      font-family: var(--font-display);
-      font-size: 52px;
-      font-style: italic;
-      letter-spacing: 0.06em;
-      color: #ffffff;
-      text-shadow: 0 4px 6px rgba(0, 0, 0, 0.9), 0 0 20px rgba(0, 240, 255, 0.9), -2px -2px 0 #002266, 2px 2px 0 #002266;
-    }
-
-    /* THE ANIME COLLISION EXPLOSION (EPIC VFX) */
-    .clash-epic-explosion {
-      pointer-events: none;
-      position: absolute;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: 580px;
-      height: 380px;
-      z-index: 30;
-      transition: left 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .explosion-img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      mix-blend-mode: screen;
-      filter: contrast(1.2) brightness(1.2);
-    }
-
-    /* Extra rotating starburst rays overlay */
-    .clash-ray-overlay {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 280px;
-      height: 280px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(255, 200, 0, 0.6) 25%, rgba(0, 240, 255, 0.4) 50%, transparent 70%);
-      mix-blend-mode: screen;
-    }
-
-    .clash-sub-pct {
+    .score-readouts-bottom {
       display: flex;
       justify-content: space-between;
-      padding: 0 20px;
       margin-top: 6px;
-      font-size: 18px;
       font-weight: 900;
       letter-spacing: 0.04em;
+      font-size: clamp(12px, 1.6vw, 18px);
     }
 
-    /* ==========================================================================
-       TOP HUMAN CHALLENGERS TABLE
-       ========================================================================== */
-    .challengers-arena-card {
+    .pct-left { color: var(--color-human-gold); }
+    .pct-right { color: var(--color-ai-cyan); }
+
+    /* -------------------------------------------------------------------------
+       TABLE: "TOP HUMAN CHALLENGERS" (§2.5)
+       ------------------------------------------------------------------------- */
+    .table-container {
       position: relative;
-      z-index: 10;
-      width: 100%;
-      max-width: 820px;
-      margin: 10px auto 0;
+      z-index: 20;
+      width: min(92vw, 560px);
+      margin: clamp(8px, 1.8dvh, 20px) auto clamp(12px, 2dvh, 24px);
       text-align: center;
     }
 
-    .challengers-arena-card h2 {
-      font-size: 26px;
-      font-weight: 800;
-      color: #ffffff;
-      margin-bottom: 12px;
-      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+    .table-title {
+      font-size: clamp(18px, 2.5vw, 24px);
+      font-weight: 900;
       letter-spacing: 0.02em;
+      margin-bottom: clamp(6px, 1dvh, 12px);
+      text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
     }
 
-    .challenger-table-header {
+    .table-head {
       display: grid;
-      grid-template-columns: 90px 1fr 140px;
-      padding: 0 24px 8px;
-      font-size: 15px;
+      grid-template-columns: 60px 1fr 100px;
+      padding: 0 16px 6px;
+      font-size: 13px;
       font-weight: 800;
+      text-transform: uppercase;
       color: #93c5fd;
       text-align: left;
     }
 
-    .challenger-table-header div:first-child { text-align: center; }
-    .challenger-table-header div:last-child { text-align: right; }
+    .table-head div:first-child { text-align: center; }
+    .table-head div:last-child { text-align: right; }
 
-    /* Rank 1 — Gold Pill */
-    .row-rank1-gold {
+    .table-rows {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(6px, 0.8dvh, 9px);
+    }
+
+    /* Rank 1: Gold Gradient Pill */
+    .row-gold-pill {
       display: grid;
-      grid-template-columns: 90px 1fr 140px;
+      grid-template-columns: 60px 1fr 100px;
       align-items: center;
-      padding: 10px 24px;
-      border-radius: 18px;
-      margin-bottom: 10px;
+      padding: clamp(8px, 1.2dvh, 11px) 16px;
+      border-radius: 9999px;
       background: linear-gradient(180deg, #ffeb80 0%, #ffc107 40%, #e09400 85%, #b26a00 100%);
-      box-shadow: 0 0 28px rgba(255, 193, 7, 0.7), inset 0 2px 3px rgba(255, 255, 255, 0.8), inset 0 -2px 4px rgba(0, 0, 0, 0.6);
-      border: 2px solid #fff59d;
-    }
-
-    .row-rank1-gold .rank-num {
-      text-align: center;
-      font-size: 22px;
-      font-weight: 900;
+      box-shadow: 0 0 24px rgba(255, 193, 7, 0.6), inset 0 2px 3px rgba(255, 255, 255, 0.8), inset 0 -2px 4px rgba(0, 0, 0, 0.6);
+      border: 1.5px solid #fff59d;
       color: #020617;
-    }
-
-    .row-rank1-gold .player-name {
-      text-align: left;
-      font-size: 20px;
       font-weight: 900;
-      color: #020617;
     }
 
-    .row-rank1-gold .player-score {
-      text-align: right;
-      font-size: 24px;
-      font-weight: 900;
-      color: #020617;
-    }
+    .row-gold-pill .r-num { font-size: clamp(16px, 2vw, 20px); text-align: center; }
+    .row-gold-pill .r-name { font-size: clamp(14px, 1.8vw, 17px); text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .row-gold-pill .r-score { font-size: clamp(16px, 2vw, 21px); text-align: right; }
 
-    /* Ranks 2-4 — Deep Cyber Blue Metallic Bars */
-    .row-cyber-blue {
+    /* Ranks 2+: Translucent Blue Pills */
+    .row-blue-pill {
       display: grid;
-      grid-template-columns: 90px 1fr 140px;
+      grid-template-columns: 60px 1fr 100px;
       align-items: center;
-      padding: 8px 24px;
-      border-radius: 16px;
-      margin-bottom: 8px;
-      background: linear-gradient(180deg, #16408f 0%, #0c2661 50%, #07163c 100%);
+      padding: clamp(6px, 1dvh, 9px) 16px;
+      border-radius: 9999px;
+      background: linear-gradient(180deg, rgba(22, 64, 143, 0.85) 0%, rgba(12, 38, 97, 0.85) 50%, rgba(7, 22, 60, 0.85) 100%);
       border: 1.5px solid #2563eb;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(96, 165, 250, 0.4);
-    }
-
-    .row-cyber-blue .rank-num {
-      text-align: center;
-      font-size: 18px;
-      font-weight: 800;
-      color: #60a5fa;
-    }
-
-    .row-cyber-blue .player-name {
-      text-align: left;
-      font-size: 18px;
-      font-weight: 700;
-      color: #f8fafc;
-    }
-
-    .row-cyber-blue .player-score {
-      text-align: right;
-      font-size: 20px;
-      font-weight: 800;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(96, 165, 250, 0.35);
       color: #ffffff;
     }
 
+    .row-blue-pill .r-num { font-size: clamp(14px, 1.6vw, 17px); font-weight: 800; color: #60a5fa; text-align: center; }
+    .row-blue-pill .r-name { font-size: clamp(13px, 1.6vw, 16px); font-weight: 700; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .row-blue-pill .r-score { font-size: clamp(14px, 1.7vw, 18px); font-weight: 800; text-align: right; }
+
+    .masked-tag {
+      font-size: 0.85em;
+      opacity: 0.7;
+      font-weight: 600;
+    }
+
     /* ==========================================================================
-       MOBILE FRAME PREVIEW (FOR PHONES)
+       SCREEN 2: STRETCH GAME ROUND VIEW (§6)
        ========================================================================== */
-    .mobile-screen-simulator {
-      width: 100%;
-      max-width: 440px;
-      margin: 16px auto;
-      border: 4px solid #00f0ff;
-      border-radius: 36px;
+    #game-screen {
+      display: none;
+      position: relative;
+      z-index: 20;
+      width: min(92vw, 440px);
+      min-height: calc(100dvh - 50px);
+      margin: 0 auto;
       padding: 16px;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .game-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #94a3b8;
+    }
+
+    .game-progress-track {
+      width: 100%;
+      height: 6px;
+      background: #1e293b;
+      border-radius: 999px;
+      margin: 8px 0 16px;
+      overflow: hidden;
+    }
+
+    .game-progress-fill {
+      width: 66%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--color-human-gold), var(--color-ai-cyan));
+    }
+
+    .game-canvas-frame {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 20px;
+      border: 2px solid rgba(0, 240, 255, 0.4);
       background: #020617;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 240, 255, 0.2);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.15);
+    }
+
+    .game-button-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 20px;
+    }
+
+    .btn-choice-real {
+      min-height: 64px;
+      border-radius: 18px;
+      border: 2px solid var(--color-human-gold);
+      background: linear-gradient(180deg, #3d2000, #140800);
+      color: #ffeb80;
+      font-size: 18px;
+      font-weight: 900;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 0 16px rgba(255, 190, 11, 0.25);
+      transition: transform 0.1s;
+    }
+
+    .btn-choice-ai {
+      min-height: 64px;
+      border-radius: 18px;
+      border: 2px solid var(--color-ai-cyan);
+      background: linear-gradient(180deg, #00254d, #000b1a);
+      color: #00f0ff;
+      font-size: 18px;
+      font-weight: 900;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6), 0 0 16px rgba(0, 240, 255, 0.25);
+      transition: transform 0.1s;
+    }
+
+    .btn-choice-real:active, .btn-choice-ai:active {
+      transform: scale(0.96);
+    }
+
+    /* ==========================================================================
+       MEDIA QUERIES (§4)
+       ========================================================================== */
+    @media (max-width: 560px) {
+      .human-icons-flank, .ai-icons-flank {
+        opacity: 0.22;
+      }
+      .score-readouts-top {
+        font-size: 12px;
+      }
+      .score-readouts-bottom {
+        font-size: 11px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .human-icons-flank, .ai-icons-flank {
+        display: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
     }
   </style>
 </head>
 <body>
 
-  <!-- Top Interactive Toolbar -->
+  <!-- ========================================================================
+       INLINE SVG ASSET SYSTEM (<pattern>, <symbol>, zero network fetches)
+       ======================================================================== -->
+  <svg style="display: none;" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <!-- Circuit Board Pattern (< 2 KB inline SVG) -->
+      <pattern id="circuit-pat" width="80" height="80" patternUnits="userSpaceOnUse">
+        <path d="M 0 20 L 30 20 L 40 10 L 80 10 M 0 60 L 25 60 L 40 75 L 80 75 M 30 20 L 30 45 L 50 45 L 50 80 M 60 10 L 60 35 L 75 35"
+              fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="30" cy="20" r="3" fill="currentColor" />
+        <circle cx="40" cy="10" r="2.5" fill="currentColor" />
+        <circle cx="50" cy="45" r="3" fill="currentColor" />
+        <circle cx="25" cy="60" r="2.5" fill="currentColor" />
+        <circle cx="40" cy="75" r="3" fill="currentColor" />
+      </pattern>
+
+      <!-- Silhouette 1: Runner -->
+      <symbol id="icon-human-runner" viewBox="0 0 100 120">
+        <circle cx="50" cy="18" r="13" fill="#ffffff" />
+        <path d="M 45 34 C 36 44, 25 60, 15 82 L 27 86 C 33 70, 40 56, 48 50 L 62 68 L 84 78 L 78 64 L 62 58 L 52 42 L 66 36 C 76 42, 90 50, 100 54 L 100 42 C 90 38, 78 30, 68 26 Z" fill="#ffffff" />
+        <path d="M 36 74 L 18 116 L 32 118 L 50 84 Z" fill="#ffffff" />
+        <path d="M 60 72 L 78 112 L 96 108 L 76 92 Z" fill="#ffffff" />
+      </symbol>
+
+      <!-- Silhouette 2: Victory Cheering -->
+      <symbol id="icon-human-cheer" viewBox="0 0 100 120">
+        <circle cx="50" cy="20" r="13" fill="#ffffff" />
+        <path d="M 50 35 L 42 70 L 26 118 L 40 118 L 52 78 L 60 118 L 74 118 L 58 70 Z" fill="#ffffff" />
+        <path d="M 50 38 L 18 10 L 26 4 L 50 28 L 74 4 L 82 10 Z" fill="#ffffff" />
+      </symbol>
+
+      <!-- Silhouette 3: Jumping Champion -->
+      <symbol id="icon-human-jump" viewBox="0 0 100 120">
+        <circle cx="50" cy="16" r="12" fill="#ffffff" />
+        <path d="M 50 30 C 44 40, 32 60, 20 80 L 32 84 C 40 70, 48 54, 52 48 L 68 62 L 90 70 L 86 58 L 70 52 L 60 38 Z" fill="#ffffff" />
+        <path d="M 38 72 L 20 112 L 34 114 L 50 82 Z" fill="#ffffff" />
+        <path d="M 62 70 L 80 110 L 96 106 L 78 88 Z" fill="#ffffff" />
+      </symbol>
+
+      <!-- AI Microchip Icon -->
+      <symbol id="icon-ai-chip" viewBox="0 0 100 100">
+        <!-- Body -->
+        <rect x="15" y="15" width="70" height="70" rx="14" fill="#06122d" stroke="#00f0ff" stroke-width="3" />
+        <rect x="25" y="25" width="50" height="50" rx="8" fill="#0b2259" stroke="#38bdf8" stroke-width="1.5" />
+        <!-- Pins -->
+        <line x1="5" y1="35" x2="15" y2="35" stroke="#00f0ff" stroke-width="3" />
+        <line x1="5" y1="50" x2="15" y2="50" stroke="#00f0ff" stroke-width="3" />
+        <line x1="5" y1="65" x2="15" y2="65" stroke="#00f0ff" stroke-width="3" />
+        <line x1="85" y1="35" x2="95" y2="35" stroke="#00f0ff" stroke-width="3" />
+        <line x1="85" y1="50" x2="95" y2="50" stroke="#00f0ff" stroke-width="3" />
+        <line x1="85" y1="65" x2="95" y2="65" stroke="#00f0ff" stroke-width="3" />
+        <line x1="35" y1="5" x2="35" y2="15" stroke="#00f0ff" stroke-width="3" />
+        <line x1="50" y1="5" x2="50" y2="15" stroke="#00f0ff" stroke-width="3" />
+        <line x1="65" y1="5" x2="65" y2="15" stroke="#00f0ff" stroke-width="3" />
+        <line x1="35" y1="85" x2="35" y2="95" stroke="#00f0ff" stroke-width="3" />
+        <line x1="50" y1="85" x2="50" y2="95" stroke="#00f0ff" stroke-width="3" />
+        <line x1="65" y1="85" x2="65" y2="95" stroke="#00f0ff" stroke-width="3" />
+        <!-- Text -->
+        <text x="50" y="58" fill="#00f0ff" font-family="sans-serif" font-size="24" font-weight="900" text-anchor="middle" letter-spacing="1">AI</text>
+      </symbol>
+    </defs>
+  </svg>
+
+  <!-- ========================================================================
+       DEMO HARNESS CONTROLS
+       ======================================================================== -->
   <header id="demo-toolbar">
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <span style="font-size: 12px; font-weight: 900; color: #00f0ff; text-transform: uppercase;">Preview Mode:</span>
-      <button class="btn-tab active" onclick="switchView('dashboard')">🖥️ 16:9 Booth TV</button>
-      <button class="btn-tab" onclick="switchView('leaderboard')">📱 Mobile Leaderboard</button>
-      <button class="btn-tab" onclick="switchView('game')">🎮 Mobile Round 1 Game</button>
+    <div class="tool-group">
+      <span style="font-size: 11px; font-weight: 900; color: #00f0ff;">VIEW:</span>
+      <button class="tool-btn active" onclick="setScreenView('leaderboard')">Leaderboard</button>
+      <button class="tool-btn" onclick="setScreenView('game')">Game Round</button>
     </div>
 
-    <div style="display: flex; align-items: center; gap: 14px;">
-      <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800;">
-        <span style="color: #94a3b8;">Clash Ratio:</span>
-        <input type="range" id="scoreSlider" min="20" max="80" value="66" oninput="updateClashSeam(this.value)" style="cursor: pointer; accent-color: #00f0ff;" />
-        <span id="sliderDisplay" style="color: #ffbe0b; width: 44px; text-align: right;">66%</span>
+    <div class="tool-group">
+      <span style="font-size: 11px; font-weight: 900; color: #94a3b8;">DEVICE:</span>
+      <button id="btn-mode-tv" class="tool-btn active" onclick="setDeviceMode('tv')">🖥️ 16:9 Booth TV</button>
+      <button id="btn-mode-mobile" class="tool-btn" onclick="setDeviceMode('mobile')">📱 Mobile (390px)</button>
+    </div>
+
+    <div class="tool-group">
+      <div class="slider-box">
+        <span style="color: #94a3b8;">Score:</span>
+        <input type="range" id="score-slider" min="15" max="85" value="66" oninput="onScoreSlider(this.value)" />
+        <span id="slider-pct" style="width: 38px; color: #ffbe0b;">66%</span>
       </div>
-      <button class="btn-tab" id="simToggleBtn" onclick="toggleClashSim()">⚡ Anime Battle Sim</button>
+      <button id="sim-btn" class="tool-btn" onclick="toggleSim()">⚡ Timer Sim: OFF</button>
     </div>
   </header>
 
-  <!-- ======================================================================
-       VIEW 1: THE 16:9 BOOTH TV ARENA
-       ====================================================================== -->
-  <section id="view-dashboard" class="view-panel active">
-    <div class="arena-tv-container">
+  <!-- ========================================================================
+       MAIN RESPONSIVE VIEWPORT STAGE (Single DOM tree)
+       ======================================================================== -->
+  <div id="viewport-stage" class="mode-tv">
+
+    <!-- ======================================================================
+         SCREEN 1: LEADERBOARD ARENA
+         ====================================================================== -->
+    <main id="leaderboard-screen">
       
-      <!-- LEFT FLANK: Detailed Glowing Orange Human Crowds & Circuit Traces -->
-      <img src="./public/assets/humans_flank.jpg" class="flank-left" alt="Human crowd circuit artwork" />
-
-      <!-- RIGHT FLANK: Futuristic Glowing Blue AI Microchips & Motherboard Traces -->
-      <img src="./public/assets/ai_flank.jpg" class="flank-right" alt="AI CPU motherboard artwork" />
-
-      <!-- 1. Top Beveled Stadium Banner -->
-      <div class="stadium-banner">
-        <h1>
-          HUMANS <span class="vs">vs</span> AI LEADERBOARD
-        </h1>
-      </div>
-
-      <!-- 2. The Main Epic Clash Bar -->
-      <div class="clash-battle-station">
-        <div class="clash-header-scores">
-          <div class="human-score">HUMANS TOTAL: <span id="dash-score-human" class="tabular" style="color: #ffbe0b;">24,150</span></div>
-          <div class="ai-score">AI TOTAL: <span id="dash-score-ai" class="tabular" style="color: #00f0ff;">19,800</span></div>
+      <!-- Split Background (Left: Warm dark, Right: Navy, driven by score split) -->
+      <div class="split-bg-layer" aria-hidden="true">
+        <div class="bg-half-human" id="bg-human-half">
+          <svg class="circuit-overlay" width="100%" height="100%" style="color: #ea580c;">
+            <rect width="100%" height="100%" fill="url(#circuit-pat)" />
+          </svg>
         </div>
-
-        <div class="clash-bar-frame">
-          <!-- Left Human Chevron -->
-          <div id="human-chevron" class="chevron-human" style="width: 66%;">
-            <span class="label-text">HUMANS</span>
-          </div>
-
-          <!-- Right AI Chevron -->
-          <div id="ai-chevron" class="chevron-ai" style="width: 34%;">
-            <span class="label-text">AI</span>
-          </div>
-
-          <!-- EPIC ANIME EXPLOSION AT THE SEAM -->
-          <div id="anime-explosion-seam" class="clash-epic-explosion animate-clash-shockwave" style="left: 66%;">
-            <div class="clash-ray-overlay animate-ray-spin"></div>
-            <img src="./public/assets/anime_clash_explosion.jpg" class="explosion-img animate-jitter" alt="Anime clash energy explosion" />
-          </div>
-        </div>
-
-        <div class="clash-sub-pct">
-          <div id="human-pct-label" style="color: #ffbe0b; font-weight: 900;">HUMANS: 66%</div>
-          <div id="ai-pct-label" style="color: #00f0ff; font-weight: 900;">AI: 32%</div>
+        <div class="bg-half-ai">
+          <svg class="circuit-overlay" width="100%" height="100%" style="color: #0072ff;">
+            <rect width="100%" height="100%" fill="url(#circuit-pat)" />
+          </svg>
         </div>
       </div>
 
-      <!-- 3. Top Human Challengers Table -->
-      <div class="challengers-arena-card">
-        <h2>Top Human Challengers</h2>
+      <!-- Side Iconography: Inline SVG <use> elements (§2.3) -->
+      <div class="side-iconography" aria-hidden="true">
+        <!-- 12 Human Silhouettes -->
+        <svg class="human-icons-flank" viewBox="0 0 320 400">
+          <use href="#icon-human-cheer" x="10" y="20" width="60" height="72" opacity="0.7" />
+          <use href="#icon-human-runner" x="70" y="10" width="65" height="78" opacity="0.95" />
+          <use href="#icon-human-jump" x="140" y="30" width="55" height="66" opacity="0.8" />
+          <use href="#icon-human-runner" x="20" y="110" width="70" height="84" opacity="0.9" />
+          <use href="#icon-human-cheer" x="100" y="100" width="80" height="96" opacity="1.0" />
+          <use href="#icon-human-jump" x="180" y="120" width="60" height="72" opacity="0.75" />
+          <use href="#icon-human-cheer" x="0" y="220" width="65" height="78" opacity="0.8" />
+          <use href="#icon-human-runner" x="75" y="210" width="75" height="90" opacity="0.9" />
+          <use href="#icon-human-jump" x="160" y="230" width="55" height="66" opacity="0.65" />
+          <use href="#icon-human-cheer" x="40" y="310" width="60" height="72" opacity="0.75" />
+          <use href="#icon-human-runner" x="110" y="300" width="70" height="84" opacity="0.85" />
+          <use href="#icon-human-jump" x="190" y="320" width="50" height="60" opacity="0.6" />
+        </svg>
 
-        <div class="challenger-table-header">
+        <!-- 5 AI Microchips -->
+        <svg class="ai-icons-flank" viewBox="0 0 320 400">
+          <!-- Central Large AI Processor -->
+          <use href="#icon-ai-chip" x="110" y="140" width="120" height="120" opacity="1.0" />
+          <!-- Satellite Microchips -->
+          <use href="#icon-ai-chip" x="30" y="40" width="65" height="65" opacity="0.85" />
+          <use href="#icon-ai-chip" x="210" y="30" width="60" height="60" opacity="0.75" />
+          <use href="#icon-ai-chip" x="20" y="260" width="70" height="70" opacity="0.8" />
+          <use href="#icon-ai-chip" x="220" y="270" width="65" height="65" opacity="0.85" />
+        </svg>
+      </div>
+
+      <!-- 1. Title Banner (§2.1) -->
+      <header class="title-banner">
+        <h1>HUMANS <span class="vs">vs</span> AI LEADERBOARD</h1>
+      </header>
+
+      <!-- 2. Beam Band Centerpiece (§2.4, §3) -->
+      <section class="centerpiece-station" aria-label="Score Battle Meter">
+        <!-- Top Score Readouts -->
+        <div class="score-readouts-top">
+          <div class="readout-left">
+            HUMANS TOTAL: <span id="label-human-total" class="tabular">24,150</span>
+          </div>
+          <div class="readout-right">
+            AI TOTAL: <span id="label-ai-total" class="tabular">19,800</span>
+          </div>
+        </div>
+
+        <!-- The Canvas Centerpiece (Mount Point for createVsBeam) -->
+        <div id="vs-beam-mount"></div>
+
+        <!-- Bottom Percentages -->
+        <div class="score-readouts-bottom">
+          <div id="label-human-pct" class="pct-left">HUMANS: 66%</div>
+          <div id="label-ai-pct" class="pct-right">AI: 32%</div>
+        </div>
+      </section>
+
+      <!-- 3. Top Human Challengers Table (§2.5) -->
+      <section class="table-container" aria-label="Challenger Rankings">
+        <h2 class="table-title">Top Human Challengers</h2>
+
+        <div class="table-head">
           <div>Rank</div>
           <div>Player Name</div>
           <div>Score</div>
         </div>
 
-        <!-- Rank 1 (Gold Pill) -->
-        <div class="row-rank1-gold">
-          <div class="rank-num">1</div>
-          <div class="player-name">Alfinan 7beca <span style="font-size: 13px; font-weight: 600; opacity: 0.7;">••••2084</span></div>
-          <div class="tabular player-score">2330</div>
+        <div id="challengers-table-rows" class="table-rows">
+          <!-- Populated by initLeaderboard & updatePlayers -->
         </div>
+      </section>
 
-        <!-- Ranks 2-4 (Cyber Blue Metallic Pills) -->
-        <div class="row-cyber-blue">
-          <div class="rank-num">2</div>
-          <div class="player-name">Åoer.60 <span style="font-size: 13px; color: #94a3b8;">••••9412</span></div>
-          <div class="tabular player-score">1600</div>
-        </div>
+    </main>
 
-        <div class="row-cyber-blue">
-          <div class="rank-num">3</div>
-          <div class="player-name">Renockeho <span style="font-size: 13px; color: #94a3b8;">••••3156</span></div>
-          <div class="tabular player-score">750</div>
-        </div>
-
-        <div class="row-cyber-blue">
-          <div class="rank-num">4</div>
-          <div class="player-name">Remzeckál <span style="font-size: 13px; color: #94a3b8;">••••8841</span></div>
-          <div class="tabular player-score">380</div>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ======================================================================
-       VIEW 2: MOBILE LEADERBOARD
-       ====================================================================== -->
-  <section id="view-leaderboard" class="view-panel">
-    <div class="mobile-screen-simulator">
-      <div style="text-align: center; margin-bottom: 14px;">
-        <div style="font-size: 10px; font-weight: 900; letter-spacing: 0.2em; text-transform: uppercase; color: #00f0ff;">AIDA · AU vs AI</div>
-        <h1 style="font-family: var(--font-display); font-size: 28px; font-style: italic; text-transform: uppercase; color: #ffe600; margin-top: 2px;">
-          HUMANS <span style="font-size: 20px; color: #fff;">vs</span> AI
-        </h1>
-        <p style="font-size: 11px; color: #94a3b8;">Official Booth Standings</p>
-      </div>
-
-      <!-- Compact Mobile Clash Bar with Explosion -->
-      <div style="position: relative; margin-bottom: 16px;">
-        <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 900; margin-bottom: 4px;">
-          <span style="color: #ffbe0b;">HUMANS: <strong id="mob-human-pts">24,150</strong></span>
-          <span style="color: #00f0ff;">AI: <strong id="mob-ai-pts">19,800</strong></span>
-        </div>
-
-        <div style="position: relative; display: flex; height: 60px; width: 100%; border-radius: 16px; overflow: visible;">
-          <div id="mob-chevron-human" class="chevron-human" style="width: 66%; padding-left: 14px; clip-path: polygon(0% 0%, calc(100% - 20px) 0%, 100% 50%, calc(100% - 20px) 100%, 0% 100%);">
-            <span style="font-family: var(--font-display); font-size: 26px; font-style: italic; color: #fff;">HUMANS</span>
-          </div>
-          <div id="mob-chevron-ai" class="chevron-ai" style="width: 34%; padding-right: 14px; clip-path: polygon(20px 0%, 100% 0%, 100% 100%, 20px 100%, 0% 50%);">
-            <span style="font-family: var(--font-display); font-size: 26px; font-style: italic; color: #fff;">AI</span>
-          </div>
-
-          <div id="mob-explosion-seam" class="clash-epic-explosion animate-clash-shockwave" style="left: 66%; width: 280px; height: 200px;">
-            <img src="./public/assets/anime_clash_explosion.jpg" class="explosion-img animate-jitter" alt="Anime clash explosion" />
-          </div>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 900; margin-top: 4px;">
-          <span id="mob-pct-human" style="color: #ffbe0b;">HUMANS: 66%</span>
-          <span id="mob-pct-ai" style="color: #00f0ff;">AI: 32%</span>
-        </div>
-      </div>
-
-      <!-- Mobile Top Challengers -->
-      <div style="text-align: center; margin-top: 14px;">
-        <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 10px; color: #fff;">Top Human Challengers</h3>
-
-        <div class="row-rank1-gold" style="grid-template-columns: 50px 1fr 90px; padding: 8px 14px; border-radius: 14px;">
-          <div class="rank-num" style="font-size: 18px;">1</div>
-          <div class="player-name" style="font-size: 15px;">Alfinan 7beca <small style="font-size: 10px; opacity: 0.7;">••••2084</small></div>
-          <div class="tabular player-score" style="font-size: 18px;">2330</div>
-        </div>
-
-        <div class="row-cyber-blue" style="grid-template-columns: 50px 1fr 90px; padding: 7px 14px; border-radius: 12px;">
-          <div class="rank-num" style="font-size: 15px;">2</div>
-          <div class="player-name" style="font-size: 14px;">Åoer.60 <small style="font-size: 10px; color: #94a3b8;">••••9412</small></div>
-          <div class="tabular player-score" style="font-size: 15px;">1600</div>
-        </div>
-
-        <div class="row-cyber-blue" style="grid-template-columns: 50px 1fr 90px; padding: 7px 14px; border-radius: 12px;">
-          <div class="rank-num" style="font-size: 15px;">3</div>
-          <div class="player-name" style="font-size: 14px;">Renockeho <small style="font-size: 10px; color: #94a3b8;">••••3156</small></div>
-          <div class="tabular player-score" style="font-size: 15px;">750</div>
-        </div>
-      </div>
-
-      <button style="width: 100%; margin-top: 16px; padding: 14px; border-radius: 16px; border: none; background: linear-gradient(90deg, #ffbe0b, #fb5607); color: #020617; font-size: 16px; font-weight: 900; text-transform: uppercase; cursor: pointer; box-shadow: 0 0 25px rgba(251, 86, 7, 0.5);">
-        Play Challenge →
-      </button>
-    </div>
-  </section>
-
-  <!-- ======================================================================
-       VIEW 3: MOBILE ROUND 1 GAME
-       ====================================================================== -->
-  <section id="view-game" class="view-panel">
-    <div class="mobile-screen-simulator" style="display: flex; flex-direction: column; justify-content: space-between; min-height: 580px;">
+    <!-- ======================================================================
+         SCREEN 2: STRETCH GAME ROUND SCREEN (§6)
+         ====================================================================== -->
+    <main id="game-screen">
       <div>
-        <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; color: #94a3b8;">
+        <div class="game-top-bar">
           <span>Image <strong style="color: #fff;">1</strong> of 3</span>
-          <span class="tabular" style="color: #00f0ff; font-size: 15px; font-weight: 900;">7s</span>
+          <span class="tabular" style="color: var(--color-ai-cyan); font-size: 16px;">60s</span>
         </div>
 
-        <div style="width: 100%; height: 6px; border-radius: 999px; background: #1e293b; margin-top: 6px; overflow: hidden;">
-          <div style="width: 70%; height: 100%; background: linear-gradient(90deg, #ffbe0b, #00f0ff); box-shadow: 0 0 12px #00f0ff;"></div>
+        <div class="game-progress-track">
+          <div class="game-progress-fill"></div>
         </div>
 
-        <div style="text-align: center; margin-top: 16px;">
+        <div style="text-align: center; margin: 12px 0 16px;">
           <h2 style="font-size: 22px; font-weight: 900;">Real or AI Generated?</h2>
         </div>
 
-        <div style="width: 100%; aspect-ratio: 1 / 1; border-radius: 20px; border: 2px solid #00f0ff; background: #000; margin-top: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 30px rgba(0, 240, 255, 0.2);">
-          <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#00f0ff" stroke-width="1.5">
-            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <polyline points="21 15 16 10 5 21"/>
-          </svg>
+        <!-- Placeholder Canvas Gradient Frame -->
+        <div class="game-canvas-frame">
+          <canvas id="placeholder-image-canvas" width="360" height="360" style="width: 100%; height: 100%; display: block;"></canvas>
         </div>
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 18px;">
-        <button onclick="alert('Locked REAL!')" style="min-height: 64px; border-radius: 16px; border: 2px solid #ffbe0b; background: linear-gradient(180deg, #3d2000, #140800); color: #ffeb80; font-size: 18px; font-weight: 900; text-transform: uppercase; cursor: pointer; box-shadow: 0 0 20px rgba(255, 190, 11, 0.3);">
-          REAL
-        </button>
-        <button onclick="alert('Locked AI!')" style="min-height: 64px; border-radius: 16px; border: 2px solid #00f0ff; background: linear-gradient(180deg, #00254d, #000b1a); color: #00f0ff; font-size: 18px; font-weight: 900; text-transform: uppercase; cursor: pointer; box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);">
-          AI GENERATED
-        </button>
+      <!-- Thumb-zone touch buttons -->
+      <div>
+        <div class="game-button-grid">
+          <button class="btn-choice-real" onclick="onAnswer(true)">REAL</button>
+          <button class="btn-choice-ai" onclick="onAnswer(false)">AI GENERATED</button>
+        </div>
+        <p style="text-align: center; font-size: 11px; color: #94a3b8; margin-top: 14px;">
+          Tap fast for speed bonus · Official scores tally at the end
+        </p>
       </div>
-    </div>
-  </section>
+    </main>
 
+  </div>
+
+  <!-- ========================================================================
+       VsBeam ENGINE & LEADERBOARD CONTROLLER SCRIPT
+       ======================================================================== -->
   <script>
-    let simInterval = null;
+    // -------------------------------------------------------------------------
+    // 1. WebGL2/Canvas VsBeam Engine (§3: Two Chevron Wedges + Central Starburst)
+    // -------------------------------------------------------------------------
+    const SPLIT_MIN = 0.15;
+    const SPLIT_MAX = 0.85;
 
-    function switchView(viewName) {
-      document.querySelectorAll('.view-panel').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.btn-tab').forEach(el => el.classList.remove('active'));
-      document.getElementById('view-' + viewName).classList.add('active');
-      event.target.classList.add('active');
+    function hexToRgb(hex) {
+      let c = hex.replace('#', '');
+      if (c.length === 3) c = c.split('').map(x => x + x).join('');
+      const n = parseInt(c, 16);
+      return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
     }
 
-    function updateClashSeam(val) {
-      const humanPct = parseInt(val, 10);
-      const aiPct = 100 - humanPct;
-      document.getElementById('sliderDisplay').innerText = humanPct + '%';
+    function createVsBeam(container, options = {}) {
+      const humanColorHex = options.humanColor || '#ff8c1a';
+      const humanCoreHex = options.humanCore || '#ffd9a0';
+      const aiColorHex = options.aiColor || '#4d6bff';
+      const aiCoreHex = options.aiCore || '#a0b8ff';
 
-      // 16:9 TV Dashboard Elements
-      document.getElementById('human-chevron').style.width = humanPct + '%';
-      document.getElementById('ai-chevron').style.width = aiPct + '%';
-      document.getElementById('anime-explosion-seam').style.left = humanPct + '%';
-      document.getElementById('human-pct-label').innerText = 'HUMANS: ' + humanPct + '%';
-      document.getElementById('ai-pct-label').innerText = 'AI: ' + aiPct + '%';
-      document.getElementById('dash-score-human').innerText = (humanPct * 365).toLocaleString();
-      document.getElementById('dash-score-ai').innerText = (aiPct * 300).toLocaleString();
+      const humanColor = hexToRgb(humanColorHex);
+      const humanCore = hexToRgb(humanCoreHex);
+      const aiColor = hexToRgb(aiColorHex);
+      const aiCore = hexToRgb(aiCoreHex);
 
-      // Mobile Elements
-      document.getElementById('mob-chevron-human').style.width = humanPct + '%';
-      document.getElementById('mob-chevron-ai').style.width = aiPct + '%';
-      document.getElementById('mob-explosion-seam').style.left = humanPct + '%';
-      document.getElementById('mob-pct-human').innerText = 'HUMANS: ' + humanPct + '%';
-      document.getElementById('mob-pct-ai').innerText = 'AI: ' + aiPct + '%';
-      document.getElementById('mob-human-pts').innerText = (humanPct * 365).toLocaleString();
-      document.getElementById('mob-ai-pts').innerText = (aiPct * 300).toLocaleString();
+      const isTouch = window.matchMedia('(pointer: coarse)').matches;
+      const sparkBudget = options.sparkBudget || (isTouch ? 100 : 200);
+      let resScale = options.resolutionScale || (isTouch ? 0.6 : 0.75);
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      container.style.position = 'relative';
+      container.style.overflow = 'visible';
+
+      // Layer 1: Ambient CSS Glow (No blur filter)
+      const glowLayer = document.createElement('div');
+      glowLayer.style.position = 'absolute';
+      glowLayer.style.inset = '-14px 0';
+      glowLayer.style.pointerEvents = 'none';
+      glowLayer.style.background = 'radial-gradient(ellipse 65% 50% at 50% 50%, rgba(255, 140, 26, 0.25) 0%, rgba(77, 107, 255, 0.25) 100%)';
+      glowLayer.style.boxShadow = '0 0 24px rgba(0, 0, 0, 0.7)';
+      container.appendChild(glowLayer);
+
+      // Layer 2: Beam Canvas (WebGL)
+      const beamCanvas = document.createElement('canvas');
+      beamCanvas.style.position = 'absolute';
+      beamCanvas.style.inset = '0';
+      beamCanvas.style.width = '100%';
+      beamCanvas.style.height = '100%';
+      beamCanvas.style.display = 'block';
+      beamCanvas.style.pointerEvents = 'none';
+      container.appendChild(beamCanvas);
+
+      // Layer 3: Sparks Canvas (2D)
+      const sparksCanvas = document.createElement('canvas');
+      sparksCanvas.style.position = 'absolute';
+      sparksCanvas.style.inset = '0';
+      sparksCanvas.style.width = '100%';
+      sparksCanvas.style.height = '100%';
+      sparksCanvas.style.display = 'block';
+      sparksCanvas.style.pointerEvents = 'none';
+      container.appendChild(sparksCanvas);
+
+      const sparksCtx = sparksCanvas.getContext('2d');
+      let cssFallbackEl = null;
+
+      let gl = null;
+      let program = null;
+      let isWebGL2 = false;
+
+      try {
+        gl = beamCanvas.getContext('webgl2', { alpha: true, antialias: false, depth: false });
+        if (gl) isWebGL2 = true;
+        else gl = beamCanvas.getContext('webgl', { alpha: true, antialias: false, depth: false });
+      } catch (e) {
+        gl = null;
+      }
+
+      const vsSource = isWebGL2
+        ? `#version 300 es
+          in vec2 aPosition;
+          out vec2 vUv;
+          void main() {
+            vUv = (aPosition + 1.0) * 0.5;
+            gl_Position = vec4(aPosition, 0.0, 1.0);
+          }`
+        : `attribute vec2 aPosition;
+          varying vec2 vUv;
+          void main() {
+            vUv = (aPosition + 1.0) * 0.5;
+            gl_Position = vec4(aPosition, 0.0, 1.0);
+          }`;
+
+      const fsBody = `
+        uniform float uSplit;
+        uniform float uTime;
+        uniform vec2 uResolution;
+        uniform vec3 uHumanColor;
+        uniform vec3 uHumanCore;
+        uniform vec3 uAiColor;
+        uniform vec3 uAiCore;
+
+        float hash(vec2 p) {
+          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+        }
+
+        float noise(vec2 p) {
+          vec2 i = floor(p);
+          vec2 f = fract(p);
+          vec2 u = f * f * (3.0 - 2.0 * f);
+          return mix(
+            mix(hash(i + vec2(0.0, 0.0)), hash(i + vec2(1.0, 0.0)), u.x),
+            mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
+            u.y
+          );
+        }
+
+        void main() {
+          vec2 uv = vUv;
+          float aspect = uResolution.x / max(uResolution.y, 1.0);
+          float dY = abs(uv.y - 0.5);
+
+          float halfH = 0.32;
+          float beamMask = smoothstep(halfH + 0.05, halfH - 0.03, dY);
+
+          // Pointed chevron tips
+          float gap = 0.024;
+          float chevronSlope = 0.042;
+          float slopeOffset = (1.0 - (dY / halfH)) * chevronSlope;
+
+          float edgeLeft = (uSplit - gap * 0.5) + slopeOffset;
+          float edgeRight = (uSplit + gap * 0.5) - slopeOffset;
+
+          float nShimmer = (noise(vec2(uv.y * 12.0, uTime * 6.0)) - 0.5) * 0.016;
+          edgeLeft += nShimmer;
+          edgeRight += nShimmer;
+
+          float core = pow(clamp(1.0 - (dY / 0.16), 0.0, 1.0), 2.6);
+          float flicker = 0.92 + 0.08 * sin(uTime * 20.0 + uv.x * 30.0);
+
+          float humanMask = (1.0 - smoothstep(edgeLeft - 0.012, edgeLeft + 0.012, uv.x)) * beamMask;
+          vec3 humanBase = mix(uHumanColor, uHumanCore, core * flicker);
+          humanBase += vec3(0.35, 0.25, 0.1) * smoothstep(halfH, halfH - 0.06, uv.y - 0.5 + halfH);
+
+          float aiMask = smoothstep(edgeRight - 0.012, edgeRight + 0.012, uv.x) * beamMask;
+          vec3 aiBase = mix(uAiColor, uAiCore, core * flicker);
+          aiBase += vec3(0.2, 0.3, 0.45) * smoothstep(halfH, halfH - 0.06, uv.y - 0.5 + halfH);
+
+          vec3 finalColor = humanBase * humanMask + aiBase * aiMask;
+          float finalAlpha = clamp(humanMask + aiMask, 0.0, 1.0);
+
+          // Starburst clash in gap
+          vec2 clashCenter = vec2(uSplit, 0.5);
+          vec2 delta = (uv - clashCenter) * vec2(aspect, 1.0);
+          float r = length(delta);
+          float angle = atan(delta.y, delta.x);
+
+          float nRay = noise(vec2(angle * 2.5, uTime * 1.5));
+          float rayWaves = sin(angle * 10.0 + uTime * 4.0 + nRay * 3.5);
+          float rayIntensity = pow(clamp(rayWaves * 0.5 + 0.5, 0.0, 1.0), 3.5);
+          float rayFade = exp(-r * 7.5);
+
+          float coreBurst = exp(-r * 22.0) * 1.6;
+          float ambientBurst = exp(-r * 4.5) * 0.55;
+
+          vec3 warmRay = mix(uHumanCore, vec3(1.0, 0.85, 0.4), 0.6);
+          vec3 coolRay = mix(uAiCore, vec3(0.5, 0.85, 1.0), 0.6);
+          vec3 rayTint = mix(warmRay, coolRay, smoothstep(-0.06, 0.06, delta.x));
+
+          vec3 starburst = vec3(1.0) * coreBurst + rayTint * (rayIntensity * rayFade * 2.2 + ambientBurst);
+          float burstAlpha = clamp(coreBurst + rayFade * rayIntensity * 1.5 + ambientBurst * 0.8, 0.0, 1.0);
+
+          finalColor += starburst;
+          finalAlpha = clamp(finalAlpha + burstAlpha, 0.0, 1.0);
+      `;
+
+      const fsSource = isWebGL2
+        ? `#version 300 es
+          precision mediump float;
+          in vec2 vUv;
+          out vec4 fragColor;
+          ${fsBody}
+          fragColor = vec4(finalColor * finalAlpha, finalAlpha);
+        }`
+        : `precision mediump float;
+          varying vec2 vUv;
+          ${fsBody}
+          gl_FragColor = vec4(finalColor * finalAlpha, finalAlpha);
+        }`;
+
+      let uSplitLoc, uTimeLoc, uResolutionLoc;
+
+      if (gl) {
+        const vs = gl.createShader(gl.VERTEX_SHADER);
+        gl.shaderSource(vs, vsSource);
+        gl.compileShader(vs);
+
+        const fs = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(fs, fsSource);
+        gl.compileShader(fs);
+
+        program = gl.createProgram();
+        gl.attachShader(program, vs);
+        gl.attachShader(program, fs);
+        gl.linkProgram(program);
+
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+          gl = null;
+        } else {
+          gl.useProgram(program);
+          uSplitLoc = gl.getUniformLocation(program, 'uSplit');
+          uTimeLoc = gl.getUniformLocation(program, 'uTime');
+          uResolutionLoc = gl.getUniformLocation(program, 'uResolution');
+
+          gl.uniform3fv(gl.getUniformLocation(program, 'uHumanColor'), humanColor);
+          gl.uniform3fv(gl.getUniformLocation(program, 'uHumanCore'), humanCore);
+          gl.uniform3fv(gl.getUniformLocation(program, 'uAiColor'), aiColor);
+          gl.uniform3fv(gl.getUniformLocation(program, 'uAiCore'), aiCore);
+
+          const aPosLoc = gl.getAttribLocation(program, 'aPosition');
+          const quadBuffer = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, quadBuffer);
+          gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
+          gl.enableVertexAttribArray(aPosLoc);
+          gl.vertexAttribPointer(aPosLoc, 2, gl.FLOAT, false, 0, 0);
+        }
+      }
+
+      if (!gl) {
+        beamCanvas.style.display = 'none';
+        cssFallbackEl = document.createElement('div');
+        cssFallbackEl.style.position = 'absolute';
+        cssFallbackEl.style.inset = '0';
+        cssFallbackEl.style.borderRadius = '9999px';
+        cssFallbackEl.style.background = `linear-gradient(90deg, ${humanColorHex} 0%, ${humanColorHex} calc(var(--split, 50%) - 15px), #ffffff calc(var(--split, 50%)), ${aiColorHex} calc(var(--split, 50%) + 15px), ${aiColorHex} 100%)`;
+        container.appendChild(cssFallbackEl);
+      }
+
+      // Preallocated Particle Pool (Zero GC)
+      const particles = new Array(sparkBudget);
+      for (let i = 0; i < sparkBudget; i++) {
+        particles[i] = { x: 0, y: 0, vx: 0, vy: 0, life: 0, maxLife: 0, size: 0, isHuman: true };
+      }
+
+      function spawnParticle(x, y, isBurst = false) {
+        for (let i = 0; i < sparkBudget; i++) {
+          if (particles[i].life <= 0) {
+            const isHuman = Math.random() < 0.5;
+            const speed = isBurst ? 2.5 + Math.random() * 5.0 : 1.2 + Math.random() * 3.0;
+            const angle = isHuman ? Math.PI + (Math.random() - 0.5) * 1.8 : (Math.random() - 0.5) * 1.8;
+
+            particles[i].x = x;
+            particles[i].y = y + (Math.random() - 0.5) * 14;
+            particles[i].vx = Math.cos(angle) * speed;
+            particles[i].vy = Math.sin(angle) * speed;
+            particles[i].maxLife = 350 + Math.random() * 450;
+            particles[i].life = particles[i].maxLife;
+            particles[i].size = 1.5 + Math.random() * 2.5;
+            particles[i].isHuman = isHuman;
+            return;
+          }
+        }
+      }
+
+      function fireBurst(x, y, count = 35) {
+        for (let i = 0; i < count; i++) spawnParticle(x, y, true);
+      }
+
+      let currentSplit = 0.5;
+      let targetSplit = 0.5;
+      let startSplit = 0.5;
+      let lerpStartTime = 0;
+      let isLerping = false;
+      let prevLeadHuman = null;
+
+      let width = container.clientWidth || 300;
+      let height = container.clientHeight || 70;
+      let isVisible = true;
+      let isPaused = false;
+      let rAFId = 0;
+      let lastTime = performance.now();
+
+      function updateDimensions() {
+        width = container.clientWidth;
+        height = container.clientHeight;
+        if (width === 0 || height === 0) return;
+
+        const dpr = window.devicePixelRatio || 1;
+        const internalW = Math.max(64, Math.floor(width * dpr * resScale));
+        const internalH = Math.max(16, Math.floor(height * dpr * resScale));
+
+        if (gl) {
+          if (beamCanvas.width !== internalW || beamCanvas.height !== internalH) {
+            beamCanvas.width = internalW;
+            beamCanvas.height = internalH;
+            gl.viewport(0, 0, internalW, internalH);
+            gl.uniform2f(uResolutionLoc, internalW, internalH);
+          }
+        }
+
+        if (sparksCanvas.width !== width || sparksCanvas.height !== height) {
+          sparksCanvas.width = width;
+          sparksCanvas.height = height;
+        }
+      }
+
+      function loop(now) {
+        if (!isVisible || isPaused) {
+          rAFId = 0;
+          return;
+        }
+
+        const dt = now - lastTime;
+        lastTime = now;
+
+        if (isLerping) {
+          const elapsed = now - lerpStartTime;
+          const progress = Math.min(1.0, elapsed / 500);
+          const ease = 1 - Math.pow(1 - progress, 3);
+          currentSplit = startSplit + (targetSplit - startSplit) * ease;
+          if (options.onSplitChange) options.onSplitChange(currentSplit);
+          if (progress >= 1.0) {
+            currentSplit = targetSplit;
+            isLerping = false;
+          }
+        }
+
+        const clashX = currentSplit * width;
+        const clashY = height * 0.5;
+
+        if (gl && program) {
+          gl.uniform1f(uSplitLoc, currentSplit);
+          gl.uniform1f(uTimeLoc, reducedMotion ? 0.0 : now * 0.001);
+          gl.drawArrays(gl.TRIANGLES, 0, 6);
+        } else if (cssFallbackEl) {
+          cssFallbackEl.style.setProperty('--split', `${Math.round(currentSplit * 100)}%`);
+        }
+
+        if (sparksCtx && !reducedMotion) {
+          sparksCtx.clearRect(0, 0, width, height);
+          sparksCtx.globalCompositeOperation = 'lighter';
+
+          if (Math.random() < 0.45) spawnParticle(clashX, clashY);
+
+          for (let i = 0; i < sparkBudget; i++) {
+            const p = particles[i];
+            if (p.life > 0) {
+              p.x += p.vx;
+              p.y += p.vy;
+              p.life -= dt;
+              const ratio = Math.max(0, p.life / p.maxLife);
+              sparksCtx.fillStyle = p.isHuman
+                ? `rgba(255, 180, 50, ${ratio})`
+                : `rgba(80, 160, 255, ${ratio})`;
+              sparksCtx.beginPath();
+              sparksCtx.arc(p.x, p.y, p.size * ratio, 0, Math.PI * 2);
+              sparksCtx.fill();
+            }
+          }
+        }
+
+        rAFId = requestAnimationFrame(loop);
+      }
+
+      function startLoop() {
+        if (!rAFId && isVisible && !isPaused) {
+          lastTime = performance.now();
+          rAFId = requestAnimationFrame(loop);
+        }
+      }
+
+      const resizeObserver = new ResizeObserver(updateDimensions);
+      resizeObserver.observe(container);
+
+      const intersectionObserver = new IntersectionObserver((entries) => {
+        isVisible = entries[0].isIntersecting && !document.hidden;
+        if (isVisible) startLoop();
+      });
+      intersectionObserver.observe(container);
+
+      const onVis = () => {
+        isVisible = !document.hidden;
+        if (isVisible) startLoop();
+      };
+      document.addEventListener('visibilitychange', onVis);
+
+      updateDimensions();
+      startLoop();
+
+      return {
+        setScore(h, a) {
+          const tot = h + a;
+          const raw = tot <= 0 ? 0.5 : h / tot;
+          const clamped = Math.max(SPLIT_MIN, Math.min(SPLIT_MAX, raw));
+
+          const isHumanLead = clamped >= 0.5;
+          if (prevLeadHuman !== null && prevLeadHuman !== isHumanLead) {
+            fireBurst(currentSplit * width, height * 0.5, 35);
+          }
+          prevLeadHuman = isHumanLead;
+
+          if (Math.abs(clamped - targetSplit) > 0.001) {
+            startSplit = currentSplit;
+            targetSplit = clamped;
+            lerpStartTime = performance.now();
+            isLerping = true;
+          }
+        },
+        setPaused(p) {
+          isPaused = p;
+          if (!isPaused) startLoop();
+        },
+        destroy() {
+          if (rAFId) cancelAnimationFrame(rAFId);
+          resizeObserver.disconnect();
+          intersectionObserver.disconnect();
+          document.removeEventListener('visibilitychange', onVis);
+          if (gl) gl.getExtension('WEBGL_lose_context')?.loseContext();
+          beamCanvas.remove();
+          sparksCanvas.remove();
+          glowLayer.remove();
+          if (cssFallbackEl) cssFallbackEl.remove();
+        }
+      };
     }
 
-    function toggleClashSim() {
-      const btn = document.getElementById('simToggleBtn');
-      if (simInterval) {
-        clearInterval(simInterval);
-        simInterval = null;
-        btn.innerText = '⚡ Anime Battle Sim';
-        btn.style.boxShadow = '';
+    // -------------------------------------------------------------------------
+    // 2. Leaderboard Screen Controller & API (§5)
+    // -------------------------------------------------------------------------
+    let beamInstance = null;
+    let labelHumanTotal, labelAiTotal, labelHumanPct, labelAiPct, bgHumanHalf, tableRowsEl;
+
+    const initialPlayers = [
+      { rank: 1, name: "Alfinan 7beca", maskedId: "2084", score: 2330 },
+      { rank: 2, name: "Åoer.60", maskedId: "9412", score: 1600 },
+      { rank: 3, name: "Renockeho", maskedId: "3156", score: 750 },
+      { rank: 4, name: "Remzeckál", maskedId: "8841", score: 380 }
+    ];
+
+    function initLeaderboard(rootEl, config) {
+      labelHumanTotal = rootEl.querySelector('#label-human-total');
+      labelAiTotal = rootEl.querySelector('#label-ai-total');
+      labelHumanPct = rootEl.querySelector('#label-human-pct');
+      labelAiPct = rootEl.querySelector('#label-ai-pct');
+      bgHumanHalf = rootEl.querySelector('#bg-human-half');
+      tableRowsEl = rootEl.querySelector('#challengers-table-rows');
+
+      const mountEl = rootEl.querySelector('#vs-beam-mount');
+
+      // Mount the real WebGL2 createVsBeam component with synchronized background easing
+      beamInstance = createVsBeam(mountEl, {
+        humanColor: '#ff8c1a',
+        humanCore: '#ffd9a0',
+        aiColor: '#4d6bff',
+        aiCore: '#a0b8ff',
+        onSplitChange: (split) => {
+          // Synchronize background split with the beam's shared 500ms easing clock
+          const pct = Math.round(split * 100);
+          bgHumanHalf.style.width = pct + '%';
+        }
+      });
+
+      updateScore(config.humansTotal, config.aiTotal);
+      updatePlayers(config.players || initialPlayers);
+    }
+
+    function updateScore(humansTotal, aiTotal) {
+      if (beamInstance) beamInstance.setScore(humansTotal, aiTotal);
+
+      const total = humansTotal + aiTotal;
+      const hPct = total <= 0 ? 50 : Math.round((humansTotal / total) * 100);
+      const aPct = 100 - hPct;
+
+      if (labelHumanTotal) labelHumanTotal.textContent = humansTotal.toLocaleString();
+      if (labelAiTotal) labelAiTotal.textContent = aiTotal.toLocaleString();
+      if (labelHumanPct) labelHumanPct.textContent = 'HUMANS: ' + hPct + '%';
+      if (labelAiPct) labelAiPct.textContent = 'AI: ' + aPct + '%';
+
+      // Update test harness slider display
+      const slider = document.getElementById('score-slider');
+      if (slider) slider.value = hPct;
+      const sliderTxt = document.getElementById('slider-pct');
+      if (sliderTxt) sliderTxt.textContent = hPct + '%';
+    }
+
+    function updatePlayers(players) {
+      if (!tableRowsEl) return;
+      tableRowsEl.innerHTML = '';
+
+      players.forEach(p => {
+        const row = document.createElement('div');
+        const isFirst = p.rank === 1;
+        row.className = isFirst ? 'row-gold-pill' : 'row-blue-pill';
+
+        row.innerHTML = `
+          <div class="r-num">${p.rank}</div>
+          <div class="r-name">${escapeHtml(p.name)} <span class="masked-tag">••••${escapeHtml(p.maskedId)}</span></div>
+          <div class="r-score tabular">${p.score.toLocaleString()}</div>
+        `;
+        tableRowsEl.appendChild(row);
+      });
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+
+    // Expose on window for external API testing
+    window.initLeaderboard = initLeaderboard;
+    window.updateScore = updateScore;
+    window.updatePlayers = updatePlayers;
+
+    // -------------------------------------------------------------------------
+    // 3. Harness Controls & Simulation
+    // -------------------------------------------------------------------------
+    let currentH = 24150;
+    let currentA = 19800;
+    let simTimer = null;
+
+    function setDeviceMode(mode) {
+      const stage = document.getElementById('viewport-stage');
+      const btnTv = document.getElementById('btn-mode-tv');
+      const btnMob = document.getElementById('btn-mode-mobile');
+
+      if (mode === 'mobile') {
+        stage.className = 'mode-mobile';
+        btnMob.classList.add('active');
+        btnTv.classList.remove('active');
       } else {
-        btn.innerText = '⏹ Stop Sim';
-        btn.style.boxShadow = '0 0 16px #ff0055';
-        simInterval = setInterval(() => {
-          // Dynamic battle shifts
-          const shift = Math.floor(Math.random() * 46) + 28; // 28% to 74%
-          document.getElementById('scoreSlider').value = shift;
-          updateClashSeam(shift);
-        }, 1400);
+        stage.className = 'mode-tv';
+        btnTv.classList.add('active');
+        btnMob.classList.remove('active');
       }
     }
+
+    function setScreenView(view) {
+      const lbScreen = document.getElementById('leaderboard-screen');
+      const gameScreen = document.getElementById('game-screen');
+      const buttons = document.querySelectorAll('.tool-group:first-child .tool-btn');
+
+      if (view === 'game') {
+        lbScreen.style.display = 'none';
+        gameScreen.style.display = 'flex';
+        buttons[0].classList.remove('active');
+        buttons[1].classList.add('active');
+        drawPlaceholderImage();
+      } else {
+        lbScreen.style.display = 'flex';
+        gameScreen.style.display = 'none';
+        buttons[0].classList.add('active');
+        buttons[1].classList.remove('active');
+      }
+    }
+
+    function onScoreSlider(val) {
+      stopSim();
+      const hPct = parseInt(val, 10);
+      const total = 40000;
+      currentH = Math.round(total * (hPct / 100));
+      currentA = total - currentH;
+      updateScore(currentH, currentA);
+    }
+
+    function toggleSim() {
+      if (simTimer) stopSim();
+      else startSim();
+    }
+
+    function startSim() {
+      const btn = document.getElementById('sim-btn');
+      btn.textContent = '⚡ Timer Sim: ON';
+      btn.classList.add('active');
+
+      simTimer = setInterval(() => {
+        const delta = Math.floor((Math.random() - 0.48) * 2400);
+        currentH = Math.max(8000, Math.min(34000, currentH + delta));
+        currentA = 42000 - currentH;
+        updateScore(currentH, currentA);
+      }, 2200);
+    }
+
+    function stopSim() {
+      if (simTimer) {
+        clearInterval(simTimer);
+        simTimer = null;
+      }
+      const btn = document.getElementById('sim-btn');
+      btn.textContent = '⚡ Timer Sim: OFF';
+      btn.classList.remove('active');
+    }
+
+    // Stretch §6: Game Round Drawing Stub
+    function drawPlaceholderImage() {
+      const c = document.getElementById('placeholder-image-canvas');
+      if (!c) return;
+      const ctx = c.getContext('2d');
+      const grad = ctx.createRadialGradient(180, 180, 30, 180, 180, 200);
+      grad.addColorStop(0, '#1e3a8a');
+      grad.addColorStop(1, '#020617');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 360, 360);
+
+      ctx.strokeStyle = '#00f0ff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(30, 30, 300, 300);
+
+      ctx.fillStyle = '#93c5fd';
+      ctx.font = 'bold 16px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Image Loads Here', 180, 170);
+      ctx.font = '12px -apple-system, sans-serif';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('(Placeholder Canvas Gradient)', 180, 195);
+    }
+
+    function onAnswer(isRealGuess) {
+      alert('Answer Locked: You guessed ' + (isRealGuess ? 'REAL' : 'AI GENERATED') + '!');
+    }
+
+    // -------------------------------------------------------------------------
+    // INITIALIZATION ON LOAD
+    // -------------------------------------------------------------------------
+    window.addEventListener('DOMContentLoaded', () => {
+      initLeaderboard(document.getElementById('leaderboard-screen'), {
+        humansTotal: 24150,
+        aiTotal: 19800,
+        players: initialPlayers
+      });
+    });
   </script>
 </body>
 </html>
