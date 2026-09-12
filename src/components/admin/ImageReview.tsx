@@ -26,7 +26,13 @@ export interface ReviewImage {
   timesCorrect: number;
 }
 
-export function ImageReview({ images }: { images: ReviewImage[] }) {
+export function ImageReview({
+  images,
+  includeInactive = false,
+}: {
+  images: ReviewImage[];
+  includeInactive?: boolean;
+}) {
   const [index, setIndex] = useState(0);
   const [guess, setGuess] = useState<'real' | 'ai_generated' | null>(null);
   const [score, setScore] = useState({ right: 0, total: 0 });
@@ -84,6 +90,15 @@ export function ImageReview({ images }: { images: ReviewImage[] }) {
       setNote(res.error?.message ?? 'Failed');
       return;
     }
+    if (!res.data.active && !includeInactive) {
+      // Remove it from this sitting entirely. Leaving a deactivated image in
+      // the queue invites judging something students will never see.
+      setItems((list) => list.filter((it) => it.id !== current.id));
+      setGuess(null);
+      setIndex((i) => Math.min(i, Math.max(0, items.length - 2)));
+      return;
+    }
+
     setItems((list) =>
       list.map((it) => (it.id === current.id ? { ...it, active: res.data.active } : it)),
     );
@@ -115,6 +130,16 @@ export function ImageReview({ images }: { images: ReviewImage[] }) {
         <p className="mt-2 text-center text-xs text-[var(--color-muted)]">
           This sample: {items.filter((i) => i.label === 'real').length} real ·{' '}
           {items.filter((i) => i.label === 'ai_generated').length} AI
+          {includeInactive && ' · including deactivated'}
+        </p>
+
+        <p className="mt-1 text-center text-xs">
+          <a
+            href={includeInactive ? '/admin/images' : '/admin/images?all=1'}
+            className="text-[var(--color-cyan)] underline underline-offset-2"
+          >
+            {includeInactive ? 'Show only active' : 'Show deactivated too'}
+          </a>
         </p>
 
         {accuracy !== null && (

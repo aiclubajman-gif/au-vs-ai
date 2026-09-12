@@ -4,7 +4,14 @@ import { ImageReview, type ReviewImage } from '@/components/admin/ImageReview';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AdminImagesPage() {
+export default async function AdminImagesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ all?: string }>;
+}) {
+  const params = await searchParams;
+  const includeInactive = params.all === '1';
+
   const auth = await requireAdmin();
 
   if (!auth.ok) {
@@ -25,7 +32,11 @@ export default async function AdminImagesPage() {
    * looked like a labelling disaster. Shuffling client-side cannot fix a sample
    * that is already biased.
    */
-  const { data } = await supabase.rpc('random_round1_images', { p_limit: 60 });
+  const { data } = await supabase.rpc('random_round1_images', {
+    p_limit: 60,
+    // Active-only by default, so the review reflects what students are served.
+    p_active_only: !includeInactive,
+  });
 
   const images: ReviewImage[] = (data ?? []).map(
     (r: {
@@ -47,5 +58,5 @@ export default async function AdminImagesPage() {
     }),
   );
 
-  return <ImageReview images={images} />;
+  return <ImageReview images={images} includeInactive={includeInactive} />;
 }
