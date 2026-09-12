@@ -29,25 +29,61 @@ const clearing = process.argv.includes('--clear');
 if (clearing) {
   console.log(`\n  ${BOLD}Clearing development data${RESET}\n`);
 
-  const { count: imgCount } = await admin
+  /**
+   * DEACTIVATE rather than delete.
+   *
+   * attempt_round1.image_id references round1_images, so deleting an image
+   * that appeared in any past attempt is rejected by the foreign key. An
+   * earlier version ignored that error and reported "removed 0" while the
+   * placeholders stayed live — the exact silent failure this is guarding now.
+   *
+   * Deactivating is also the better outcome: start_attempt only ever selects
+   * active images, so the placeholders stop being served while the history of
+   * what was shown during testing stays intact.
+   */
+  const { data: deactivated, error: imgErr } = await admin
     .from('round1_images')
-    .delete({ count: 'exact' })
-    .eq('is_test', true);
-  console.log(`  removed ${imgCount ?? 0} placeholder images`);
+    .update({ active: false })
+    .eq('is_test', true)
+    .select('id');
 
-  const { data: testAttempts } = await admin
+  if (imgErr) {
+    console.log(`  ${RED}failed to deactivate placeholders:${RESET} ${imgErr.message}`);
+    process.exit(1);
+  }
+  console.log(`  deactivated ${deactivated?.length ?? 0} placeholder images`);
+
+  // Test attempts must go first, or they keep referencing the placeholders.
+  const { data: testAttempts, error: attErr } = await admin
     .from('attempts')
-    .select('id')
-    .eq('is_test', true);
+    .delete()
+    .eq('is_test', true)
+    .select('id');
 
-  if (testAttempts?.length) {
-    await admin.from('attempts').delete().eq('is_test', true);
-    console.log(`  removed ${testAttempts.length} test attempts`);
+  if (attErr) {
+    console.log(`  ${YELLOW}could not remove test attempts:${RESET} ${attErr.message}`);
+  } else {
+    console.log(`  removed ${testAttempts?.length ?? 0} test attempts`);
   }
 
   await admin.from('event_settings').update({ challenge_open: false }).eq('id', 1);
-  console.log(`  challenge closed`);
-  console.log(`\n  ${GREEN}Development data cleared.${RESET}\n`);
+
+  // Verify, rather than assume. This is the check that was missing.
+  const { data: health } = await admin.rpc('round1_bank_health');
+
+  console.log('');
+  if (health) {
+    console.log(`  ${BOLD}Bank now${RESET}`);
+    console.log(`    active         ${health.active}`);
+    console.log(`    real / ai      ${health.real} / ${health.ai}`);
+    console.log(`    placeholders   ${health.placeholders === 0
+      ? `${GREEN}0${RESET}`
+      : `${RED}${health.placeholders} STILL LIVE${RESET}`}`);
+    console.log(`    playable       ${health.playable ? `${GREEN}yes${RESET}` : `${RED}no${RESET}`}`);
+  }
+
+  console.log(`\n  ${YELLOW}The challenge is now CLOSED.${RESET}`);
+  console.log(`  Reopen it from /admin when you want students to play.\n`);
   process.exit(0);
 }
 

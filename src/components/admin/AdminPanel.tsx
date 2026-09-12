@@ -167,6 +167,25 @@ export function AdminPanel({
           </div>
         </section>
 
+        {/* ---- Content ---- */}
+        <section className="mt-8">
+          <h2 className="text-sm font-semibold tracking-wider text-[var(--color-muted)]">
+            CONTENT
+          </h2>
+          <a
+            href="/admin/images"
+            className="mt-3 flex items-center justify-between rounded-xl border border-[var(--color-edge)] bg-[var(--color-navy)] px-4 py-4 transition-colors hover:border-[var(--color-cyan-dim)]"
+          >
+            <span>
+              <span className="block text-sm font-medium">Review images</span>
+              <span className="mt-0.5 block text-xs text-[var(--color-muted)]">
+                Judge the bank at phone size. Deactivate bad ones.
+              </span>
+            </span>
+            <span className="text-[var(--color-cyan)]">→</span>
+          </a>
+        </section>
+
         {/* ---- Stats ---- */}
         <section className="mt-8">
           <h2 className="text-sm font-semibold tracking-wider text-[var(--color-muted)]">
