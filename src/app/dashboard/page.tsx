@@ -1,4 +1,5 @@
 import { DashboardClient } from '@/components/dashboard/DashboardClient';
+import { type ChallengerRow } from '@/components/dashboard/ChallengerTable';
 import { createAdminSupabase } from '@/lib/supabase/server';
 
 export const revalidate = 5;
@@ -13,7 +14,7 @@ export default async function DashboardPage() {
     averageScore: 0,
     playingNow: 0,
   };
-  let initialChallengers = [];
+  let initialChallengers: ChallengerRow[] = [];
 
   try {
     const supabase = createAdminSupabase();
