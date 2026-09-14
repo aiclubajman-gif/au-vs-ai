@@ -8,7 +8,7 @@
  */
 import { createAdminSupabase } from '@/lib/supabase/server';
 import { round2SubmitSchema } from '@/lib/validation';
-import { ok, fail, messageFor } from '@/lib/api/respond';
+import { ok, fail, messageFor, refCode } from '@/lib/api/respond';
 import { requireOwnedAttempt, loadSettings } from '@/lib/api/attempt';
 import { scoreRound2 } from '@/lib/scoring';
 
@@ -51,7 +51,9 @@ export async function POST(req: Request) {
     },
   );
 
-  await admin
+  // Only an unsubmitted row is written, so a retry racing the original request
+  // cannot score the drawing twice.
+  const { data: written, error: writeError } = await admin
     .from('attempt_round2')
     .update({
       recognized: result.recognized,
@@ -62,7 +64,22 @@ export async function POST(req: Request) {
       bitmap28: bitmap28 ? Buffer.from(bitmap28, 'base64') : null,
       submitted_at: new Date().toISOString(),
     })
-    .eq('attempt_id', attemptId);
+    .eq('attempt_id', attemptId)
+    .is('submitted_at', null)
+    .select('attempt_id');
+
+  if (writeError) {
+    const ref = refCode();
+    await admin.from('app_events').insert({
+      event: 'round2_submit_failed',
+      ref_code: ref,
+      user_id: guard.userId,
+      details: { attempt_id: attemptId },
+    });
+    return fail('SERVER_ERROR', messageFor('SERVER_ERROR'), 500, ref);
+  }
+
+  if (!written || written.length === 0) return ok({ locked: true, alreadyAnswered: true });
 
   await admin.from('attempts').update({ current_round: 3 }).eq('id', attemptId);
 

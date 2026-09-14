@@ -30,10 +30,16 @@ export function DebugDraw() {
   const drawing = useRef(false);
 
   useEffect(() => {
-    resolveClassifier().then((c) => {
-      setClassifier(c);
-      setNote(getResolutionNote());
-    });
+    resolveClassifier()
+      .then((c) => {
+        setClassifier(c);
+        setNote(getResolutionNote());
+      })
+      .catch((err: unknown) => {
+        // The game would fail its device check here; show why.
+        setLoadError(err instanceof Error ? err.message : 'model failed to load');
+        setNote(getResolutionNote());
+      });
   }, []);
 
   const redraw = useCallback(() => {
@@ -139,7 +145,7 @@ export function DebugDraw() {
                   : 'text-[var(--color-lose)]'
               }`}
             >
-              {classifier ? classifier.kind : 'loading…'}
+              {classifier ? classifier.kind : loadError ? 'unavailable' : 'loading…'}
             </span>
           </p>
           <p className="mt-1 font-mono text-xs leading-relaxed text-[var(--color-muted)]">

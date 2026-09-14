@@ -1,7 +1,23 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { RetryNotice } from '@/components/ui';
+import {
+  submitWithRetry,
+  isRetryable,
+  describeSaveFailure,
+  type SubmitFailure,
+} from '@/lib/client/submit';
 import type { Round3Assignment } from '@/types';
+
+interface Round3AnswerBody {
+  attemptId: string;
+  guess: number;
+  idempotencyKey: string;
+}
+
+/** Shortest time "Answer locked" is shown before scoring begins. */
+const LOCK_MS = 1100;
 
 /**
  * Round 3 — You vs AIDA.
@@ -28,22 +44,67 @@ export function Round3({
   const [guess, setGuess] = useState(mid);
   const [locked, setLocked] = useState(false);
   const [remaining, setRemaining] = useState(durationMs);
-  const startedAt = useRef(Date.now());
+  const [saving, setSaving] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
+  const [failure, setFailure] = useState<SubmitFailure | null>(null);
+  const startedAt = useRef(0);
   const submitted = useRef(false);
+  /** The locked guess. Retries resend exactly this, same key included. */
+  const submission = useRef<Round3AnswerBody | null>(null);
+  const inFlight = useRef(false);
+  const lockedAt = useRef(0);
+  const unmounted = useRef(false);
 
-  const submit = useCallback(async () => {
+  // The clock starts when the question is first on screen.
+  useEffect(() => {
+    startedAt.current = Date.now();
+    unmounted.current = false;
+    return () => {
+      unmounted.current = true;
+    };
+  }, []);
+
+  /** Saves the locked guess and moves on only once the server has it. */
+  const save = useCallback(
+    async (body: Round3AnswerBody) => {
+      if (inFlight.current) return;
+      inFlight.current = true;
+      setSaving(true);
+      setFailure(null);
+
+      const result = await submitWithRetry('/api/round3/answer', body, {
+        isCancelled: () => unmounted.current,
+        onRetry: () => setReconnecting(true),
+      });
+
+      inFlight.current = false;
+      if (unmounted.current) return;
+      setSaving(false);
+      setReconnecting(false);
+
+      if (!result.ok) {
+        setFailure(result);
+        return;
+      }
+
+      const wait = Math.max(0, LOCK_MS - (Date.now() - lockedAt.current));
+      setTimeout(() => {
+        if (!unmounted.current) onComplete();
+      }, wait);
+    },
+    [onComplete],
+  );
+
+  const submit = useCallback(() => {
     if (submitted.current) return;
     submitted.current = true;
+    lockedAt.current = Date.now();
     setLocked(true);
 
-    await fetch('/api/round3/answer', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ attemptId, guess, idempotencyKey: crypto.randomUUID() }),
-    }).catch(() => {});
-
-    setTimeout(onComplete, 1100);
-  }, [attemptId, guess, onComplete]);
+    const body: Round3AnswerBody = { attemptId, guess, idempotencyKey: crypto.randomUUID() };
+    submission.current = body;
+    save(body);
+  }, [attemptId, guess, save]);
 
   useEffect(() => {
     if (locked) return;
@@ -104,6 +165,26 @@ export function Round3({
             <span>{assignment.maxValue}</span>
           </div>
         </div>
+
+        {reconnecting && (
+          <p className="mb-3 text-center text-sm text-[var(--color-muted)]">
+            Saving… reconnecting
+          </p>
+        )}
+
+        {failure && (
+          <div className="mb-4">
+            <RetryNotice
+              message={describeSaveFailure(failure, 'answer')}
+              refCode={failure.ref}
+              retryable={isRetryable(failure)}
+              busy={saving}
+              onRetry={() => {
+                if (submission.current) save(submission.current);
+              }}
+            />
+          </div>
+        )}
 
         <button
           onClick={submit}

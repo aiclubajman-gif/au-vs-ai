@@ -83,3 +83,38 @@ export function ErrorBanner({ message, refCode }: { message: string; refCode?: s
 export function Spacer() {
   return <div className="flex-1" />;
 }
+
+/**
+ * Shown when a submission could not be saved. A connection problem offers
+ * "Try again", which resends the SAME submission. A refusal the server will
+ * repeat (signed out, attempt reset) offers a reload instead, which resumes
+ * from the server's own record of the game.
+ */
+export function RetryNotice({
+  message,
+  refCode,
+  retryable,
+  onRetry,
+  busy,
+}: {
+  message: string;
+  refCode?: string;
+  retryable: boolean;
+  onRetry: () => void;
+  busy?: boolean;
+}) {
+  return (
+    <div>
+      <ErrorBanner message={message} refCode={refCode} />
+      <div className="mt-3">
+        <Button
+          variant="ghost"
+          busy={busy}
+          onClick={retryable ? onRetry : () => window.location.reload()}
+        >
+          {retryable ? 'Try again' : 'Reload'}
+        </Button>
+      </div>
+    </div>
+  );
+}

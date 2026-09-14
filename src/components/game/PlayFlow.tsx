@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { OtpInput } from '@/components/game/OtpInput';
 import { Screen, Title, Hint, Button, ErrorBanner, Spacer } from '@/components/ui';
 import { resolveClassifier } from '@/lib/ml/classifier';
@@ -11,6 +11,7 @@ import { Round2 } from '@/components/game/Round2';
 import { Round3 } from '@/components/game/Round3';
 import { Result } from '@/components/game/Result';
 import { resumeStep, toResult } from '@/lib/api/serialize';
+import { postJson } from '@/lib/client/submit';
 import type { College, AttemptAssignment, PublicAttemptResult, EventSettings } from '@/types';
 
 type Step =
@@ -26,13 +27,18 @@ interface ApiError {
   code?: string;
 }
 
-async function post(url: string, body: unknown) {
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  return res.json();
+type PostResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: { code: string; message: string; ref?: string } };
+
+/**
+ * Never throws. A dropped connection or a non-JSON error page comes back as an
+ * ordinary failure, so no button is left stuck on "Working…".
+ */
+async function post<T = unknown>(url: string, body: unknown): Promise<PostResult<T>> {
+  const res = await postJson<T>(url, body);
+  if (res.ok) return { ok: true, data: res.data };
+  return { ok: false, error: { code: res.code, message: res.message, ref: res.ref } };
 }
 
 export function PlayFlow({
@@ -104,38 +110,55 @@ export function PlayFlow({
 
   const emailValid = isAuEmail(email);
 
+  // Synchronous guard shared by the button, the Enter key and "Resend", so
+  // repeated presses cannot fire overlapping sends before `busy` re-renders.
+  const sending = useRef(false);
+
   async function sendCode() {
+    if (sending.current || !isAuEmail(email)) return;
+    sending.current = true;
     setBusy(true);
     setError(null);
-    const res = await post('/api/auth/send-otp', { email });
-    setBusy(false);
 
-    if (!res.ok) {
-      setError({ message: res.error.message, ref: res.error.ref });
-      return;
+    try {
+      const res = await post<{ cooldownMs?: number }>('/api/auth/send-otp', { email });
+      if (!res.ok) {
+        setError({ message: res.error.message, ref: res.error.ref });
+        return;
+      }
+      setCooldown(Math.ceil((res.data.cooldownMs ?? 60000) / 1000));
+      setStep('otp');
+    } finally {
+      sending.current = false;
+      setBusy(false);
     }
-    setCooldown(Math.ceil((res.data.cooldownMs ?? 60000) / 1000));
-    setStep('otp');
   }
 
   const verifyCode = useCallback(
     async (entered: string) => {
       setBusy(true);
       setError(null);
-      const res = await post('/api/auth/verify-otp', { email, token: entered });
-      setBusy(false);
 
-      if (!res.ok) {
-        setError({ message: res.error.message, ref: res.error.ref });
-        setCode('');
-        return;
-      }
+      try {
+        const res = await post<{ needsProfile: boolean; attemptStatus: string }>(
+          '/api/auth/verify-otp',
+          { email, token: entered },
+        );
 
-      if (res.data.attemptStatus === 'completed') {
-        setStep('completed');
-        return;
+        if (!res.ok) {
+          setError({ message: res.error.message, ref: res.error.ref });
+          setCode('');
+          return;
+        }
+
+        if (res.data.attemptStatus === 'completed') {
+          setStep('completed');
+          return;
+        }
+        setStep(res.data.needsProfile ? 'profile' : 'device');
+      } finally {
+        setBusy(false);
       }
-      setStep(res.data.needsProfile ? 'profile' : 'device');
     },
     [email],
   );
@@ -143,17 +166,21 @@ export function PlayFlow({
   async function saveProfile() {
     setBusy(true);
     setError(null);
-    const res = await post('/api/profile', {
-      fullName,
-      collegeId: collegeId ? Number(collegeId) : null,
-    });
-    setBusy(false);
 
-    if (!res.ok) {
-      setError({ message: res.error.message, ref: res.error.ref });
-      return;
+    try {
+      const res = await post('/api/profile', {
+        fullName,
+        collegeId: collegeId ? Number(collegeId) : null,
+      });
+
+      if (!res.ok) {
+        setError({ message: res.error.message, ref: res.error.ref });
+        return;
+      }
+      setStep('device');
+    } finally {
+      setBusy(false);
     }
-    setStep('device');
   }
 
   // ------------------------------------------------------------------
@@ -244,7 +271,9 @@ export function PlayFlow({
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && emailValid && sendCode()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') sendCode();
+          }}
           type="email"
           inputMode="email"
           autoComplete="email"
@@ -464,9 +493,13 @@ export function PlayFlow({
     );
   }
 
+  // Every interstitial gets its own `key`. They render at the same place in the
+  // tree, so without one React reuses the previous screen's instance and its
+  // countdown: an outro that timed out would instantly skip the next intro.
   if (step === 'intro1') {
     return (
       <Interstitial
+        key="intro1"
         intro={ROUND_INTROS[1]}
         timerValue={Math.round(timings.round1MsPerImage / 1000)}
         onDone={() => setStep('round1')}
@@ -486,12 +519,13 @@ export function PlayFlow({
   }
 
   if (step === 'outro1') {
-    return <Interstitial outro={ROUND_OUTROS[1]} onDone={() => setStep('intro2')} />;
+    return <Interstitial key="outro1" outro={ROUND_OUTROS[1]} onDone={() => setStep('intro2')} />;
   }
 
   if (step === 'intro2') {
     return (
       <Interstitial
+        key="intro2"
         intro={ROUND_INTROS[2]}
         timerValue={Math.round(timings.round2DrawMs / 1000)}
         onDone={() => setStep('round2')}
@@ -511,12 +545,13 @@ export function PlayFlow({
   }
 
   if (step === 'outro2') {
-    return <Interstitial outro={ROUND_OUTROS[2]} onDone={() => setStep('intro3')} />;
+    return <Interstitial key="outro2" outro={ROUND_OUTROS[2]} onDone={() => setStep('intro3')} />;
   }
 
   if (step === 'intro3') {
     return (
       <Interstitial
+        key="intro3"
         intro={ROUND_INTROS[3]}
         timerValue={Math.round(timings.round3Ms / 1000)}
         onDone={() => setStep('round3')}

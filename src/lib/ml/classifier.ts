@@ -2,8 +2,8 @@
  * Drawing classifier interface.
  *
  * Round 2 sits behind this interface so the real TensorFlow.js model can drop
- * in on 11 September without touching any game code. Until then the mock lets
- * the full flow — including the §8 device check — work end to end.
+ * in without touching any game code. The mock exists for local development
+ * only (see mockClassifierAllowed) and is never used in a production build.
  *
  * The device check is the reason this exists before the model does: we must be
  * able to ask "can this phone run the drawing round?" BEFORE an official
@@ -36,8 +36,10 @@ export const CLASSES = [
 export type ClassKey = (typeof CLASSES)[number];
 
 /**
- * Stand-in classifier. Returns plausible-looking confidences derived from the
- * bitmap so the UI can be built and judged, without pretending to be accurate.
+ * Stand-in classifier for DEVELOPMENT ONLY. Returns plausible-looking
+ * confidences derived from the bitmap so the UI can be built and judged,
+ * without pretending to be accurate. Its scores are meaningless, which is why
+ * resolveClassifier() refuses it in production.
  *
  * It deliberately still exercises the real failure path: if the browser has no
  * canvas or typed-array support, selfTest() returns false and the device check
@@ -103,13 +105,21 @@ export class MockClassifier implements Classifier {
   }
 }
 
+/** The real model could not be loaded on this device, and no mock is allowed. */
+export class ClassifierUnavailableError extends Error {
+  constructor(reason: string) {
+    super(`Drawing model unavailable: ${reason}`);
+    this.name = 'ClassifierUnavailableError';
+  }
+}
+
 let instance: Classifier | null = null;
 let resolving: Promise<Classifier> | null = null;
 let lastError: string | null = null;
 
 /**
  * Why the real model was not used, if it was not. Surfaced on /debug/draw so a
- * silent fallback to the mock is diagnosable instead of mysterious.
+ * failed load is diagnosable instead of mysterious.
  */
 export function getClassifierError(): string | null {
   return lastError;
@@ -122,14 +132,30 @@ export function getResolutionNote(): string {
 }
 
 /**
- * Returns the real TensorFlow.js classifier when an exported model is present
- * at /models/quickdraw/model.json, and the mock otherwise.
+ * Whether the stand-in classifier may replace a model that failed to load.
  *
- * This is what lets the game be fully playable before the model exists, and
- * upgrade the moment it is dropped in — no code change, no flag to remember to
- * flip on fair day.
+ * Never in a production build. The mock passes selfTest, so allowing it there
+ * would let an official attempt start on a device that cannot run the real
+ * model and score Round 2 on made-up confidences. In development it is opt-in
+ * with NEXT_PUBLIC_ALLOW_MOCK_CLASSIFIER=1.
  */
-export async function resolveClassifier(): Promise<Classifier> {
+export function mockClassifierAllowed(): boolean {
+  return (
+    process.env.NODE_ENV !== 'production' &&
+    process.env.NEXT_PUBLIC_ALLOW_MOCK_CLASSIFIER === '1'
+  );
+}
+
+/**
+ * Returns the real TensorFlow.js classifier from /models/quickdraw/model.json.
+ *
+ * If it cannot be loaded this REJECTS, and the device check treats that as a
+ * failed device: no attempt is created, so the student keeps their one game.
+ * A failure is not cached, so "Try again" genuinely retries the model.
+ */
+export async function resolveClassifier({
+  allowMock = mockClassifierAllowed(),
+}: { allowMock?: boolean } = {}): Promise<Classifier> {
   if (instance) return instance;
   if (resolving) return resolving;
 
@@ -143,6 +169,7 @@ export async function resolveClassifier(): Promise<Classifier> {
           const real = new TfjsClassifier();
           await real.load();
           instance = real;
+          lastError = null;
           resolutionNote = probe.reason;
           return real;
         } catch (err) {
@@ -159,10 +186,15 @@ export async function resolveClassifier(): Promise<Classifier> {
       resolutionNote = `probe failed: ${err instanceof Error ? err.message : 'unknown'}`;
     }
 
-    // Falling back to the mock. A missing or broken model must never stop a
-    // student from playing.
-    instance = new MockClassifier();
-    return instance;
+    lastError = resolutionNote;
+
+    if (allowMock) {
+      resolutionNote = `${resolutionNote} — using MOCK classifier (development only)`;
+      instance = new MockClassifier();
+      return instance;
+    }
+
+    throw new ClassifierUnavailableError(lastError);
   })();
 
   try {
@@ -172,8 +204,12 @@ export async function resolveClassifier(): Promise<Classifier> {
   }
 }
 
-/** Synchronous accessor for code paths that already awaited resolveClassifier. */
+/**
+ * Synchronous accessor for code paths that already awaited resolveClassifier.
+ * Throws rather than inventing a classifier, so a missing model can never be
+ * silently replaced by the mock.
+ */
 export function getClassifier(): Classifier {
-  if (!instance) instance = new MockClassifier();
+  if (!instance) throw new ClassifierUnavailableError('classifier has not been resolved');
   return instance;
 }

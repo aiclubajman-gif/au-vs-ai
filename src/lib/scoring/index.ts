@@ -36,6 +36,20 @@ export interface Round1Answer {
   correct: boolean;
 }
 
+/**
+ * Whether a Round 1 selection matches the image's true label.
+ *
+ * `null` means the timer ran out with nothing chosen. It is never correct,
+ * whatever the image is — a timeout must not be scored as if the student had
+ * picked either answer.
+ */
+export function isRound1Correct(
+  selected: 'real' | 'ai_generated' | null,
+  label: 'real' | 'ai_generated',
+): boolean {
+  return selected !== null && selected === label;
+}
+
 /** Points for a single Round 1 slot. Throws on an out-of-range slot. */
 export function scoreRound1Slot(slot: number, correct: boolean): number {
   if (!Number.isInteger(slot) || slot < 1 || slot > ROUND1_SLOTS) {

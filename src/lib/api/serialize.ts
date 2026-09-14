@@ -64,6 +64,23 @@ export function toAssignment(raw: unknown): AttemptAssignment {
   };
 }
 
+/**
+ * Marks Round 1 slots as answered when the server recorded a submission.
+ *
+ * get_attempt_assignment() derives `answered` from selected_answer, which is
+ * NULL for a timed-out slot. Without this, a student who timed out and then
+ * refreshed would be sent back into Round 1. Only ever turns a flag on, so a
+ * failed lookup falls back to the database's own view.
+ */
+export function markAnsweredSlots(a: AttemptAssignment, answeredSlots: number[]): AttemptAssignment {
+  if (answeredSlots.length === 0) return a;
+  const done = new Set(answeredSlots);
+  return {
+    ...a,
+    round1: a.round1.map((s) => (done.has(s.slot) ? { ...s, answered: true } : s)),
+  };
+}
+
 export function toResult(raw: unknown): PublicAttemptResult {
   const r = (raw ?? {}) as Raw;
   return {

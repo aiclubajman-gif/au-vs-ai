@@ -11,7 +11,7 @@
  */
 import { createServerSupabase, createAdminSupabase } from '@/lib/supabase/server';
 import { ok, fail, messageFor, codeFromPgError, refCode } from '@/lib/api/respond';
-import { toAssignment } from '@/lib/api/serialize';
+import { toAssignment, markAnsweredSlots } from '@/lib/api/serialize';
 
 export async function POST(req: Request) {
   const supabase = await createServerSupabase();
@@ -57,5 +57,18 @@ export async function POST(req: Request) {
 
   // Normalised to camelCase here so the browser never has to know that
   // Postgres speaks snake_case.
-  return ok(toAssignment(data));
+  const assignment = toAssignment(data);
+
+  if (assignment.status !== 'completed' && assignment.attemptId) {
+    // A timed-out Round 1 slot has answered_at but no selected_answer.
+    const { data: submitted } = await admin
+      .from('attempt_round1')
+      .select('slot')
+      .eq('attempt_id', assignment.attemptId)
+      .not('answered_at', 'is', null);
+
+    return ok(markAnsweredSlots(assignment, (submitted ?? []).map((r) => r.slot)));
+  }
+
+  return ok(assignment);
 }

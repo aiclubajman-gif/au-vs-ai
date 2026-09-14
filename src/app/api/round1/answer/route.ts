@@ -8,9 +8,9 @@
  */
 import { createAdminSupabase } from '@/lib/supabase/server';
 import { round1SubmitSchema } from '@/lib/validation';
-import { ok, fail, messageFor } from '@/lib/api/respond';
+import { ok, fail, messageFor, refCode } from '@/lib/api/respond';
 import { requireOwnedAttempt } from '@/lib/api/attempt';
-import { scoreRound1Slot, ROUND1_SLOTS } from '@/lib/scoring';
+import { scoreRound1Slot, isRound1Correct, ROUND1_SLOTS } from '@/lib/scoring';
 
 export async function POST(req: Request) {
   let body: unknown;
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
   const { data: slotRow } = await admin
     .from('attempt_round1')
-    .select('slot, image_id, selected_answer')
+    .select('slot, image_id, answered_at')
     .eq('attempt_id', attemptId)
     .eq('slot', slot)
     .maybeSingle();
@@ -44,24 +44,33 @@ export async function POST(req: Request) {
 
   // Idempotent: a retry after a dropped connection must not re-score, and a
   // refresh must not let a student change an answer they already gave.
-  if (slotRow.selected_answer !== null) {
+  // answered_at, not selected_answer, is the submission marker, because a
+  // timeout is recorded with no selection at all.
+  if (slotRow.answered_at !== null) {
     return ok({ locked: true, alreadyAnswered: true });
   }
 
-  // The correct label is read here on the server and never sent anywhere.
-  const { data: image } = await admin
-    .from('round1_images')
-    .select('label')
-    .eq('id', slotRow.image_id)
-    .maybeSingle();
+  let correct = false;
 
-  // An image deactivated or deleted mid-event would otherwise crash the round.
-  if (!image) return fail('SERVER_ERROR', messageFor('SERVER_ERROR'), 500);
+  if (selectedAnswer !== null) {
+    // The correct label is read here on the server and never sent anywhere.
+    const { data: image } = await admin
+      .from('round1_images')
+      .select('label')
+      .eq('id', slotRow.image_id)
+      .maybeSingle();
 
-  const correct = image.label === selectedAnswer;
+    // An image deactivated or deleted mid-event would otherwise crash the round.
+    if (!image) return fail('SERVER_ERROR', messageFor('SERVER_ERROR'), 500);
+
+    correct = isRound1Correct(selectedAnswer, image.label);
+  }
+
   const points = scoreRound1Slot(slot, correct);
 
-  await admin
+  // Only an unanswered slot is written, so two copies of the same request
+  // racing each other cannot both score.
+  const { data: written, error: writeError } = await admin
     .from('attempt_round1')
     .update({
       selected_answer: selectedAnswer,
@@ -71,16 +80,36 @@ export async function POST(req: Request) {
       answered_at: new Date().toISOString(),
     })
     .eq('attempt_id', attemptId)
-    .eq('slot', slot);
+    .eq('slot', slot)
+    .is('answered_at', null)
+    .select('slot');
+
+  if (writeError) {
+    const ref = refCode();
+    await admin.from('app_events').insert({
+      event: 'round1_answer_failed',
+      ref_code: ref,
+      user_id: guard.userId,
+      details: { attempt_id: attemptId, slot },
+    });
+    return fail('SERVER_ERROR', messageFor('SERVER_ERROR'), 500, ref);
+  }
+
+  if (!written || written.length === 0) {
+    return ok({ locked: true, alreadyAnswered: true });
+  }
 
   // Difficulty stats for the admin dashboard, not shown publicly during play.
-  await admin.rpc('bump_image_stats', { p_image_id: slotRow.image_id, p_correct: correct });
+  // A timeout is not an answer, so it does not count towards an image's stats.
+  if (selectedAnswer !== null) {
+    await admin.rpc('bump_image_stats', { p_image_id: slotRow.image_id, p_correct: correct });
+  }
 
   const { count } = await admin
     .from('attempt_round1')
     .select('slot', { count: 'exact', head: true })
     .eq('attempt_id', attemptId)
-    .not('selected_answer', 'is', null);
+    .not('answered_at', 'is', null);
 
   const roundComplete = (count ?? 0) >= ROUND1_SLOTS;
   if (roundComplete) {
