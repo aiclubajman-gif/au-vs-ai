@@ -2,102 +2,10 @@ import Link from 'next/link';
 import { createAdminSupabase } from '@/lib/supabase/server';
 import type { LeaderboardDisplayMode } from '@/types';
 
-export const revalidate = 10;
-
-interface Row {
-  rank: number;
-  display_name: string;
-  masked_id_suffix: string;
-  total_score: number;
-  human_win: boolean;
-}
-
-async function getData() {
-  try {
-    const supabase = createAdminSupabase();
-    const [{ data: rows }, { data: settings }] = await Promise.all([
-      supabase.from('leaderboard_public').select('*').order('rank').limit(50),
-      supabase.from('event_settings').select('leaderboard_display').eq('id', 1).single(),
-    ]);
-    return {
-      rows: (rows ?? []) as Row[],
-      mode: (settings?.leaderboard_display ?? 'name_and_masked_id') as LeaderboardDisplayMode,
-    };
-  } catch {
-    return { rows: [] as Row[], mode: 'name_and_masked_id' as LeaderboardDisplayMode };
-  }
-}
-
-/** §5 — never render a full student ID or email, whatever the mode. */
-function label(row: Row, mode: LeaderboardDisplayMode) {
-  if (mode === 'name_only') return row.display_name;
-  if (mode === 'masked_id_only') return `••••${row.masked_id_suffix}`;
-  return `${row.display_name} · ••••${row.masked_id_suffix}`;
-}
-
-export default async function LeaderboardPage() {
-  const { rows, mode } = await getData();
-
-  return (
-    <main className="min-h-dvh px-5 py-8">
-      <div className="mx-auto w-full max-w-md">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight">Leaderboard</h1>
-          <p className="mt-2 text-sm text-[var(--color-muted)]">
-            {rows.length > 0
-              ? `Top ${rows.length} of the challenge`
-              : 'No scores yet. The challenge opens at the AIDA booth.'}
-          </p>
-        </div>
-
-        {rows.length > 0 && (
-          <ol className="mt-8 space-y-2">
-            {rows.map((row) => {
-              const podium = row.rank <= 3;
-              return (
-                <li
-                  key={`${row.rank}-${row.masked_id_suffix}`}
-                  className={`flex items-center gap-4 rounded-xl border px-4 py-3 ${
-                    podium
-                      ? 'border-[var(--color-cyan-dim)] bg-[var(--color-navy)]'
-                      : 'border-[var(--color-edge)] bg-[var(--color-navy)]/60'
-                  }`}
-                >
-                  <span
-                    className={`tabular w-8 shrink-0 text-center text-lg font-bold ${
-                      podium ? 'text-[var(--color-cyan)]' : 'text-[var(--color-muted)]'
-                    }`}
-                  >
-                    {row.rank}
-                  </span>
-
-                  <span className="min-w-0 flex-1 truncate text-sm">{label(row, mode)}</span>
-
-                  <span
-                    aria-label={row.human_win ? 'Human win' : 'AI win'}
-                    className={`shrink-0 text-xs ${
-                      row.human_win ? 'text-[var(--color-win)]' : 'text-[var(--color-muted)]'
-                    }`}
-                  >
-                    {row.human_win ? 'HUMAN' : 'AI'}
-                  </span>
-
-                  <span className="tabular w-14 shrink-0 text-right font-bold">
-                    {row.total_score}
-                  </span>
-                </li>
-              );
-            })}
-          </ol>
-        )}
-
-        <Link
-          href="/"
-          className="mt-8 block text-center text-sm text-[var(--color-cyan)] underline underline-offset-4"
-        >
-          Back
-        </Link>
-      </div>
-    </main>
-  );
-}
+export const revalidate=10;
+interface Row{rank:number;display_name:string;masked_id_suffix:string;total_score:number;human_win:boolean;}
+async function getData(){try{const s=createAdminSupabase();const [{data:rows},{data:settings}]=await Promise.all([s.from('leaderboard_public').select('*').order('rank').limit(50),s.from('event_settings').select('leaderboard_display').eq('id',1).single()]);return {rows:(rows??[]) as Row[],mode:(settings?.leaderboard_display??'name_and_masked_id') as LeaderboardDisplayMode};}catch{return {rows:[] as Row[],mode:'name_and_masked_id' as LeaderboardDisplayMode};}}
+function label(row:Row,mode:LeaderboardDisplayMode){if(mode==='name_only')return row.display_name;if(mode==='masked_id_only')return `••••${row.masked_id_suffix}`;return `${row.display_name} · ••••${row.masked_id_suffix}`;}
+function pillStyle(rank:number):React.CSSProperties|undefined{if(rank===1)return{background:'linear-gradient(180deg,#ffe066 0%,#ffc21b 55%,#ff9d1b 100%)'};if(rank===2)return{background:'linear-gradient(180deg,#f8fafc 0%,#cbd5e1 55%,#94a3b8 100%)'};if(rank===3)return{background:'linear-gradient(180deg,#ffcf9e 0%,#e08a4b 55%,#b46822 100%)'};return undefined;}
+function pillText(rank:number){return rank<=3?'text-[#241400]':'text-slate-100';}
+export default async function LeaderboardPage(){const {rows,mode}=await getData();return <main className="relative min-h-dvh overflow-hidden bg-[var(--color-px-bg)]"><div className="arena-bg" aria-hidden="true"/><div className="relative z-10 mx-auto w-full max-w-md px-4 py-8"><div className="text-center"><span className="px-chip text-[9px]">AIDA · AU vs AI</span><h1 className="px-title-yellow mt-5 text-2xl leading-[1.7] sm:text-3xl">LEADERBOARD</h1><p className="mt-3 text-xs text-slate-400">{rows.length>0?`Top ${rows.length} of the challenge`:'No scores yet. The challenge opens at the AIDA booth.'}</p></div>{rows.length>0&&<ol className="mt-8 space-y-2.5">{rows.map(row=>{const podium=row.rank<=3;return <li key={`${row.rank}-${row.masked_id_suffix}`} className={`flex items-center gap-3 border-[3px] px-3.5 py-3 ${podium?'border-[#070c26] shadow-[0_4px_0_#070c26]':'border-[#070c26] bg-[#0b1236] shadow-[0_4px_0_#070c26]'}`} style={pillStyle(row.rank)}><span className={`tabular w-7 shrink-0 text-center font-px text-[10px] ${podium?'':'text-[var(--color-px-cyan)]'}`}>{row.rank}</span><span className={`min-w-0 flex-1 truncate text-xs font-semibold ${pillText(row.rank)}`}>{label(row,mode)}</span><span aria-label={row.human_win?'Human win':'AI win'} className={`shrink-0 font-px text-[8px] ${podium?'':row.human_win?'text-[var(--color-win)]':'text-[var(--color-px-cyan)]'}`}>{row.human_win?'HUMAN':'AI'}</span><span className={`tabular w-14 shrink-0 text-right font-px text-xs ${pillText(row.rank)}`}>{row.total_score}</span></li>;})}</ol>}<div className="mt-8 grid grid-cols-2 gap-3"><Link href="/" className="px-btn px-btn-ghost py-3.5 text-center text-[10px]">← Back</Link><Link href="/play" className="px-btn px-btn-cyan py-3.5 text-center text-[10px]">Play →</Link></div></div></main>}
