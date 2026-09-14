@@ -269,10 +269,10 @@ export function Round2({
 
         {/* Prompt Banner */}
         <div className="mt-4 text-center">
-          <span className="inline-block rounded-md border border-cyan-500/40 bg-cyan-950/40 px-3 py-1 font-pixel text-[9px] uppercase tracking-widest text-cyan-300 shadow-[0_0_12px_rgba(0,240,255,0.2)]">
+          <span className="inline-block rounded-md border border-cyan-500/40 bg-cyan-950/40 px-3 py-1 font-silkscreen text-[10px] uppercase tracking-widest text-cyan-300 shadow-[0_0_12px_rgba(0,240,255,0.2)]">
             QUICKDRAW CHALLENGE
           </span>
-          <h1 className="mt-2 font-display text-2xl font-black uppercase tracking-wide text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] sm:text-3xl">
+          <h1 className="mt-2 font-pixel text-base sm:text-xl font-bold uppercase tracking-wider text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
             Draw a <span className="text-cyan-400 underline decoration-cyan-500/50 underline-offset-4">{assignment.displayName}</span>
           </h1>
         </div>
@@ -336,7 +336,7 @@ export function Round2({
                             : 'border-slate-800 bg-slate-900/50'
                         }`}
                       >
-                        <div className="flex justify-between font-display text-sm">
+                        <div className="flex justify-between font-silkscreen text-xs font-bold">
                           <span
                             className={
                               isTarget

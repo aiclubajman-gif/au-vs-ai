@@ -85,7 +85,7 @@ export default function PreviewPlayground() {
 
         <button
           onClick={() => switchTab('stadium')}
-          className={`rounded-lg px-2.5 py-1.5 font-display text-xs font-bold transition-all ${
+          className={`rounded-lg px-2.5 py-1.5 font-silkscreen text-xs font-bold transition-all ${
             activeTab === 'stadium'
               ? 'bg-amber-500 text-black shadow-[0_0_10px_rgba(245,158,11,0.5)]'
               : 'border border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500'
@@ -96,7 +96,7 @@ export default function PreviewPlayground() {
 
         <button
           onClick={() => switchTab('round1')}
-          className={`rounded-lg px-2.5 py-1.5 font-display text-xs font-bold transition-all ${
+          className={`rounded-lg px-2.5 py-1.5 font-silkscreen text-xs font-bold transition-all ${
             activeTab === 'round1'
               ? 'bg-amber-500 text-black shadow-[0_0_10px_rgba(245,158,11,0.5)]'
               : 'border border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500'
@@ -107,7 +107,7 @@ export default function PreviewPlayground() {
 
         <button
           onClick={() => switchTab('round2')}
-          className={`rounded-lg px-2.5 py-1.5 font-display text-xs font-bold transition-all ${
+          className={`rounded-lg px-2.5 py-1.5 font-silkscreen text-xs font-bold transition-all ${
             activeTab === 'round2'
               ? 'bg-cyan-500 text-black shadow-[0_0_10px_rgba(0,240,255,0.5)]'
               : 'border border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500'
@@ -118,7 +118,7 @@ export default function PreviewPlayground() {
 
         <button
           onClick={() => switchTab('round3')}
-          className={`rounded-lg px-2.5 py-1.5 font-display text-xs font-bold transition-all ${
+          className={`rounded-lg px-2.5 py-1.5 font-silkscreen text-xs font-bold transition-all ${
             activeTab === 'round3'
               ? 'bg-cyan-500 text-black shadow-[0_0_10px_rgba(0,240,255,0.5)]'
               : 'border border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500'
@@ -129,7 +129,7 @@ export default function PreviewPlayground() {
 
         <button
           onClick={() => switchTab('humanwin')}
-          className={`rounded-lg px-2.5 py-1.5 font-display text-xs font-bold transition-all ${
+          className={`rounded-lg px-2.5 py-1.5 font-silkscreen text-xs font-bold transition-all ${
             activeTab === 'humanwin'
               ? 'bg-emerald-500 text-black shadow-[0_0_10px_rgba(16,185,129,0.5)]'
               : 'border border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500'
@@ -140,7 +140,7 @@ export default function PreviewPlayground() {
 
         <button
           onClick={() => switchTab('aiwin')}
-          className={`rounded-lg px-2.5 py-1.5 font-display text-xs font-bold transition-all ${
+          className={`rounded-lg px-2.5 py-1.5 font-silkscreen text-xs font-bold transition-all ${
             activeTab === 'aiwin'
               ? 'bg-rose-500 text-white shadow-[0_0_10px_rgba(244,63,94,0.5)]'
               : 'border border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500'
@@ -151,7 +151,7 @@ export default function PreviewPlayground() {
 
         <button
           onClick={() => switchTab('intro')}
-          className={`rounded-lg px-2.5 py-1.5 font-display text-xs font-bold transition-all ${
+          className={`rounded-lg px-2.5 py-1.5 font-silkscreen text-xs font-bold transition-all ${
             activeTab === 'intro'
               ? 'bg-sky-500 text-black shadow-[0_0_10px_rgba(56,189,248,0.5)]'
               : 'border border-slate-700 bg-slate-800 text-slate-300 hover:border-slate-500'
@@ -163,7 +163,7 @@ export default function PreviewPlayground() {
         <Link
           href="/sprites/preview.html"
           target="_blank"
-          className="rounded-lg border border-purple-500/50 bg-purple-950/50 px-2.5 py-1.5 font-display text-xs font-bold text-purple-300 hover:bg-purple-900/50 ml-2"
+          className="rounded-lg border border-purple-500/50 bg-purple-950/50 px-2.5 py-1.5 font-silkscreen text-xs font-bold text-purple-300 hover:bg-purple-900/50 ml-2"
         >
           🖼️ All Sprites
         </Link>

@@ -142,10 +142,10 @@ export function Round1({
 
         {/* Title Banner */}
         <div className="mt-4 text-center">
-          <span className="inline-block rounded-md border border-cyan-500/40 bg-cyan-950/40 px-3 py-1 font-pixel text-[9px] uppercase tracking-widest text-cyan-300 shadow-[0_0_12px_rgba(0,240,255,0.2)]">
+          <span className="inline-block rounded-md border border-cyan-500/40 bg-cyan-950/40 px-3 py-1 font-silkscreen text-[10px] uppercase tracking-widest text-cyan-300 shadow-[0_0_12px_rgba(0,240,255,0.2)]">
             ROUND 1 · REAL OR AI?
           </span>
-          <h1 className="mt-2 font-display text-2xl font-black uppercase tracking-wide text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] sm:text-3xl">
+          <h1 className="mt-2 font-pixel text-base sm:text-lg font-bold uppercase tracking-wider text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
             Real or AI Generated?
           </h1>
         </div>
@@ -168,8 +168,8 @@ export function Round1({
                 <p className="font-pixel text-sm tracking-wider uppercase text-cyan-300 drop-shadow-[0_0_12px_rgba(0,240,255,0.9)]">
                   ANSWER LOCKED
                 </p>
-                <p className="mt-2 font-display text-xs text-slate-400 uppercase tracking-widest">
-                  Transmitting score...
+                <p className="mt-2 font-silkscreen text-xs text-slate-400 uppercase tracking-widest">
+                  Transmitting pick...
                 </p>
               </div>
             )}
@@ -186,10 +186,10 @@ export function Round1({
             disabled={locked}
             className="pixel-btn pixel-btn-amber min-h-[64px] flex-col px-3 py-3"
           >
-            <span className="font-pixel text-[8px] uppercase tracking-wider opacity-80">
+            <span className="font-silkscreen text-[10px] uppercase tracking-wider opacity-85">
               Option 1
             </span>
-            <span className="font-pixel text-base uppercase tracking-wider sm:text-lg">
+            <span className="font-pixel text-sm sm:text-base uppercase tracking-wider">
               REAL
             </span>
           </button>
@@ -200,16 +200,16 @@ export function Round1({
             disabled={locked}
             className="pixel-btn pixel-btn-cyan min-h-[64px] flex-col px-3 py-3"
           >
-            <span className="font-pixel text-[8px] uppercase tracking-wider opacity-80">
+            <span className="font-silkscreen text-[10px] uppercase tracking-wider opacity-85">
               Option 2
             </span>
-            <span className="font-pixel text-base uppercase tracking-wider sm:text-lg">
+            <span className="font-pixel text-sm sm:text-base uppercase tracking-wider">
               AI GENERATED
             </span>
           </button>
         </div>
 
-        <p className="mt-3.5 text-center font-display text-xs text-slate-400">
+        <p className="mt-3.5 text-center font-silkscreen text-xs text-slate-400">
           ⚡ Fast answer = speed bonus · Scores revealed at the end
         </p>
       </div>

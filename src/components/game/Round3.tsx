@@ -114,17 +114,17 @@ export function Round3({
 
         {/* Title Banner */}
         <div className="mt-4 text-center">
-          <span className="inline-block rounded-md border border-cyan-500/40 bg-cyan-950/40 px-3 py-1 font-pixel text-[9px] uppercase tracking-widest text-cyan-300 shadow-[0_0_12px_rgba(0,240,255,0.2)]">
+          <span className="inline-block rounded-md border border-cyan-500/40 bg-cyan-950/40 px-3 py-1 font-silkscreen text-[10px] uppercase tracking-widest text-cyan-300 shadow-[0_0_12px_rgba(0,240,255,0.2)]">
             FINAL ROUND · YOU VS AIDA
           </span>
-          <h1 className="mt-2 font-display text-2xl font-black uppercase tracking-wide text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] sm:text-3xl">
+          <h1 className="mt-2 font-pixel text-base sm:text-lg font-bold uppercase tracking-wider text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
             Knowledge Estimator
           </h1>
         </div>
 
         {/* Question & Guess Card */}
         <div className="pixel-box relative mt-3.5 flex flex-col items-center justify-center p-6 text-center sm:mt-4">
-          <p className="font-display text-lg font-bold leading-relaxed text-slate-100 sm:text-xl">
+          <p className="font-silkscreen text-xs sm:text-sm font-bold leading-relaxed text-slate-100">
             {assignment.prompt}
           </p>
 

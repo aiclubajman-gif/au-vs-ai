@@ -69,7 +69,7 @@ export function DashboardClient({
             1. TOP STADIUM BANNER: "HUMANS vs AI LEADERBOARD"
             ================================================================= */}
         <header className="mx-auto w-full max-w-4xl text-center">
-          <div className="mb-2 flex items-center justify-center gap-2 text-xs font-black uppercase tracking-[0.25em] text-sky-400">
+          <div className="mb-2 flex items-center justify-center gap-2 font-silkscreen text-[11px] font-bold uppercase tracking-[0.2em] text-sky-400">
             <span
               className={`h-2.5 w-2.5 rounded-full ${
                 isLive ? 'bg-emerald-400 shadow-[0_0_12px_#34d399] animate-pulse' : 'bg-amber-400'
@@ -86,8 +86,8 @@ export function DashboardClient({
                 '0 0 25px rgba(30, 93, 216, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.5), inset 0 -2px 6px rgba(0, 0, 0, 0.8)',
             }}
           >
-            <h1 className="flex flex-wrap items-center justify-center gap-x-3 text-center font-black tracking-wider uppercase italic text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-[#ffe600] drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-              HUMANS <span className="text-xl sm:text-3xl md:text-4xl text-white drop-shadow-[0_0_12px_rgba(0,240,255,0.9)]">vs</span> AI LEADERBOARD
+            <h1 className="font-pixel flex flex-wrap items-center justify-center gap-x-3 text-center tracking-wider uppercase text-lg sm:text-2xl md:text-3xl lg:text-4xl text-[#ffe600] drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+              HUMANS <span className="text-xs sm:text-lg md:text-xl text-white drop-shadow-[0_0_12px_rgba(0,240,255,0.9)]">vs</span> AI LEADERBOARD
             </h1>
           </div>
         </header>
@@ -108,29 +108,29 @@ export function DashboardClient({
           {/* Telemetry quick badges below the table */}
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-xl border border-sky-500/25 bg-[#071333]/70 p-3 text-center backdrop-blur-sm">
-              <span className="text-xs uppercase tracking-wider text-slate-400">Total Challengers</span>
-              <p className="tabular mt-0.5 text-xl font-black text-white sm:text-2xl">
+              <span className="font-silkscreen text-[10px] uppercase tracking-wider text-slate-400">Total Challengers</span>
+              <p className="tabular font-pixel mt-1 text-lg font-black text-white sm:text-2xl">
                 {eventStats.totalPlayers}
               </p>
             </div>
 
             <div className="rounded-xl border border-amber-500/25 bg-[#1c1206]/70 p-3 text-center backdrop-blur-sm">
-              <span className="text-xs uppercase tracking-wider text-amber-300">Human Victories</span>
-              <p className="tabular mt-0.5 text-xl font-black text-amber-400 sm:text-2xl">
+              <span className="font-silkscreen text-[10px] uppercase tracking-wider text-amber-300">Human Victories</span>
+              <p className="tabular font-pixel mt-1 text-lg font-black text-amber-400 sm:text-2xl">
                 {eventStats.humanWins}
               </p>
             </div>
 
             <div className="rounded-xl border border-sky-500/25 bg-[#071333]/70 p-3 text-center backdrop-blur-sm">
-              <span className="text-xs uppercase tracking-wider text-sky-300">AI Defenses</span>
-              <p className="tabular mt-0.5 text-xl font-black text-sky-400 sm:text-2xl">
+              <span className="font-silkscreen text-[10px] uppercase tracking-wider text-sky-300">AI Defenses</span>
+              <p className="tabular font-pixel mt-1 text-lg font-black text-sky-400 sm:text-2xl">
                 {eventStats.aiWins}
               </p>
             </div>
 
             <div className="rounded-xl border border-emerald-500/25 bg-[#072418]/70 p-3 text-center backdrop-blur-sm">
-              <span className="text-xs uppercase tracking-wider text-emerald-300">Highest Score</span>
-              <p className="tabular mt-0.5 text-xl font-black text-emerald-400 sm:text-2xl">
+              <span className="font-silkscreen text-[10px] uppercase tracking-wider text-emerald-300">Highest Score</span>
+              <p className="tabular font-pixel mt-1 text-lg font-black text-emerald-400 sm:text-2xl">
                 {eventStats.topScore}
               </p>
             </div>
