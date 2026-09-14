@@ -91,7 +91,8 @@ export const profileSetupSchema = z.object({
 export const round1SubmitSchema = z.object({
   attemptId: z.uuid(),
   slot: z.number().int().min(1).max(4),
-  selectedAnswer: z.enum(['real', 'ai_generated']),
+  /** null = the timer ran out with no choice made. Scores zero. */
+  selectedAnswer: z.enum(['real', 'ai_generated']).nullable(),
   responseTimeMs: z.number().int().min(0).max(120_000),
   idempotencyKey: z.uuid(),
 });

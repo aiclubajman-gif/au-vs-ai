@@ -7,7 +7,7 @@
  */
 import { createAdminSupabase } from '@/lib/supabase/server';
 import { round3SubmitSchema } from '@/lib/validation';
-import { ok, fail, messageFor } from '@/lib/api/respond';
+import { ok, fail, messageFor, refCode } from '@/lib/api/respond';
 import { requireOwnedAttempt, loadSettings } from '@/lib/api/attempt';
 import { scoreRound3, clampGuessToRange, round3AbsError } from '@/lib/scoring';
 
@@ -63,7 +63,9 @@ export async function POST(req: Request) {
     toleranceExponent: settings.round3ToleranceExponent,
   });
 
-  await admin
+  // Only an unanswered row is written, so a retry racing the original request
+  // cannot replace the guess or score it twice.
+  const { data: written, error: writeError } = await admin
     .from('attempt_round3')
     .update({
       guess: safeGuess,
@@ -71,7 +73,22 @@ export async function POST(req: Request) {
       points,
       answered_at: new Date().toISOString(),
     })
-    .eq('attempt_id', attemptId);
+    .eq('attempt_id', attemptId)
+    .is('answered_at', null)
+    .select('attempt_id');
+
+  if (writeError) {
+    const ref = refCode();
+    await admin.from('app_events').insert({
+      event: 'round3_answer_failed',
+      ref_code: ref,
+      user_id: guard.userId,
+      details: { attempt_id: attemptId },
+    });
+    return fail('SERVER_ERROR', messageFor('SERVER_ERROR'), 500, ref);
+  }
+
+  if (!written || written.length === 0) return ok({ locked: true, alreadyAnswered: true });
 
   await admin.from('attempts').update({ current_round: 4 }).eq('id', attemptId);
 

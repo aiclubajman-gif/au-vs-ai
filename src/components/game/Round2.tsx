@@ -1,7 +1,14 @@
 'use client';
 
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { getClassifier, type Prediction } from '@/lib/ml/classifier';
+import { RetryNotice } from '@/components/ui';
+import { resolveClassifier, type Prediction } from '@/lib/ml/classifier';
+import {
+  submitWithRetry,
+  isRetryable,
+  describeSaveFailure,
+  type SubmitFailure,
+} from '@/lib/client/submit';
 import type { Round2Assignment } from '@/types';
 
 /**
@@ -16,10 +23,25 @@ import type { Round2Assignment } from '@/types';
  */
 
 type Stroke = { x: number; y: number }[];
-type Phase = 'drawing' | 'analysing' | 'revealed';
+type Phase = 'drawing' | 'analysing' | 'analysisFailed' | 'revealed';
+
+interface Round2SubmitBody {
+  attemptId: string;
+  targetConfidence: number;
+  topPredictions: Prediction[];
+  drawTimeMs: number;
+  bitmap28: string;
+  idempotencyKey: string;
+}
 
 const CANVAS_SIZE = 320;
 const STROKE_WIDTH = 12;
+/** Minimum suspense so the reveal reads as a moment, not a flicker. */
+const ANALYSE_MS = 900;
+/** How long the predictions stay on screen before moving on. */
+const REVEAL_MS = 2600;
+/** Ceiling in round2SubmitSchema. A backgrounded tab can otherwise exceed it. */
+const MAX_DRAW_MS = 120_000;
 
 export function Round2({
   attemptId,
@@ -37,9 +59,29 @@ export function Round2({
   const [phase, setPhase] = useState<Phase>('drawing');
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [remaining, setRemaining] = useState(drawMs);
+  const [saving, setSaving] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
+  const [failure, setFailure] = useState<SubmitFailure | null>(null);
   const drawing = useRef(false);
-  const startedAt = useRef(Date.now());
+  const startedAt = useRef(0);
   const submitted = useRef(false);
+  /** The finished drawing, kept so a failed analysis can be retried as-is. */
+  const finished = useRef<{ bitmap: Float32Array; drawTimeMs: number } | null>(null);
+  /** The scored submission. Retries resend exactly this, same key included. */
+  const submission = useRef<Round2SubmitBody | null>(null);
+  const analysing = useRef(false);
+  const inFlight = useRef(false);
+  const revealedAt = useRef(0);
+  const unmounted = useRef(false);
+
+  // The drawing clock starts when the canvas is first on screen.
+  useEffect(() => {
+    startedAt.current = Date.now();
+    unmounted.current = false;
+    return () => {
+      unmounted.current = true;
+    };
+  }, []);
 
   // ---- rendering -------------------------------------------------------
   const redraw = useCallback(() => {
@@ -129,46 +171,97 @@ export function Round2({
     return out;
   }, [strokes]);
 
-  const submit = useCallback(async () => {
-    if (submitted.current) return;
-    submitted.current = true;
+  /** Sends the scored drawing and moves on only once the server has it. */
+  const save = useCallback(
+    async (body: Round2SubmitBody) => {
+      if (inFlight.current) return;
+      inFlight.current = true;
+      setSaving(true);
+      setFailure(null);
+
+      const result = await submitWithRetry('/api/round2/submit', body, {
+        isCancelled: () => unmounted.current,
+        onRetry: () => setReconnecting(true),
+      });
+
+      inFlight.current = false;
+      if (unmounted.current) return;
+      setSaving(false);
+      setReconnecting(false);
+
+      if (!result.ok) {
+        setFailure(result);
+        return;
+      }
+
+      const wait = Math.max(0, REVEAL_MS - (Date.now() - revealedAt.current));
+      setTimeout(() => {
+        if (!unmounted.current) onComplete();
+      }, wait);
+    },
+    [onComplete],
+  );
+
+  /**
+   * Runs the model on the finished drawing, then reveals and saves.
+   *
+   * A classifier failure is shown as a retryable state. Submitting empty
+   * predictions instead would quietly score the drawing as zero.
+   */
+  const analyse = useCallback(async () => {
+    const input = finished.current;
+    if (!input || analysing.current) return;
+    analysing.current = true;
     setPhase('analysing');
 
-    const drawTimeMs = Date.now() - startedAt.current;
-    const bitmap = toBitmap28();
-
+    const minimum = new Promise((r) => setTimeout(r, ANALYSE_MS));
     let preds: Prediction[] = [];
     try {
-      preds = await getClassifier().predict(bitmap);
+      const classifier = await resolveClassifier();
+      preds = await classifier.predict(input.bitmap);
     } catch {
       preds = [];
     }
+    await minimum;
+
+    analysing.current = false;
+    if (unmounted.current) return;
+
+    if (preds.length === 0) {
+      setPhase('analysisFailed');
+      return;
+    }
 
     const target = preds.find((p) => p.label === assignment.classKey);
-    const bytes = new Uint8Array(bitmap.map((v) => Math.round(v * 255)));
-    const b64 = btoa(String.fromCharCode(...bytes));
+    const bytes = new Uint8Array(input.bitmap.map((v) => Math.round(v * 255)));
 
-    // Minimum suspense so the reveal reads as a moment, not a flicker.
-    await new Promise((r) => setTimeout(r, 900));
+    const body: Round2SubmitBody = {
+      attemptId,
+      targetConfidence: target?.confidence ?? 0,
+      topPredictions: preds.slice(0, 3),
+      drawTimeMs: input.drawTimeMs,
+      bitmap28: btoa(String.fromCharCode(...bytes)),
+      idempotencyKey: crypto.randomUUID(),
+    };
+    submission.current = body;
 
+    revealedAt.current = Date.now();
     setPredictions(preds.slice(0, 3));
     setPhase('revealed');
+    save(body);
+  }, [assignment.classKey, attemptId, save]);
 
-    await fetch('/api/round2/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        attemptId,
-        targetConfidence: target?.confidence ?? 0,
-        topPredictions: preds.slice(0, 3),
-        drawTimeMs,
-        bitmap28: b64,
-        idempotencyKey: crypto.randomUUID(),
-      }),
-    }).catch(() => {});
+  const submit = useCallback(() => {
+    if (submitted.current) return;
+    submitted.current = true;
 
-    setTimeout(onComplete, 2600);
-  }, [assignment.classKey, attemptId, onComplete, toBitmap28]);
+    // The drawing is frozen here. The AI has not looked at it until now (§14).
+    finished.current = {
+      bitmap: toBitmap28(),
+      drawTimeMs: Math.min(Date.now() - startedAt.current, MAX_DRAW_MS),
+    };
+    analyse();
+  }, [analyse, toBitmap28]);
 
   useEffect(() => {
     if (phase !== 'drawing') return;
@@ -304,14 +397,42 @@ export function Round2({
                   </div>
                 );
               })}
-              {predictions.length === 0 && (
+              {reconnecting && (
                 <p className="text-center text-sm text-[var(--color-muted)]">
-                  The AI couldn&apos;t read that one.
+                  Saving… reconnecting
                 </p>
               )}
             </div>
           )}
+
+          {phase === 'analysisFailed' && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--color-void)]/90 px-6 text-center">
+              <p className="text-base font-semibold">The AI couldn&apos;t analyse your drawing.</p>
+              <p className="mt-2 text-sm text-[var(--color-muted)]">
+                Your drawing is still here. Try again, or show this screen to an AIDA team
+                member.
+              </p>
+              <button
+                onClick={analyse}
+                className="mt-4 rounded-lg border border-[var(--color-edge)] px-4 py-2 text-sm"
+              >
+                Try again
+              </button>
+            </div>
+          )}
         </div>
+
+        {failure && (
+          <RetryNotice
+            message={describeSaveFailure(failure, 'drawing')}
+            refCode={failure.ref}
+            retryable={isRetryable(failure)}
+            busy={saving}
+            onRetry={() => {
+              if (submission.current) save(submission.current);
+            }}
+          />
+        )}
 
         {phase === 'drawing' && (
           <div className="mt-5 grid grid-cols-3 gap-3">
