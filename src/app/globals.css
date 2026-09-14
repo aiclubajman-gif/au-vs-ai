@@ -1,7 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,400;0,600;0,700;1,700&family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap');
 @import "tailwindcss";
 
 /* ==========================================================================
-   AU vs AI — Design Tokens & Humans vs AI Arena
+   AU vs AI — 16-Bit Retro Arcade Design Tokens & Arena Styles
    Dual-clash palette:
      Humans (AU): Radiant Amber / Fiery Orange / Gold Metallic
      AI: Electric Cyan / Cyber Blue / Neon Sapphire
@@ -9,15 +10,15 @@
    ========================================================================== */
 
 @theme {
-  --color-void: #030712;
-  --color-navy: #090d1f;
-  --color-surface: #0e152d;
+  --color-void: #02050e;
+  --color-navy: #050b1d;
+  --color-surface: #0a1330;
   --color-edge: #1b2649;
 
   /* Legacy cyan aliases for backwards compatibility */
-  --color-cyan: #06b6d4;
+  --color-cyan: #00f0ff;
   --color-cyan-bright: #38bdf8;
-  --color-cyan-dim: #0891b2;
+  --color-cyan-dim: #0284c7;
 
   --color-ink: #f8fafc;
   --color-muted: #94a3b8;
@@ -26,22 +27,23 @@
   --color-lose: #f43f5e;
 
   /* Humans / AU Palette */
-  --color-human-gold: #f59e0b;
-  --color-human-orange: #ea580c;
+  --color-human-gold: #ffbe0b;
+  --color-human-orange: #fb5607;
   --color-human-amber: #d97706;
   --color-human-glow: #fbbf24;
   --color-human-deep: #78350f;
 
   /* AI Palette */
   --color-ai-cyan: #00f0ff;
-  --color-ai-blue: #2563eb;
+  --color-ai-blue: #0072ff;
   --color-ai-sapphire: #1d4ed8;
   --color-ai-glow: #60a5fa;
-  --color-ai-deep: #172554;
+  --color-ai-deep: #07153a;
 
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  --font-sans: 'Chakra Petch', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: 'Chakra Petch', sans-serif;
+  --font-pixel: 'Press Start 2P', 'Silkscreen', monospace;
+  --font-mono: 'Press Start 2P', ui-monospace, SFMono-Regular, monospace;
 }
 
 html {
@@ -56,19 +58,36 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Retro Typography Utilities */
+.font-pixel {
+  font-family: var(--font-pixel), monospace;
+  letter-spacing: -0.02em;
+}
+
+.font-display {
+  font-family: var(--font-display), sans-serif;
+}
+
 /* Numerals that don't jitter while a counter animates. */
 .tabular {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
 }
 
-/* Keyboard focus must stay visible — accessibility floor. */
+/* Pixel Art crisp scaling */
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+/* Keyboard focus visible for accessibility */
 :focus-visible {
   outline: 2px solid var(--color-cyan);
   outline-offset: 3px;
 }
 
-/* Stop iOS zooming when a student taps an input (§36). */
+/* Stop iOS zooming on inputs */
 input,
 select,
 textarea,
@@ -76,49 +95,185 @@ button {
   font-size: 16px;
 }
 
-/* Kill the blue tap flash on Android Chrome. */
+/* Kill blue tap flash on mobile */
 * {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* A drawing canvas must never scroll the page under a finger (§13). */
+/* Canvas drawing touch safety */
 .canvas-surface {
   touch-action: none;
 }
 
 /* ==========================================================================
-   Arena Animations & Effects (GPU-composited for mobile performance)
+   Tactile 3D Retro Arcade Buttons
    ========================================================================== */
 
-@keyframes clashPulse {
-  0%, 100% {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 0.85;
-  }
-  50% {
-    transform: translate(-50%, -50%) scale(1.18);
-    opacity: 1;
-  }
+.pixel-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-pixel), monospace;
+  text-transform: uppercase;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s ease;
 }
 
-@keyframes sparkRotate {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+.pixel-btn:active:not(:disabled) {
+  transform: translateY(4px);
 }
 
-@keyframes circuitPulse {
-  0%, 100% {
-    opacity: 0.35;
-  }
-  50% {
-    opacity: 0.85;
-  }
+.pixel-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.6);
 }
 
+/* Amber / Human Team Button */
+.pixel-btn-amber {
+  background: linear-gradient(180deg, #ffc000 0%, #ff8c00 50%, #e55b00 100%);
+  color: #1a0a00;
+  border: 2px solid #ffe880;
+  box-shadow: 0 5px 0 #7a2800, 0 8px 18px rgba(255, 140, 0, 0.45);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.pixel-btn-amber:active:not(:disabled) {
+  box-shadow: 0 1px 0 #7a2800, 0 3px 8px rgba(255, 140, 0, 0.35);
+}
+
+/* Cyan / AI Team Button */
+.pixel-btn-cyan {
+  background: linear-gradient(180deg, #00f0ff 0%, #0099ff 50%, #0055dd 100%);
+  color: #00122e;
+  border: 2px solid #b3f5ff;
+  box-shadow: 0 5px 0 #002b66, 0 8px 18px rgba(0, 240, 255, 0.45);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.pixel-btn-cyan:active:not(:disabled) {
+  box-shadow: 0 1px 0 #002b66, 0 3px 8px rgba(0, 240, 255, 0.35);
+}
+
+/* Green / Victory Button */
+.pixel-btn-green {
+  background: linear-gradient(180deg, #38ef7d 0%, #11998e 100%);
+  color: #022312;
+  border: 2px solid #a3f7bf;
+  box-shadow: 0 5px 0 #084c26, 0 8px 18px rgba(56, 239, 125, 0.4);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.pixel-btn-green:active:not(:disabled) {
+  box-shadow: 0 1px 0 #084c26, 0 3px 8px rgba(56, 239, 125, 0.3);
+}
+
+/* Dark Slate / Control Button (Undo, Clear, Back) */
+.pixel-btn-dark {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  color: #cbd5e1;
+  border: 2px solid #334155;
+  box-shadow: 0 4px 0 #020617, 0 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+.pixel-btn-dark:active:not(:disabled) {
+  box-shadow: 0 1px 0 #020617;
+}
+
+/* ==========================================================================
+   Retro Arcade Boxes & Containers
+   ========================================================================== */
+
+.pixel-box {
+  background: rgba(5, 11, 29, 0.88);
+  border: 3px solid #1b3a7a;
+  border-radius: 14px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.15);
+}
+
+.pixel-box-amber {
+  background: linear-gradient(180deg, rgba(28, 16, 4, 0.92) 0%, rgba(12, 7, 2, 0.95) 100%);
+  border: 3px solid #d97706;
+  border-radius: 14px;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.25), inset 0 1px 2px rgba(251, 191, 36, 0.3);
+}
+
+.pixel-box-cyan {
+  background: linear-gradient(180deg, rgba(6, 22, 54, 0.92) 0%, rgba(2, 9, 26, 0.95) 100%);
+  border: 3px solid #0284c7;
+  border-radius: 14px;
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.25), inset 0 1px 2px rgba(56, 189, 248, 0.3);
+}
+
+.pixel-box-gold {
+  background: linear-gradient(180deg, rgba(38, 26, 6, 0.95) 0%, rgba(16, 10, 2, 0.98) 100%);
+  border: 3px solid #ffbe0b;
+  border-radius: 14px;
+  box-shadow: 0 0 35px rgba(255, 190, 11, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+}
+
+/* Digital Timer Badge */
+.pixel-timer {
+  background: #020617;
+  border: 2px solid #00f0ff;
+  border-radius: 8px;
+  padding: 3px 10px;
+  color: #00f0ff;
+  font-family: var(--font-pixel), monospace;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.45), inset 0 0 6px rgba(0, 240, 255, 0.2);
+}
+
+.pixel-timer-amber {
+  border-color: #ffbe0b;
+  color: #ffbe0b;
+  box-shadow: 0 0 12px rgba(255, 190, 11, 0.45), inset 0 0 6px rgba(255, 190, 11, 0.2);
+}
+
+/* Mobile Background Circuit Texture */
+.bg-mobile-circuit-pattern {
+  background-image: radial-gradient(circle at 50% 10%, rgba(0, 120, 255, 0.15) 0%, transparent 60%),
+                    url('/sprites/bg-mobile-circuit.png');
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-color: #02050e;
+}
+
+/* Arena Clashes and Flanks */
+.bevel-human-bar {
+  background: linear-gradient(180deg, #ffbe0b 0%, #f77f00 45%, #d62828 100%);
+  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.45),
+              inset 0 -3px 4px rgba(0, 0, 0, 0.5),
+              0 0 20px rgba(247, 127, 0, 0.45);
+}
+
+.bevel-ai-bar {
+  background: linear-gradient(180deg, #00f0ff 0%, #0077b6 45%, #03045e 100%);
+  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.45),
+              inset 0 -3px 4px rgba(0, 0, 0, 0.5),
+              0 0 20px rgba(0, 240, 255, 0.45);
+}
+
+/* Subtle CRT Scanline overlay */
+.scanlines {
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.25) 50%
+  ), linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.03),
+    rgba(0, 255, 0, 0.01),
+    rgba(0, 0, 255, 0.03)
+  );
+  background-size: 100% 3px, 6px 100%;
+  pointer-events: none;
+}
+
+/* Animations */
 @keyframes animeClashPulse {
   0%, 100% {
     transform: translate(-50%, -50%) scale(1) rotate(0deg);
@@ -130,69 +285,27 @@ button {
   }
 }
 
-@keyframes raySpin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes electricJitter {
-  0%, 100% { opacity: 0.9; transform: scale(1); }
-  25% { opacity: 1; transform: scale(1.02) translate(1px, -1px); }
-  50% { opacity: 0.85; transform: scale(0.99) translate(-1px, 1px); }
-  75% { opacity: 1; transform: scale(1.03) translate(1px, 0); }
-}
-
 .animate-clash-shockwave {
   animation: animeClashPulse 1.8s ease-in-out infinite;
   will-change: transform, filter;
 }
 
-.animate-ray-spin {
-  animation: raySpin 16s linear infinite;
-  will-change: transform;
-}
-
-.animate-jitter {
-  animation: electricJitter 0.15s ease-in-out infinite alternate;
-}
-
-
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.2s ease-out forwards;
+  animation: fadeIn 0.18s ease-out forwards;
 }
 
-
-/* Beveled metallic 3D bar styling matching the mockup */
-.bevel-human-bar {
-  background: linear-gradient(180deg, #ff9f1c 0%, #f77f00 45%, #d62828 100%);
-  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.45),
-              inset 0 -3px 4px rgba(0, 0, 0, 0.5),
-              0 0 20px rgba(247, 127, 0, 0.45);
+@keyframes floatGentle {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
 }
 
-.bevel-ai-bar {
-  background: linear-gradient(180deg, #00b4d8 0%, #0077b6 45%, #03045e 100%);
-  box-shadow: inset 0 2px 3px rgba(255, 255, 255, 0.45),
-              inset 0 -3px 4px rgba(0, 0, 0, 0.5),
-              0 0 20px rgba(0, 180, 216, 0.45);
-}
-
-/* Glassmorphic Cyber Cards */
-.cyber-card {
-  background: rgba(14, 21, 45, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(37, 99, 235, 0.25);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+.animate-float {
+  animation: floatGentle 2.4s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

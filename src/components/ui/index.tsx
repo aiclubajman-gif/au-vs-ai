@@ -1,9 +1,10 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { ArenaFrame } from '@/components/game/ArenaFrame';
 
 /**
- * Shared primitives for the game screens.
+ * Shared primitives for the game screens — 16-bit retro arcade edition.
  *
  * Touch targets are 56px minimum, focus rings stay visible, and every button
  * disables itself while busy so a double-tap in a noisy hall cannot submit
@@ -12,18 +13,26 @@ import type { ReactNode } from 'react';
 
 export function Screen({ children }: { children: ReactNode }) {
   return (
-    <main className="flex min-h-dvh flex-col px-6 py-8">
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col">{children}</div>
-    </main>
+    <ArenaFrame>
+      <div className="flex flex-1 flex-col justify-center">{children}</div>
+    </ArenaFrame>
   );
 }
 
 export function Title({ children }: { children: ReactNode }) {
-  return <h1 className="text-3xl font-bold tracking-tight">{children}</h1>;
+  return (
+    <h1 className="font-display text-2xl sm:text-3xl font-black uppercase tracking-wide text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+      {children}
+    </h1>
+  );
 }
 
 export function Hint({ children }: { children: ReactNode }) {
-  return <p className="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">{children}</p>;
+  return (
+    <p className="mt-3 font-display text-sm leading-relaxed text-slate-300">
+      {children}
+    </p>
+  );
 }
 
 export function Button({
@@ -41,22 +50,25 @@ export function Button({
   variant?: 'primary' | 'ghost';
   type?: 'button' | 'submit';
 }) {
-  const base =
-    'w-full rounded-xl px-6 py-4 text-base font-semibold transition-colors min-h-[56px] disabled:opacity-40 disabled:cursor-not-allowed';
-  const styles =
-    variant === 'primary'
-      ? 'bg-[var(--color-cyan)] text-[var(--color-void)] hover:bg-[var(--color-cyan-bright)]'
-      : 'border border-[var(--color-edge)] text-[var(--color-ink)] hover:border-[var(--color-cyan-dim)]';
+  const isPrimary = variant === 'primary';
+  const styles = isPrimary ? 'pixel-btn-amber text-sm' : 'pixel-btn-dark text-xs';
 
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled || busy}
-      className={`${base} ${styles}`}
+      className={`pixel-btn min-h-[58px] w-full ${styles}`}
       aria-busy={busy}
     >
-      {busy ? 'Working…' : children}
+      {busy ? (
+        <span className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-amber-200 animate-ping" />
+          WORKING...
+        </span>
+      ) : (
+        children
+      )}
     </button>
   );
 }
@@ -70,11 +82,11 @@ export function ErrorBanner({ message, refCode }: { message: string; refCode?: s
   return (
     <div
       role="alert"
-      className="mt-5 rounded-lg border border-[var(--color-lose)]/40 bg-[var(--color-lose)]/10 px-4 py-3"
+      className="mt-5 rounded-xl border-2 border-rose-500/60 bg-rose-950/40 p-4 shadow-[0_0_16px_rgba(244,63,94,0.3)]"
     >
-      <p className="text-sm text-[var(--color-lose)]">{message}</p>
+      <p className="font-display text-sm font-semibold text-rose-300">{message}</p>
       {refCode && (
-        <p className="mt-1 font-mono text-xs text-[var(--color-muted)]">{refCode}</p>
+        <p className="mt-1 font-pixel text-[9px] text-rose-400 opacity-80">{refCode}</p>
       )}
     </div>
   );

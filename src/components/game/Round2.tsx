@@ -3,16 +3,18 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { getClassifier, type Prediction } from '@/lib/ml/classifier';
 import type { Round2Assignment } from '@/types';
+import { ArenaFrame } from './ArenaFrame';
 
 /**
  * Round 2 — Draw vs AI.
  *
- * §14: NO live confidence while drawing. The student draws blind, submits, and
- * only then does the AI analyse. Live bars would let someone nudge their sketch
- * toward whatever the model was guessing, which is both unfair and less fun.
- *
- * Strokes are kept as point arrays rather than pixels so undo is exact and the
- * 28x28 export can be re-rasterised cleanly at any size.
+ * 16-Bit Retro Arcade Redesign:
+ * - ArenaFrame stadium frame with meadow & circuit flanks.
+ * - Peeking Robot mascot (`/sprites/robot-peek.png`) watching the student draw.
+ * - Tactile 3D retro arcade buttons for "UNDO", "CLEAR", and "SUBMIT".
+ * - Retro radar scanner animation during "AI ANALYSING SKETCH...".
+ * - Neon confidence bars with target match checkmark during the reveal.
+ * - NO live confidence bars while drawing (§14).
  */
 
 type Stroke = { x: number; y: number }[];
@@ -74,11 +76,6 @@ export function Round2({
 
   /**
    * Converts the drawing into the 28x28 the model expects.
-   *
-   * The pipeline must match QuickDraw's preprocessing exactly or a good model
-   * returns nonsense: crop to the ink's bounding box, pad to a square, add a
-   * small margin, then downscale. Skipping the crop is the single most common
-   * reason these projects "fail" when the model is actually fine.
    */
   const toBitmap28 = useCallback((): Float32Array => {
     const out = new Float32Array(784);
@@ -148,7 +145,7 @@ export function Round2({
     const bytes = new Uint8Array(bitmap.map((v) => Math.round(v * 255)));
     const b64 = btoa(String.fromCharCode(...bytes));
 
-    // Minimum suspense so the reveal reads as a moment, not a flicker.
+    // Suspense pause so the reveal moment feels earned
     await new Promise((r) => setTimeout(r, 900));
 
     setPredictions(preds.slice(0, 3));
@@ -181,14 +178,6 @@ export function Round2({
   }, [phase, drawMs, submit]);
 
   // ---- pointer handling ------------------------------------------------
-  /**
-   * Reads coordinates from the canvas ref, NOT from e.currentTarget.
-   *
-   * React nulls `currentTarget` once event dispatch finishes. A functional
-   * state updater runs after dispatch, so calling this inside
-   * `setStrokes(s => ...)` threw "Cannot read properties of null". The ref is
-   * stable for the component's lifetime, so it is safe whenever this is called.
-   */
   function pointFrom(clientX: number, clientY: number) {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
@@ -203,7 +192,6 @@ export function Round2({
     if (phase !== 'drawing') return;
     e.currentTarget.setPointerCapture(e.pointerId);
     drawing.current = true;
-    // Resolved BEFORE the updater, while the event is still live.
     const p = pointFrom(e.clientX, e.clientY);
     setStrokes((s) => [...s, [p]]);
   }
@@ -227,118 +215,205 @@ export function Round2({
   const progress = Math.max(0, Math.min(1, remaining / drawMs));
 
   return (
-    <main className="flex min-h-dvh flex-col px-5 py-6">
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-[var(--color-muted)]">Draw vs AI</span>
-          {phase === 'drawing' && (
-            <span className="tabular font-bold text-[var(--color-cyan)]">{seconds}s</span>
-          )}
+    <ArenaFrame
+      leftMascot="/sprites/char-boy-cheer.png"
+      leftMascotAlt="Cheering Boy Avatar"
+      rightMascot="/sprites/robot-peek.png"
+      rightMascotAlt="Peeking Robot AI"
+    >
+      {/* Top Header & Telemetry */}
+      <div>
+        {/* Status Bar */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {/* Mobile Mascot Avatar */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/sprites/char-boy-cheer.png"
+              alt="Avatar"
+              className="pixelated h-8 w-auto lg:hidden"
+            />
+            <span className="font-pixel text-[10px] tracking-wider text-slate-400">
+              ROUND 2 · DRAW
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {phase === 'drawing' && (
+              <span className="pixel-timer tabular text-xs font-bold">
+                {seconds.toString().padStart(2, '0')}s
+              </span>
+            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/sprites/robot-peek.png"
+              alt="Robot"
+              className="pixelated h-8 w-auto lg:hidden"
+            />
+          </div>
         </div>
 
-        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[var(--color-edge)]">
+        {/* Progress Bar */}
+        <div
+          className="mt-2.5 h-2 w-full overflow-hidden rounded-full border border-slate-700/60 bg-slate-900/80 p-0.5"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(progress * 100)}
+        >
           <div
-            className="h-full bg-[var(--color-cyan)] transition-[width] duration-100 ease-linear"
+            className="h-full rounded-full bg-gradient-to-r from-amber-400 via-sky-400 to-cyan-400 shadow-[0_0_10px_rgba(0,240,255,0.7)] transition-[width] duration-100 ease-linear"
             style={{ width: `${phase === 'drawing' ? progress * 100 : 0}%` }}
           />
         </div>
 
-        <h1 className="mt-6 text-center text-3xl font-bold">
-          Draw a <span className="text-[var(--color-cyan)]">{assignment.displayName}</span>
-        </h1>
-
-        <div className="relative mt-5 aspect-square w-full overflow-hidden rounded-2xl border border-[var(--color-edge)] bg-[var(--color-navy)]">
-          <canvas
-            ref={canvasRef}
-            width={CANVAS_SIZE}
-            height={CANVAS_SIZE}
-            onPointerDown={start}
-            onPointerMove={move}
-            onPointerUp={end}
-            onPointerCancel={end}
-            className="canvas-surface h-full w-full"
-            aria-label={`Drawing canvas. Draw a ${assignment.displayName}.`}
-          />
-
-          {phase === 'analysing' && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--color-void)]/90">
-              <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--color-edge)] border-t-[var(--color-cyan)]" />
-              <p className="mt-4 text-sm text-[var(--color-muted)]">
-                AI is analysing your drawing…
-              </p>
-            </div>
-          )}
-
-          {phase === 'revealed' && (
-            <div className="absolute inset-0 flex flex-col justify-center gap-3 bg-[var(--color-void)]/93 px-6">
-              {predictions.map((p) => {
-                const isTarget = p.label === assignment.classKey;
-                return (
-                  <div key={p.label}>
-                    <div className="flex justify-between text-sm">
-                      <span
-                        className={
-                          isTarget
-                            ? 'font-bold text-[var(--color-win)]'
-                            : 'text-[var(--color-muted)]'
-                        }
-                      >
-                        {p.label.toUpperCase()}
-                        {isTarget && ' ✓'}
-                      </span>
-                      <span className="tabular text-sm">
-                        {Math.round(p.confidence * 100)}%
-                      </span>
-                    </div>
-                    <div className="mt-1 h-2 overflow-hidden rounded-full bg-[var(--color-edge)]">
-                      <div
-                        className="h-full rounded-full transition-[width] duration-700"
-                        style={{
-                          width: `${p.confidence * 100}%`,
-                          background: isTarget
-                            ? 'var(--color-win)'
-                            : 'var(--color-cyan-dim)',
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-              {predictions.length === 0 && (
-                <p className="text-center text-sm text-[var(--color-muted)]">
-                  The AI couldn&apos;t read that one.
-                </p>
-              )}
-            </div>
-          )}
+        {/* Prompt Banner */}
+        <div className="mt-4 text-center">
+          <span className="inline-block rounded-md border border-cyan-500/40 bg-cyan-950/40 px-3 py-1 font-pixel text-[9px] uppercase tracking-widest text-cyan-300 shadow-[0_0_12px_rgba(0,240,255,0.2)]">
+            QUICKDRAW CHALLENGE
+          </span>
+          <h1 className="mt-2 font-display text-2xl font-black uppercase tracking-wide text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] sm:text-3xl">
+            Draw a <span className="text-cyan-400 underline decoration-cyan-500/50 underline-offset-4">{assignment.displayName}</span>
+          </h1>
         </div>
 
-        {phase === 'drawing' && (
-          <div className="mt-5 grid grid-cols-3 gap-3">
+        {/* Canvas Surface with Peeking Robot Accent */}
+        <div className="relative mt-3.5 sm:mt-4">
+          {/* Peeking Robot Accent Badge */}
+          <div className="absolute -right-3 -top-10 z-20 hidden sm:block animate-float">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/sprites/robot-peek.png"
+              alt="Peeking Robot"
+              className="pixelated h-16 w-auto drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]"
+            />
+          </div>
+
+          <div className="pixel-box relative aspect-square w-full overflow-hidden p-1.5">
+            <div className="relative h-full w-full overflow-hidden rounded-lg bg-[#050b1d]">
+              <canvas
+                ref={canvasRef}
+                width={CANVAS_SIZE}
+                height={CANVAS_SIZE}
+                onPointerDown={start}
+                onPointerMove={move}
+                onPointerUp={end}
+                onPointerCancel={end}
+                className="canvas-surface h-full w-full"
+                aria-label={`Drawing canvas. Draw a ${assignment.displayName}.`}
+              />
+
+              {/* Analysing Radar State */}
+              {phase === 'analysing' && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#02050e]/92 backdrop-blur-sm animate-fade-in">
+                  <div className="relative flex items-center justify-center">
+                    <div className="h-14 w-14 animate-ping rounded-full border border-cyan-400 opacity-60" />
+                    <div className="absolute h-10 w-10 animate-spin rounded-full border-2 border-cyan-500/20 border-t-cyan-400" />
+                  </div>
+                  <p className="mt-4 font-pixel text-xs tracking-wider uppercase text-cyan-300 drop-shadow-[0_0_12px_rgba(0,240,255,0.8)]">
+                    AI IS SCANNING SKETCH...
+                  </p>
+                  <p className="mt-1 font-display text-xs text-slate-400">
+                    Extracting neural weights
+                  </p>
+                </div>
+              )}
+
+              {/* Revealed State with Top Predictions */}
+              {phase === 'revealed' && (
+                <div className="absolute inset-0 flex flex-col justify-center gap-3 bg-[#02050e]/95 px-6 animate-fade-in">
+                  <p className="text-center font-pixel text-[10px] uppercase tracking-widest text-slate-400">
+                    AI PREDICTION RESULTS
+                  </p>
+                  {predictions.map((p) => {
+                    const isTarget = p.label === assignment.classKey;
+                    return (
+                      <div
+                        key={p.label}
+                        className={`rounded-lg border p-2.5 transition-all ${
+                          isTarget
+                            ? 'border-emerald-500/60 bg-emerald-950/40 shadow-[0_0_16px_rgba(16,185,129,0.3)]'
+                            : 'border-slate-800 bg-slate-900/50'
+                        }`}
+                      >
+                        <div className="flex justify-between font-display text-sm">
+                          <span
+                            className={
+                              isTarget
+                                ? 'font-bold uppercase tracking-wider text-emerald-300'
+                                : 'text-slate-400'
+                            }
+                          >
+                            {p.label.toUpperCase()}
+                            {isTarget && ' ✓ TARGET MATCH'}
+                          </span>
+                          <span className="tabular font-pixel text-xs font-bold text-white">
+                            {Math.round(p.confidence * 100)}%
+                          </span>
+                        </div>
+                        <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-slate-800">
+                          <div
+                            className="h-full rounded-full transition-[width] duration-700 ease-out"
+                            style={{
+                              width: `${p.confidence * 100}%`,
+                              background: isTarget
+                                ? 'linear-gradient(90deg, #10b981, #34d399)'
+                                : 'linear-gradient(90deg, #0284c7, #38bdf8)',
+                              boxShadow: isTarget
+                                ? '0 0 10px rgba(16,185,129,0.8)'
+                                : '0 0 10px rgba(56,189,248,0.5)',
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {predictions.length === 0 && (
+                    <p className="text-center font-display text-sm text-slate-400">
+                      The AI couldn&apos;t identify this drawing in time.
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons (Tactile 3D Retro Arcade) */}
+      <div className="mt-4 sm:mt-6">
+        {phase === 'drawing' ? (
+          <div className="grid grid-cols-3 gap-2.5 sm:gap-3.5">
             <button
               onClick={() => setStrokes((s) => s.slice(0, -1))}
               disabled={strokes.length === 0}
-              className="min-h-[52px] rounded-xl border border-[var(--color-edge)] text-sm disabled:opacity-30"
+              className="pixel-btn pixel-btn-dark min-h-[56px] text-xs"
             >
-              Undo
+              UNDO
             </button>
             <button
               onClick={() => setStrokes([])}
               disabled={strokes.length === 0}
-              className="min-h-[52px] rounded-xl border border-[var(--color-edge)] text-sm disabled:opacity-30"
+              className="pixel-btn pixel-btn-dark min-h-[56px] text-xs"
             >
-              Clear
+              CLEAR
             </button>
             <button
               onClick={submit}
               disabled={strokes.length === 0}
-              className="min-h-[52px] rounded-xl bg-[var(--color-cyan)] text-sm font-semibold text-[var(--color-void)] disabled:opacity-30"
+              className="pixel-btn pixel-btn-cyan min-h-[56px] text-xs"
             >
-              Submit
+              SUBMIT
             </button>
+          </div>
+        ) : (
+          <div className="flex min-h-[56px] items-center justify-center rounded-xl border border-cyan-500/20 bg-cyan-950/30">
+            <span className="font-pixel text-xs tracking-wider uppercase text-cyan-300">
+              {phase === 'analysing' ? 'CLASSIFYING...' : 'ROUND COMPLETE!'}
+            </span>
           </div>
         )}
       </div>
-    </main>
+    </ArenaFrame>
   );
 }

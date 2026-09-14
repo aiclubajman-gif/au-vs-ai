@@ -1,0 +1,186 @@
+{
+  "char-boy-redcap": {
+    "width": 144,
+    "height": 160,
+    "png": "/sprites/char-boy-redcap.png",
+    "webp": "/sprites/char-boy-redcap.webp",
+    "source": "Homepage.png"
+  },
+  "char-boy-cheer": {
+    "width": 185,
+    "height": 207,
+    "png": "/sprites/char-boy-cheer.png",
+    "webp": "/sprites/char-boy-cheer.webp",
+    "source": "mround2.png"
+  },
+  "char-boy-puzzled": {
+    "width": 165,
+    "height": 235,
+    "png": "/sprites/char-boy-puzzled.png",
+    "webp": "/sprites/char-boy-puzzled.webp",
+    "source": "mround3.png"
+  },
+  "char-girl-strawhat": {
+    "width": 142,
+    "height": 137,
+    "png": "/sprites/char-girl-strawhat.png",
+    "webp": "/sprites/char-girl-strawhat.webp",
+    "source": "Homepage.png"
+  },
+  "char-boy-bluehoodie": {
+    "width": 137,
+    "height": 160,
+    "png": "/sprites/char-boy-bluehoodie.png",
+    "webp": "/sprites/char-boy-bluehoodie.webp",
+    "source": "Homepage.png"
+  },
+  "char-girl-cap": {
+    "width": 166,
+    "height": 253,
+    "png": "/sprites/char-girl-cap.png",
+    "webp": "/sprites/char-girl-cap.webp",
+    "source": "round3.png"
+  },
+  "char-humans-win": {
+    "width": 410,
+    "height": 330,
+    "png": "/sprites/char-humans-win.png"
+  },
+  "char-humans-defeat": {
+    "width": 340,
+    "height": 300,
+    "png": "/sprites/char-humans-defeat.png"
+  },
+  "robot-monitor-standing": {
+    "width": 130,
+    "height": 160,
+    "png": "/sprites/robot-monitor-standing.png",
+    "webp": "/sprites/robot-monitor-standing.webp",
+    "source": "Homepage.png"
+  },
+  "robot-monitor-waving": {
+    "width": 138,
+    "height": 158,
+    "png": "/sprites/robot-monitor-waving.png",
+    "webp": "/sprites/robot-monitor-waving.webp",
+    "source": "Homepage.png"
+  },
+  "robot-peek": {
+    "width": 175,
+    "height": 310,
+    "png": "/sprites/robot-peek.png",
+    "webp": "/sprites/robot-peek.webp",
+    "source": "mround2.png"
+  },
+  "robot-arms-crossed": {
+    "width": 191,
+    "height": 213,
+    "png": "/sprites/robot-arms-crossed.png",
+    "webp": "/sprites/robot-arms-crossed.webp",
+    "source": "mround3.png"
+  },
+  "robot-thinking": {
+    "width": 220,
+    "height": 300,
+    "png": "/sprites/robot-thinking.png",
+    "webp": "/sprites/robot-thinking.webp",
+    "source": "round3.png"
+  },
+  "robot-cheer-arms-up": {
+    "width": 270,
+    "height": 245,
+    "png": "/sprites/robot-cheer-arms-up.png",
+    "webp": "/sprites/robot-cheer-arms-up.webp",
+    "source": "aiwin.png"
+  },
+  "robot-dancing-notes": {
+    "width": 270,
+    "height": 272,
+    "png": "/sprites/robot-dancing-notes.png",
+    "webp": "/sprites/robot-dancing-notes.webp",
+    "source": "aiwin.png"
+  },
+  "robot-sparkler": {
+    "width": 270,
+    "height": 305,
+    "png": "/sprites/robot-sparkler.png",
+    "webp": "/sprites/robot-sparkler.webp",
+    "source": "aiwin.png"
+  },
+  "robot-party-column": {
+    "width": 310,
+    "height": 845,
+    "png": "/sprites/robot-party-column.png"
+  },
+  "mascot-penguins-win": {
+    "width": 420,
+    "height": 450,
+    "png": "/sprites/mascot-penguins-win.png",
+    "webp": "/sprites/mascot-penguins-win.webp",
+    "source": "humanwin.png"
+  },
+  "mascot-shrug-left": {
+    "width": 245,
+    "height": 360,
+    "png": "/sprites/mascot-shrug-left.png",
+    "webp": "/sprites/mascot-shrug-left.webp",
+    "source": "aiwin.png"
+  },
+  "mascot-shrug-right": {
+    "width": 250,
+    "height": 360,
+    "png": "/sprites/mascot-shrug-right.png",
+    "webp": "/sprites/mascot-shrug-right.webp",
+    "source": "aiwin.png"
+  },
+  "badge-crown-gold": {
+    "width": 110,
+    "height": 71,
+    "png": "/sprites/badge-crown-gold.png",
+    "webp": "/sprites/badge-crown-gold.webp",
+    "source": "mhumanWin.png"
+  },
+  "badge-laurel-left": {
+    "width": 93,
+    "height": 163,
+    "png": "/sprites/badge-laurel-left.png",
+    "webp": "/sprites/badge-laurel-left.webp",
+    "source": "humanwin.png"
+  },
+  "badge-laurel-right": {
+    "width": 105,
+    "height": 166,
+    "png": "/sprites/badge-laurel-right.png",
+    "webp": "/sprites/badge-laurel-right.webp",
+    "source": "humanwin.png"
+  },
+  "badge-trophy-rank1": {
+    "width": 358,
+    "height": 83,
+    "png": "/sprites/badge-trophy-rank1.png",
+    "webp": "/sprites/badge-trophy-rank1.webp",
+    "source": "humanwin.png"
+  },
+  "badge-beat-percentile": {
+    "width": 370,
+    "height": 86,
+    "png": "/sprites/badge-beat-percentile.png",
+    "webp": "/sprites/badge-beat-percentile.webp",
+    "source": "humanwin.png"
+  },
+  "flank-meadow-left": {
+    "width": 650,
+    "height": 941,
+    "png": "/sprites/flank-meadow-left.png"
+  },
+  "flank-circuit-right": {
+    "width": 622,
+    "height": 941,
+    "png": "/sprites/flank-circuit-right.png"
+  },
+  "bg-mobile-circuit": {
+    "width": 940,
+    "height": 1672,
+    "png": "/sprites/bg-mobile-circuit.png"
+  }
+}

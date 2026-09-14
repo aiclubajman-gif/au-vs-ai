@@ -1,0 +1,257 @@
+================================================================================
+AU vs AI — LLM FRONTEND DESIGN & CODE CONTRACT SPECIFICATION
+================================================================================
+
+Use this document as the master prompt and technical constraint guide when 
+asking another LLM to design or redesign any part of the "AU vs AI" web game.
+
+--------------------------------------------------------------------------------
+SECTION 1: MASTER SYSTEM PROMPT FOR THE EXTERNAL LLM
+--------------------------------------------------------------------------------
+
+Copy and paste this prompt directly into your design LLM:
+
+"""
+You are designing the UI/UX for a fast-paced booth competition web game called 
+"AU vs AI" (Next.js 16 + React 19 + Tailwind CSS + TypeScript).
+
+Your goal is to create sleek, high-energy, anime/cyberpunk-styled visual components 
+with rich animations, micro-interactions, and flawless responsiveness.
+
+CRITICAL ARCHITECTURE RULES (DO NOT BREAK):
+1. PRESERVE ALL COMPONENT PROPS & FUNCTION SIGNATURES:
+   You may freely alter markup, layout, styling, and animations. However, component 
+   props, callback names, state machine triggers, and data structures must remain 
+   100% identical to the contract provided below so that backend connectivity is preserved.
+
+2. PRESERVE THE GAME FLOW STATE MACHINE:
+   The game advances sequentially through these steps:
+   'intro1' -> 'round1' -> 'outro1' -> 'intro2' -> 'round2' -> 'outro2' -> 'intro3' -> 'round3' -> 'submitting' -> 'result'
+
+3. NO LIVE RIGHT/WRONG FEEDBACK DURING GAMEPLAY:
+   Round 1 and Round 3 must NEVER reveal whether an individual answer was correct or wrong. 
+   Only display a neutral "Answer Locked" state. Total score and win/loss verdicts are 
+   exclusively revealed at the end on the Result screen. This prevents players in the booth 
+   queue from leaking answers.
+
+4. AUTO-SUBMIT ON TIMEOUT:
+   When countdown timers expire (reach 0), they MUST automatically fire the submit callback 
+   so a distracted player cannot hold up the booth line.
+
+5. ZERO EXTERNAL RASTER ASSETS:
+   No <img> tags fetching external files, no @import webfonts, no large jpgs. 
+   All visual effects must be achieved with CSS, inline SVGs, or Canvas/WebGL.
+
+6. TARGET VIEWPORTS:
+   - Primary View: Mobile phone portrait (390×844px without vertical scrolling, min-h-dvh).
+   - Secondary View: 16:9 Booth TV arena (1920×1080px).
+"""
+
+--------------------------------------------------------------------------------
+SECTION 2: COMPONENT CONTRACTS & CODE SNIPPETS
+--------------------------------------------------------------------------------
+
+1. ROUND 1 — REAL OR AI? (src/components/game/Round1.tsx)
+--------------------------------------------------------------------------------
+Gameplay: 3 photographic images shown one after another. 8 seconds per image.
+Player taps "Real" or "AI Generated".
+
+Data Interfaces:
+  export interface Round1Slot {
+    slot: number;          // 1, 2, or 3
+    imageId: string;       // ID of the image
+    storagePath: string;   // Image URL/path (e.g. "/dataset/real/xxx.webp")
+    answered: boolean;     // Whether already answered
+  }
+
+  export interface Round1Props {
+    attemptId: string;
+    slots: Round1Slot[];   // Exactly 3 slots
+    msPerImage: number;    // Usually 8000ms (8s)
+    onComplete: () => void;// Callback fired after 3rd image is answered
+  }
+
+API Submission Payload:
+  Endpoint: POST /api/round1/answer
+  Body (JSON):
+  {
+    "attemptId": string,
+    "slot": number,                          // 1, 2, or 3
+    "selectedAnswer": "real" | "ai_generated", // exactly these string literals
+    "responseTimeMs": number,                // elapsed time in milliseconds
+    "idempotencyKey": string                 // crypto.randomUUID()
+  }
+
+Design Guidance:
+- Keep the photo square (aspect-square) with rounded corners and subtle glowing border.
+- Show "Image N of 3" and countdown seconds ("8s") at the top with a progress bar.
+- Two large, thumb-friendly buttons at the bottom ("Real" vs "AI Generated").
+- When clicked, show a brief "Answer Locked" overlay (~600ms) before transitioning to the next image.
+
+
+2. ROUND 2 — DRAW VS AI (src/components/game/Round2.tsx)
+--------------------------------------------------------------------------------
+Gameplay: Player is given a drawing prompt (e.g., "Apple", "Car", "Cat").
+They draw on a 2D touch canvas within 20 seconds. Once submitted, client-side
+TensorFlow.js classifies the drawing and reveals the AI's top guesses.
+
+Data Interfaces:
+  export interface Round2Assignment {
+    classKey: string;      // Machine class key (e.g., "apple", "cat", "car", "airplane")
+    displayName: string;   // Human-readable (e.g., "Apple", "Cat", "Car")
+    submitted: boolean;
+  }
+
+  export interface Round2Props {
+    attemptId: string;
+    assignment: Round2Assignment;
+    drawMs: number;         // Usually 20000ms (20s)
+    onComplete: () => void; // Triggered after the AI prediction reveal animation
+  }
+
+Canvas Drawing Requirements:
+- Strokes are recorded as points: type Stroke = { x: number; y: number }[]
+- Must support touch-action: none so swiping draws instead of scrolling the page.
+- Provides "Clear" and "Undo" controls.
+- On submit, strokes are normalized to a 28x28 grayscale Float32Array (784 values between 0.0 and 1.0).
+- Inference call: const preds = await getClassifier().predict(bitmap28);
+- Visual Phases:
+    1. 'drawing'   -> interactive drawing canvas with countdown
+    2. 'analysing' -> brief pulse/radar animation ("AI analysing sketch...")
+    3. 'revealed'  -> horizontal animated confidence bars showing AI's top 3 predictions
+
+
+3. ROUND 3 — THE AI KNOWLEDGE GUESSER (src/components/game/Round3.tsx)
+--------------------------------------------------------------------------------
+Gameplay: A numerical trivia prompt with a slider. Player drags slider to their guess.
+
+Data Interfaces:
+  export interface Round3Assignment {
+    prompt: string;        // Question text (e.g. "What % of internet traffic is bots?")
+    minValue: number;      // e.g. 0
+    maxValue: number;      // e.g. 100
+    step: number;          // e.g. 1
+    unit: string | null;   // e.g. "%"
+    answered: boolean;
+  }
+
+  export interface Round3Props {
+    attemptId: string;
+    assignment: Round3Assignment;
+    durationMs: number;     // Usually 8000ms (8s)
+    onComplete: () => void; // Fired after locking answer or timeout
+  }
+
+API Submission Payload:
+  Endpoint: POST /api/round3/answer
+  Body (JSON):
+  {
+    "attemptId": string,
+    "guess": number
+  }
+
+Design Guidance:
+- Gigantic, glowing numerical display for current slider value (e.g., text-6xl font-bold).
+- Custom slider track with an ergonomic, high-contrast draggable thumb.
+- Auto-locks and submits when timer hits 0s.
+
+
+4. TRANSITIONS & INTERSTITIALS (src/components/game/Interstitial.tsx)
+--------------------------------------------------------------------------------
+Gameplay: High-impact 3-second countdown screen before each round.
+
+Data Interfaces:
+  export interface RoundIntro {
+    round: number;
+    title: string;
+    tagline: string;
+    rules: string[];
+  }
+
+  export interface InterstitialProps {
+    intro?: RoundIntro;
+    outro?: { round: number; headline: string; subhead: string };
+    timerValue?: number;    // Countdown in seconds (usually 3)
+    onDone: () => void;     // Called when countdown reaches 0 or user taps start
+  }
+
+
+5. RESULTS & LEADERBOARD (src/components/game/Result.tsx)
+--------------------------------------------------------------------------------
+Gameplay: Displays the player's final score, victory/defeat banner, ranking, 
+and quick replay button.
+
+Data Interfaces:
+  export interface PublicAttemptResult {
+    attemptId: string;
+    totalScore: number;        // Out of 1000 (e.g., 840)
+    humanWin: boolean;         // true = beat AI threshold, false = AI won
+    rank: number;              // Current leaderboard rank (#1, #2...)
+    percentileBeaten: number;  // e.g., 94%
+    totalPlayers: number;      // Total contestants so far
+  }
+
+  export interface ResultProps {
+    result: PublicAttemptResult;
+    returning?: boolean;
+  }
+
+Design Guidance:
+- Animated number count-up for total score (respects prefers-reduced-motion).
+- Bold victory/defeat status ("HUMAN WIN" in gold/green vs "AI WIN" in cyan/red).
+- Two card pills showing Rank (#1) and Percentile Beaten ("Beat 95% of players").
+- Prominent "Play Again" button that reloads /play for rapid testing.
+
+
+6. LIVE DASHBOARD CENTERPIECE (src/components/dashboard/ClashBar.tsx)
+--------------------------------------------------------------------------------
+Gameplay: The big-screen 16:9 TV arena centerpiece showing the live score tug-of-war.
+
+Data Interfaces:
+  export interface ClashStats {
+    humanTotal: number;       // e.g., 24150
+    aiTotal: number;          // e.g., 19800
+    humanPercentage: number;  // 0 to 100 (e.g., 55)
+    aiPercentage: number;     // 0 to 100 (e.g., 45)
+  }
+
+  export interface ChallengerRow {
+    rank: number;
+    displayName: string;
+    maskedIdSuffix: string;   // e.g., "••••2084"
+    totalScore: number;
+    humanWin: boolean;
+  }
+
+Design Guidance:
+- Left chevron bar: Human (Gold/Orange gradient, points right).
+- Right chevron bar: AI (Cyan/Blue gradient, points left).
+- Center seam: Procedural WebGL starburst with dynamic spark particles.
+- Flanks: Futuristic circuit board background (SVG pattern) with human action silhouettes on the left and AI microchip pins on the right.
+
+--------------------------------------------------------------------------------
+SECTION 3: CRUCIAL TECHNICAL & UX PITFALLS TO AVOID
+--------------------------------------------------------------------------------
+
+1. JITTERING NUMBERS:
+   Always use font-variant-numeric: tabular-nums (Tailwind: `tabular-nums`) on all 
+   timers, percentages, and scores so numbers do not shift width every second.
+
+2. MOBILE VIEWPORT OVERFLOW:
+   Use `min-h-dvh` (Dynamic Viewport Height) instead of `100vh` to prevent mobile 
+   browser address bars (Safari/Chrome) from pushing interactive buttons off-screen.
+
+3. TOUCH TARGET SIZING:
+   Ensure all buttons, slider thumbs, and drawing canvases have a minimum touch 
+   target of 48×48px with generous spacing for quick booth play.
+
+4. COLOR PALETTE TOKENS:
+   Maintain consistent color identity across all rounds:
+   - Human Team: Gold (#ffbe0b), Intense Orange (#fb5607), Amber Glow (#ffd9a0)
+   - AI Team: Cyan (#00f0ff), Electric Blue (#0072ff), Soft Core (#a0b8ff)
+   - Void / Backgrounds: Deep Void Navy (#02050e), Card Navy (#050b1d), Borders (#1b2649)
+
+5. OFFLINE RESILIENCE:
+   All client API requests should include `.catch(() => {})` so a spotty Wi-Fi 
+   connection does not unmount or freeze the game.
+================================================================================
