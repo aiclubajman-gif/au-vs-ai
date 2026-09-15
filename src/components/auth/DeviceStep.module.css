@@ -1,0 +1,269 @@
+/* Page 4 — Ready / device check. Units: `--u` from AuthShell. */
+
+/* --- Device check → Start ---------------------------------------------------- */
+
+.phases {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  /* Tucked slightly into the card's top padding, as in the mockup. */
+  margin: calc(var(--u) * -14) 0 max(6px, calc(var(--u) * 16));
+  padding: 0;
+  list-style: none;
+}
+
+.phase {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: max(4px, calc(var(--u) * 10));
+  width: max(84px, calc(var(--u) * 150));
+}
+
+.phaseRing {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: max(24px, calc(var(--u) * 46));
+  height: max(24px, calc(var(--u) * 46));
+  border: max(1.5px, calc(var(--u) * 3)) solid rgba(170, 176, 245, 0.85);
+  border-radius: 50%;
+  font-size: max(12px, calc(var(--u) * 22));
+  line-height: 1;
+  color: #b9befa;
+}
+
+.phaseLabel {
+  font-size: max(10px, calc(var(--u) * 17));
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #a9aef0;
+}
+
+.phase[data-state='current'] .phaseRing {
+  border-color: #6fdcff;
+  background: radial-gradient(circle, rgba(18, 88, 190, 0.55) 0%, rgba(4, 18, 52, 0.9) 70%);
+  box-shadow: 0 0 calc(var(--u) * 12) rgba(30, 160, 255, 0.85);
+  color: #ffffff;
+}
+
+.phase[data-state='current'] .phaseLabel,
+.phase[data-state='done'] .phaseLabel {
+  font-weight: 600;
+  color: #e8f1ff;
+}
+
+.phase[data-state='done'] .phaseRing {
+  border-color: #6fdcff;
+  color: #9ff0ff;
+}
+
+.phase[data-state='failed'] .phaseRing {
+  border-color: #f87171;
+  color: #fecaca;
+}
+
+.phase[data-state='failed'] .phaseLabel {
+  color: #fca5a5;
+}
+
+.phaseLine {
+  flex: none;
+  width: max(40px, calc(var(--u) * 92));
+  height: max(1px, calc(var(--u) * 2));
+  /* Reaches from ring edge to ring edge across the label columns. */
+  margin: calc(max(24px, calc(var(--u) * 46)) / 2) calc((max(24px, calc(var(--u) * 46)) - max(84px, calc(var(--u) * 150))) / 2 + 8px) 0;
+  background: rgba(132, 140, 232, 0.6);
+}
+
+.phaseLine[data-lit] {
+  background: rgba(111, 220, 255, 0.85);
+}
+
+/* --- Title ------------------------------------------------------------------- */
+
+.title {
+  font-size: min(calc(var(--u) * 58), 11cqi);
+}
+
+.titleLine {
+  display: block;
+}
+
+/* --- Progress ring ----------------------------------------------------------- */
+
+.ring {
+  position: relative;
+  width: max(76px, calc(var(--u) * 150));
+  aspect-ratio: 1;
+  max-width: 100%;
+  margin: max(8px, calc(var(--u) * 18)) auto 0;
+}
+
+.ringSvg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 0 calc(var(--u) * 10) rgba(40, 170, 255, 0.75));
+}
+
+.ringTrack,
+.ringFill,
+.ringSweep circle {
+  fill: none;
+  stroke-width: 7;
+}
+
+.ringTrack {
+  stroke: rgba(120, 140, 200, 0.28);
+}
+
+.ringFill {
+  stroke: #2fc6ff;
+  stroke-linecap: round;
+  transition: stroke-dasharray 500ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* Indeterminate highlight travelling round the track while a stage runs. */
+.ringSweep {
+  transform-origin: 50px 50px;
+  animation: sweep 1.4s linear infinite;
+}
+
+.ringSweep circle {
+  stroke: #bff4ff;
+  stroke-linecap: round;
+  opacity: 0.85;
+}
+
+@keyframes sweep {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ringCenter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: max(30px, calc(var(--u) * 64));
+  color: #ffffff;
+}
+
+.ringCount {
+  font-family: var(--condensed);
+  font-size: max(21px, calc(var(--u) * 44));
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.ringCaption {
+  margin-top: 2px;
+  font-size: max(10px, calc(var(--u) * 17));
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a9b6ef;
+}
+
+/* --- Stage list -------------------------------------------------------------- */
+
+.stages {
+  margin: max(10px, calc(var(--u) * 20)) 0 0;
+  padding: max(2px, calc(var(--u) * 4)) max(12px, calc(var(--u) * 30));
+  list-style: none;
+  text-align: left;
+}
+
+.stage {
+  display: flex;
+  align-items: center;
+  gap: max(10px, calc(var(--u) * 28));
+  min-height: max(31px, calc(var(--u) * 54));
+  font-size: max(14px, calc(var(--u) * 26));
+  line-height: 1.25;
+  color: #dfe7ff;
+}
+
+.stage + .stage {
+  border-top: 1px solid rgba(120, 150, 230, 0.22);
+}
+
+.mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: max(20px, calc(var(--u) * 40));
+  height: max(20px, calc(var(--u) * 40));
+  font-size: max(15px, calc(var(--u) * 30));
+  color: #34d399;
+}
+
+.stage[data-state='active'] {
+  color: #ffffff;
+}
+
+.stage[data-state='active'] .mark {
+  color: #5fd4ff;
+}
+
+.stage[data-state='pending'] {
+  color: #8d95c9;
+}
+
+.stage[data-state='pending'] .mark {
+  color: rgba(140, 150, 210, 0.55);
+}
+
+.stage[data-state='failed'] {
+  color: #fecaca;
+}
+
+.stage[data-state='failed'] .mark {
+  color: #f87171;
+}
+
+/* --- Footer ------------------------------------------------------------------ */
+
+.footnote {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: max(8px, calc(var(--u) * 18)) 0 0;
+  font-size: max(10.5px, calc(var(--u) * 18));
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #a9b3e6;
+}
+
+.footnote::before,
+.footnote::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(140, 160, 230, 0.35);
+}
+
+.safe {
+  margin: max(12px, calc(var(--u) * 24)) 0 0;
+  font-size: max(13px, calc(var(--u) * 24));
+  line-height: 1.35;
+  color: var(--ink-soft);
+  text-wrap: balance;
+}
+
+.safe strong {
+  display: block;
+  font-weight: 600;
+  color: #6ee7b7;
+}
+
+.retry {
+  margin-top: max(12px, calc(var(--u) * 24));
+}

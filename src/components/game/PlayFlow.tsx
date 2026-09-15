@@ -2,9 +2,12 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { preload } from 'react-dom';
-import { OtpInput } from '@/components/game/OtpInput';
 import { EmailStep, EMAIL_PLATE_SRC } from '@/components/auth/EmailStep';
-import { Screen, Title, Hint, Button, ErrorBanner, Spacer } from '@/components/ui';
+import { AUTH_PLATE_SRC } from '@/components/auth/AuthShell';
+import { OtpStep } from '@/components/auth/OtpStep';
+import { ProfileStep } from '@/components/auth/ProfileStep';
+import { DeviceStep, type DeviceStage } from '@/components/auth/DeviceStep';
+import { Screen, Title, Hint, Button } from '@/components/ui';
 import { resolveClassifier } from '@/lib/ml/classifier';
 import { composeAuEmail } from '@/lib/client/email';
 import { Interstitial, ROUND_INTROS, ROUND_OUTROS } from '@/components/game/Interstitial';
@@ -116,6 +119,8 @@ export function PlayFlow({
   // Most visitors land on the email screen, so start fetching its artwork while
   // the session check runs rather than after it.
   preload(EMAIL_PLATE_SRC, { as: 'image', fetchPriority: 'high' });
+  // OTP, Profile and Ready share one plate; have it cached before the code arrives.
+  preload(AUTH_PLATE_SRC, { as: 'image', fetchPriority: 'low' });
 
   // Synchronous guard shared by the button, the Enter key and "Resend", so
   // repeated presses cannot fire overlapping sends before `busy` re-renders.
@@ -196,6 +201,8 @@ export function PlayFlow({
   // cannot run it is sent to a booth tablet with their attempt intact.
   // ------------------------------------------------------------------
   const [deviceState, setDeviceState] = useState<'checking' | 'ok' | 'failed'>('checking');
+  // Which milestone the check has reached, for the progress display only.
+  const [deviceStage, setDeviceStage] = useState<DeviceStage>('model');
 
   useEffect(() => {
     if (step !== 'device') return;
@@ -203,8 +210,10 @@ export function PlayFlow({
 
     (async () => {
       setDeviceState('checking');
+      setDeviceStage('model');
       try {
         const classifier = await resolveClassifier();
+        if (!cancelled) setDeviceStage('selftest');
         const passed = await classifier.selfTest();
         if (cancelled) return;
         setDeviceState(passed ? 'ok' : 'failed');
@@ -212,6 +221,7 @@ export function PlayFlow({
         // §8 — the attempt is only created once the model has proven it runs
         // on THIS device. A student on an unsupported phone keeps their attempt.
         if (passed) {
+          setDeviceStage('start');
           const res = await post('/api/attempt/start', { modelReady: true });
           if (cancelled) return;
 
@@ -241,6 +251,7 @@ export function PlayFlow({
           // A fresh game gets the Round 1 explainer. A resuming student goes
           // straight back to their round — they have already read it.
           const landing = data.resumed ? next : 'intro1';
+          setDeviceStage('done');
           setTimeout(() => {
             if (!cancelled) setStep(landing as Step);
           }, 500);
@@ -280,142 +291,46 @@ export function PlayFlow({
 
   if (step === 'otp') {
     return (
-      <Screen>
-        <Title>Enter your code</Title>
-        <Hint>Sent to {email}.</Hint>
-
-        <OtpInput value={code} onChange={setCode} onComplete={verifyCode} disabled={busy} />
-        <ErrorBanner message={error?.message ?? ''} refCode={error?.ref} />
-
-        {/*
-          Real finding from testing against an Ajman inbox: codes land in
-          Microsoft 365 QUARANTINE, which is a separate place from the Junk
-          folder and is not visible in any mail client. Students will never
-          find it unless told exactly where to look, so the instructions are
-          on screen rather than buried in a volunteer's memory.
-        */}
-        <details className="mt-6 rounded-lg border border-[var(--color-edge)] bg-[var(--color-navy)] px-4 py-3">
-          <summary className="cursor-pointer text-sm text-[var(--color-cyan)]">
-            Code hasn&apos;t arrived?
-          </summary>
-          <ol className="mt-3 space-y-2 text-sm leading-relaxed text-[var(--color-muted)]">
-            <li>1. Check your Junk folder.</li>
-            <li>
-              2. Open your AU email on the web and check Quarantine. It&apos;s separate
-              from Junk and your phone app won&apos;t show it.
-            </li>
-            <li>3. Search your mail for &ldquo;AU vs AI&rdquo;.</li>
-            <li>4. Still nothing? Ask an AIDA team member — we can sign you in.</li>
-          </ol>
-        </details>
-
-        <Spacer />
-
-        <button
-          onClick={sendCode}
-          disabled={cooldown > 0 || busy}
-          className="mb-4 w-full py-3 text-sm text-[var(--color-cyan)] disabled:text-[var(--color-muted)]"
-        >
-          {cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend code'}
-        </button>
-
-        <button
-          onClick={() => {
-            setStep('email');
-            setCode('');
-            setError(null);
-          }}
-          className="w-full py-2 text-sm text-[var(--color-muted)]"
-        >
-          Use a different email
-        </button>
-      </Screen>
+      <OtpStep
+        email={email}
+        code={code}
+        onCodeChange={setCode}
+        onComplete={verifyCode}
+        onResend={sendCode}
+        onBack={() => {
+          setStep('email');
+          setCode('');
+          setError(null);
+        }}
+        cooldown={cooldown}
+        busy={busy}
+        error={error}
+      />
     );
   }
 
   if (step === 'profile') {
     return (
-      <Screen>
-        <Title>Your name</Title>
-        <Hint>
-          This is what appears on the leaderboard. Your email stays private.
-        </Hint>
-
-        <input
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          type="text"
-          autoComplete="name"
-          placeholder="First and last name"
-          aria-label="Your full name"
-          className="mt-8 w-full rounded-xl border border-[var(--color-edge)] bg-[var(--color-navy)] px-4 py-4 text-[var(--color-ink)] placeholder:text-[var(--color-muted)]/60 focus:border-[var(--color-cyan)]"
-        />
-
-        {colleges.length > 0 && (
-          <select
-            value={collegeId}
-            onChange={(e) => setCollegeId(e.target.value)}
-            aria-label="Your college"
-            className="mt-3 w-full rounded-xl border border-[var(--color-edge)] bg-[var(--color-navy)] px-4 py-4 text-[var(--color-ink)] focus:border-[var(--color-cyan)]"
-          >
-            <option value="">College (optional)</option>
-            {colleges.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        )}
-
-        <ErrorBanner message={error?.message ?? ''} refCode={error?.ref} />
-        <Spacer />
-        <Button onClick={saveProfile} disabled={fullName.trim().length < 2} busy={busy}>
-          Continue
-        </Button>
-      </Screen>
+      <ProfileStep
+        fullName={fullName}
+        onFullNameChange={setFullName}
+        collegeId={collegeId}
+        onCollegeIdChange={setCollegeId}
+        colleges={colleges}
+        onSubmit={saveProfile}
+        busy={busy}
+        error={error}
+      />
     );
   }
 
   if (step === 'device') {
     return (
-      <Screen>
-        <div className="flex flex-1 flex-col items-center justify-center text-center">
-          {deviceState === 'checking' && (
-            <>
-              <div className="h-12 w-12 animate-spin rounded-full border-2 border-[var(--color-edge)] border-t-[var(--color-cyan)]" />
-              <p className="mt-6 text-sm text-[var(--color-muted)]">
-                Getting the drawing round ready…
-              </p>
-            </>
-          )}
-
-          {deviceState === 'ok' && (
-            <p className="text-lg font-semibold text-[var(--color-win)]">Ready</p>
-          )}
-
-          {deviceState === 'failed' && (
-            <>
-              <Title>This phone can&apos;t run the drawing round</Title>
-              <Hint>
-                Round 2 needs features your browser doesn&apos;t support. Ask an AIDA team
-                member for a booth tablet.
-              </Hint>
-              <Hint>
-                <strong className="text-[var(--color-ink)]">
-                  Your attempt has not been used.
-                </strong>{' '}
-                You can still play on another device.
-              </Hint>
-
-              <div className="mt-8 w-full">
-                <Button variant="ghost" onClick={() => window.location.reload()}>
-                  Try again
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
-      </Screen>
+      <DeviceStep
+        state={deviceState}
+        stage={deviceStage}
+        onRetry={() => window.location.reload()}
+      />
     );
   }
 

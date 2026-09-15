@@ -34,12 +34,26 @@ export function AuthStepper({ current, className }: { current: AuthStepKey; clas
             aria-current={state === 'current' ? 'step' : undefined}
           >
             <span className={styles.ring} aria-hidden="true">
-              {i + 1}
+              {state === 'done' ? <CheckGlyph /> : i + 1}
             </span>
             <span className={styles.label}>{step.label}</span>
           </li>
         );
       })}
     </ol>
+  );
+}
+
+function CheckGlyph() {
+  return (
+    <svg className={styles.check} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="m5.5 12.5 4 4 9-9.5"
+        stroke="currentColor"
+        strokeWidth="2.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

@@ -78,8 +78,17 @@
 
 .step[data-state='done'] .ring {
   border-color: #6fdcff;
-  background: rgba(20, 110, 220, 0.55);
-  color: #ffffff;
+  background: rgba(8, 30, 70, 0.6);
+  color: #9ff0ff;
+}
+
+.step[data-state='done'] .label {
+  color: #cfdcff;
+}
+
+.check {
+  width: 62%;
+  height: 62%;
 }
 
 .step[data-state='done']::after {

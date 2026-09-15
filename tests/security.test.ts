@@ -377,7 +377,10 @@ describe('Blocked-start messaging', () => {
   });
 
   it('tells the student their attempt is intact when a device fails', () => {
-    expect(src).toMatch(/attempt has not been used/i);
+    // The device screen moved into its own component in the auth redesign.
+    expect(src).toMatch(/<DeviceStep[\s\S]*?state=\{deviceState\}[\s\S]*?\/>/);
+    const device = readFileSync(join(process.cwd(), 'src/components/auth/DeviceStep.tsx'), 'utf8');
+    expect(device).toMatch(/failed \? \([\s\S]*attempt has not been used/i);
   });
 
   it('shows a reference code only for staff-actionable failures', () => {

@@ -1,0 +1,156 @@
+/* Page 3 — Profile. Units: `--u` from AuthShell. */
+
+.form {
+  margin-top: max(14px, calc(var(--u) * 30));
+  text-align: left;
+}
+
+/* Outer glass frame with an icon column; the control sits inside it. */
+.field {
+  display: flex;
+  align-items: center;
+  gap: max(10px, calc(var(--u) * 22));
+  padding: max(8px, calc(var(--u) * 16)) max(10px, calc(var(--u) * 18)) max(10px, calc(var(--u) * 16))
+    max(12px, calc(var(--u) * 24));
+  border-radius: max(12px, calc(var(--u) * 20));
+  background: rgba(4, 10, 34, 0.55);
+  box-shadow:
+    inset 0 0 0 max(1px, calc(var(--u) * 2.5)) rgba(90, 170, 255, 0.75),
+    0 0 calc(var(--u) * 18) rgba(40, 140, 255, 0.3);
+  transition: box-shadow 160ms ease;
+}
+
+.field + .field,
+.field + div + .field {
+  margin-top: max(10px, calc(var(--u) * 24));
+}
+
+.field:focus-within {
+  box-shadow:
+    inset 0 0 0 max(1.5px, calc(var(--u) * 3)) rgba(95, 212, 255, 0.95),
+    0 0 calc(var(--u) * 26) rgba(40, 170, 255, 0.55);
+}
+
+.field[data-invalid] {
+  box-shadow: inset 0 0 0 max(1.5px, calc(var(--u) * 3)) rgba(251, 191, 36, 0.85);
+}
+
+.fieldIcon {
+  flex: none;
+  width: max(22px, calc(var(--u) * 46));
+  height: max(22px, calc(var(--u) * 46));
+  color: #d8e4ff;
+}
+
+.fieldBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.label {
+  display: block;
+  margin: 0 0 max(4px, calc(var(--u) * 10)) 2px;
+  font-size: max(11px, calc(var(--u) * 20));
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: #c9d2f5;
+}
+
+.optional {
+  letter-spacing: 0.06em;
+}
+
+.control {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  height: max(40px, calc(var(--u) * 58));
+  padding: 0 max(10px, calc(var(--u) * 16));
+  border: max(1px, calc(var(--u) * 2)) solid rgba(110, 130, 220, 0.55);
+  border-radius: max(8px, calc(var(--u) * 12));
+  outline: none;
+  background: rgba(2, 6, 26, 0.85);
+  color: var(--ink);
+  font-size: 16px; /* 16px or iOS zooms on focus (§36) */
+  caret-color: var(--cyan);
+}
+
+.control::placeholder {
+  color: #9ba1e8;
+  opacity: 1;
+}
+
+.control:focus {
+  border-color: rgba(120, 220, 255, 0.8);
+}
+
+.control:read-only,
+.control:disabled {
+  color: var(--ink-soft);
+}
+
+.selectWrap {
+  position: relative;
+}
+
+.select {
+  padding-right: max(36px, calc(var(--u) * 64));
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+
+.select[data-empty] {
+  color: #b7bdf0;
+}
+
+.select option {
+  color: #0a0f1e;
+  background: #ffffff;
+}
+
+.chevron {
+  position: absolute;
+  top: 50%;
+  right: max(10px, calc(var(--u) * 18));
+  width: max(18px, calc(var(--u) * 34));
+  height: max(18px, calc(var(--u) * 34));
+  translate: 0 -50%;
+  color: #e6ecff;
+  pointer-events: none;
+}
+
+.submit {
+  margin-top: max(16px, calc(var(--u) * 32));
+}
+
+/* --- Privacy line ------------------------------------------------------------ */
+
+.privacy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: max(8px, calc(var(--u) * 18));
+  margin: max(12px, calc(var(--u) * 26)) 0 0;
+  padding-top: max(10px, calc(var(--u) * 20));
+  border-top: 1px solid rgba(120, 150, 230, 0.28);
+  font-size: max(11.5px, calc(var(--u) * 21));
+  line-height: 1.32;
+  color: #b9c3f2;
+}
+
+.privacy span {
+  /* About one balanced two-line width, so the lock stays beside the text. */
+  max-width: 19em;
+  text-align: left;
+  text-wrap: balance;
+}
+
+.privacyIcon {
+  flex: none;
+  width: max(14px, calc(var(--u) * 30));
+  height: max(14px, calc(var(--u) * 30));
+  color: var(--cyan);
+}

@@ -18,11 +18,16 @@ export function OtpInput({
   onChange,
   onComplete,
   disabled,
+  groupClassName = 'mt-8 flex justify-between gap-2',
+  inputClassName = 'tabular h-16 w-full rounded-xl border border-[var(--color-edge)] bg-[var(--color-navy)] text-center text-2xl font-bold text-[var(--color-ink)] transition-colors focus:border-[var(--color-cyan)] disabled:opacity-40',
 }: {
   value: string;
   onChange: (next: string) => void;
   onComplete: (code: string) => void;
   disabled?: boolean;
+  /** Replace the default look; behaviour is unchanged. */
+  groupClassName?: string;
+  inputClassName?: string;
 }) {
   const refs = useRef<(HTMLInputElement | null)[]>([]);
   const [submitted, setSubmitted] = useState(false);
@@ -40,6 +45,14 @@ export function OtpInput({
   useEffect(() => {
     refs.current[0]?.focus();
   }, []);
+
+  // A rejected code is cleared while the boxes are disabled, which drops focus.
+  // Put the cursor back in the first box so the student can simply retype.
+  const wasDisabled = useRef(disabled);
+  useEffect(() => {
+    if (wasDisabled.current && !disabled && value === '') refs.current[0]?.focus();
+    wasDisabled.current = disabled;
+  }, [disabled, value]);
 
   function setDigit(index: number, digit: string) {
     const chars = value.padEnd(6, ' ').split('');
@@ -87,7 +100,7 @@ export function OtpInput({
   }
 
   return (
-    <div className="mt-8 flex justify-between gap-2" role="group" aria-label="Verification code">
+    <div className={groupClassName} role="group" aria-label="Verification code">
       {digits.map((digit, i) => (
         <input
           key={i}
@@ -105,8 +118,11 @@ export function OtpInput({
           pattern="[0-9]*"
           autoComplete={i === 0 ? 'one-time-code' : 'off'}
           maxLength={1}
+          // A single space keeps :placeholder-shown usable for styling empty
+          // boxes without a screen reader announcing a placeholder glyph.
+          placeholder=" "
           aria-label={`Digit ${i + 1}`}
-          className="tabular h-16 w-full rounded-xl border border-[var(--color-edge)] bg-[var(--color-navy)] text-center text-2xl font-bold text-[var(--color-ink)] transition-colors focus:border-[var(--color-cyan)] disabled:opacity-40"
+          className={inputClassName}
         />
       ))}
     </div>
