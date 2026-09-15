@@ -4,39 +4,25 @@ import type { College } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
-const FALLBACK_TIMINGS = {
-  round1MsPerImage: 8000,
-  round2DrawMs: 20000,
-  round3Ms: 8000,
-};
-
+/**
+ * Game timing is deliberately NOT read here. start_attempt() snapshots it onto
+ * the attempt, and PlayFlow plays from that snapshot, so a resumed game keeps
+ * the timing it began with and there is no second source to fall back on.
+ */
 export default async function PlayPage() {
   let colleges: College[] = [];
-  let timings = FALLBACK_TIMINGS;
 
   try {
     const supabase = createAdminSupabase();
-
-    const [collegeRes, settingsRes] = await Promise.all([
-      supabase.from('colleges').select('id, name').eq('active', true).order('sort_order'),
-      supabase
-        .from('event_settings')
-        .select('round1_ms_per_image, round2_draw_ms, round3_ms')
-        .eq('id', 1)
-        .single(),
-    ]);
-
-    colleges = collegeRes.data ?? [];
-    if (settingsRes.data) {
-      timings = {
-        round1MsPerImage: settingsRes.data.round1_ms_per_image,
-        round2DrawMs: settingsRes.data.round2_draw_ms,
-        round3Ms: settingsRes.data.round3_ms,
-      };
-    }
+    const { data } = await supabase
+      .from('colleges')
+      .select('id, name')
+      .eq('active', true)
+      .order('sort_order');
+    colleges = data ?? [];
   } catch {
-    // Sign-in must still work if config fetch fails; defaults cover it.
+    // Sign-in must still work if the list fails; college is optional.
   }
 
-  return <PlayFlow colleges={colleges} timings={timings} />;
+  return <PlayFlow colleges={colleges} />;
 }

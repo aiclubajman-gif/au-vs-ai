@@ -1,15 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   scoreRound1,
-  scoreRound1Slot,
-  countRound1Correct,
   scoreRound2,
   scoreRound3,
   clampGuessToRange,
   calculateTotal,
   isHumanWin,
-  ROUND1_SLOT_POINTS,
-  ROUND1_SLOTS,
   ROUND2_BASE_POINTS,
   ROUND2_NEAR_MISS_CAP,
   MAX_ROUND1,
@@ -23,67 +19,50 @@ import {
 // ===========================================================================
 // ROUND 1
 // ===========================================================================
-describe('Round 1 scoring', () => {
-  it('four slots sum to exactly 500', () => {
-    expect(ROUND1_SLOT_POINTS.reduce((a, b) => a + b, 0)).toBe(MAX_ROUND1);
-    expect(ROUND1_SLOT_POINTS).toHaveLength(ROUND1_SLOTS);
+describe('Round 1 scoring — round(500 × correct / assigned)', () => {
+  const table = (assigned: number) =>
+    Array.from({ length: assigned + 1 }, (_, correct) => scoreRound1(correct, assigned));
+
+  it('legacy 4-image games score exactly as the old 125-per-slot model did', () => {
+    expect(table(4)).toEqual([0, 125, 250, 375, 500]);
   });
 
-  it('every slot is worth the same, so slot order cannot disadvantage anyone', () => {
-    expect(new Set(ROUND1_SLOT_POINTS).size).toBe(1);
+  it('8-image games round halves up, with no uneven per-slot split', () => {
+    expect(table(8)).toEqual([0, 63, 125, 188, 250, 313, 375, 438, 500]);
   });
 
-  it('all four correct scores exactly 500', () => {
-    const all = [1, 2, 3, 4].map((slot) => ({ slot, correct: true }));
-    expect(scoreRound1(all)).toBe(500);
+  it('10-image games score 50 per correct answer', () => {
+    expect(table(10)).toEqual([0, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500]);
   });
 
-  it('all four wrong scores 0', () => {
-    const none = [1, 2, 3, 4].map((slot) => ({ slot, correct: false }));
-    expect(scoreRound1(none)).toBe(0);
+  it('matches the approved examples', () => {
+    expect(scoreRound1(4, 8)).toBe(250);
+    expect(scoreRound1(8, 8)).toBe(500);
+    expect(scoreRound1(5, 10)).toBe(250);
+    expect(scoreRound1(10, 10)).toBe(500);
   });
 
-  it('scores scale evenly with correct answers', () => {
-    const build = (n: number) =>
-      [1, 2, 3, 4].map((slot) => ({ slot, correct: slot <= n }));
-    expect(scoreRound1(build(0))).toBe(0);
-    expect(scoreRound1(build(1))).toBe(125);
-    expect(scoreRound1(build(2))).toBe(250);
-    expect(scoreRound1(build(3))).toBe(375);
-    expect(scoreRound1(build(4))).toBe(500);
+  it.each([4, 8, 10])('%i images: always a whole number from 0 to 500, never decreasing', (n) => {
+    const scores = table(n);
+    expect(scores[0]).toBe(0);
+    expect(scores[n]).toBe(MAX_ROUND1);
+    for (let i = 0; i < scores.length; i++) {
+      expect(Number.isInteger(scores[i])).toBe(true);
+      if (i > 0) expect(scores[i]).toBeGreaterThan(scores[i - 1]);
+    }
   });
 
-  it('scores partial answers when an attempt is incomplete', () => {
-    expect(scoreRound1([{ slot: 1, correct: true }])).toBe(125);
-    expect(scoreRound1([])).toBe(0);
+  it('depends only on the counts, so which images were right cannot matter', () => {
+    // The only inputs are two numbers: there is no slot to weight.
+    expect(scoreRound1.length).toBe(2);
   });
 
-  it('rejects an out-of-range slot', () => {
-    expect(() => scoreRound1Slot(0, true)).toThrow(RangeError);
-    expect(() => scoreRound1Slot(5, true)).toThrow(RangeError);
-    expect(() => scoreRound1Slot(1.5, true)).toThrow(RangeError);
-  });
-
-  it('accepts slot 4', () => {
-    expect(scoreRound1Slot(4, true)).toBe(125);
-  });
-
-  it('rejects duplicate slots so a replayed request cannot double-score', () => {
-    expect(() =>
-      scoreRound1([
-        { slot: 1, correct: true },
-        { slot: 1, correct: true },
-      ]),
-    ).toThrow(/Duplicate/);
-  });
-
-  it('counts correct answers for the leaderboard tiebreak', () => {
-    expect(countRound1Correct([
-      { slot: 1, correct: true },
-      { slot: 2, correct: false },
-      { slot: 3, correct: true },
-      { slot: 4, correct: true },
-    ])).toBe(3);
+  it('rejects impossible counts', () => {
+    expect(() => scoreRound1(9, 8)).toThrow(RangeError);
+    expect(() => scoreRound1(-1, 8)).toThrow(RangeError);
+    expect(() => scoreRound1(1.5, 8)).toThrow(RangeError);
+    expect(() => scoreRound1(0, 0)).toThrow(RangeError);
+    expect(() => scoreRound1(0, 2.5)).toThrow(RangeError);
   });
 });
 

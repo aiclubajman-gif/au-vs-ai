@@ -2,6 +2,7 @@
 
 import { z } from 'zod';
 import { AU_EMAIL_DOMAIN } from '@/types';
+import { ROUND1_MAX_IMAGES, ROUND1_PRESET_KEYS } from '@/lib/timing';
 
 // ---------------------------------------------------------------------------
 // AU email (§3)
@@ -90,7 +91,8 @@ export const profileSetupSchema = z.object({
 
 export const round1SubmitSchema = z.object({
   attemptId: z.uuid(),
-  slot: z.number().int().min(1).max(4),
+  /** Upper bound only; the route checks the slot exists on this attempt. */
+  slot: z.number().int().min(1).max(ROUND1_MAX_IMAGES),
   /** null = the timer ran out with no choice made. Scores zero. */
   selectedAnswer: z.enum(['real', 'ai_generated']).nullable(),
   responseTimeMs: z.number().int().min(0).max(120_000),
@@ -162,7 +164,12 @@ export const overrideIssueSchema = z.object({
   idVerified: z.boolean(),
 });
 
-export const settingsUpdateSchema = z.object({
+/**
+ * Strict: an unknown key is rejected, not silently dropped. Timers are no
+ * longer settable as raw milliseconds — Round 1 is chosen by preset name, and
+ * Rounds 2 and 3 are fixed by the database (migration 0015).
+ */
+export const settingsUpdateSchema = z.strictObject({
   challengeOpen: z.boolean().optional(),
   newGamesPaused: z.boolean().optional(),
   entriesClosed: z.boolean().optional(),
@@ -170,9 +177,7 @@ export const settingsUpdateSchema = z.object({
   round2RecognitionThreshold: z.number().min(0.01).max(1).optional(),
   round3ScoringTolerance: z.number().positive().finite().max(1_000_000).optional(),
   round3ToleranceExponent: z.number().min(0.1).max(6).optional(),
-  round1MsPerImage: z.number().int().min(1000).max(60_000).optional(),
-  round2DrawMs: z.number().int().min(5000).max(120_000).optional(),
-  round3Ms: z.number().int().min(3000).max(60_000).optional(),
+  round1Preset: z.enum(ROUND1_PRESET_KEYS).optional(),
   leaderboardDisplay: z
     .enum(['name_only', 'masked_id_only', 'name_and_masked_id'])
     .optional(),

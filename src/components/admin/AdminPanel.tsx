@@ -2,6 +2,12 @@
 
 import { useState } from 'react';
 import { OverrideTool } from '@/components/admin/OverrideTool';
+import {
+  ROUND1_PRESETS,
+  ROUND1_PRESET_KEYS,
+  round1PresetFor,
+  type Round1Preset,
+} from '@/lib/timing';
 
 /**
  * Admin console (§41).
@@ -31,12 +37,26 @@ export interface AdminSettings {
   newGamesPaused: boolean;
   entriesClosed: boolean;
   humanWinThreshold: number;
+  /** Read-only here; changed only through a Round 1 preset. */
+  round1ImageCount: number;
   round1MsPerImage: number;
+  /** Fixed by the database for this event. Displayed, never edited. */
   round2DrawMs: number;
   round3Ms: number;
   round3ScoringTolerance: number;
   round3ToleranceExponent: number;
   round2RecognitionThreshold: number;
+}
+
+/** round1_bank_health(), judged against the current Round 1 preset. */
+export interface BankHealth {
+  active: number;
+  real: number;
+  ai: number;
+  imagesPerGame: number | null;
+  playable: boolean;
+  /** Whether the bank could fill a game of each preset's size, keyed by count. */
+  playableByImageCount: Record<string, boolean>;
 }
 
 export interface AttemptRow {
@@ -54,16 +74,53 @@ export function AdminPanel({
   initialStats,
   initialSettings,
   initialAttempts,
+  initialFormatLocked,
+  bankHealth,
 }: {
   email: string;
   initialStats: AdminStats;
   initialSettings: AdminSettings;
   initialAttempts: AttemptRow[];
+  initialFormatLocked: boolean;
+  bankHealth: BankHealth | null;
 }) {
   const [settings, setSettings] = useState(initialSettings);
   const [attempts, setAttempts] = useState(initialAttempts);
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [formatLocked, setFormatLocked] = useState(initialFormatLocked);
+
+  const currentPreset = round1PresetFor(settings.round1ImageCount, settings.round1MsPerImage);
+  const imagesPerGame = settings.round1ImageCount;
+  const round1Seconds = (settings.round1ImageCount * settings.round1MsPerImage) / 1000;
+  const round2Seconds = settings.round2DrawMs / 1000;
+  const round3Seconds = settings.round3Ms / 1000;
+
+  async function setRound1Preset(preset: Round1Preset) {
+    if (preset === currentPreset || formatLocked) return;
+    const { imageCount, msPerImage } = ROUND1_PRESETS[preset];
+    if (!confirm(`Switch Round 1 to ${imageCount} images × ${msPerImage / 1000} seconds?`)) return;
+
+    const label = 'Round 1 format';
+    setBusy(label);
+    const res = await fetch('/api/admin/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ round1Preset: preset }),
+    })
+      .then((r) => r.json())
+      .catch(() => null);
+    setBusy(null);
+
+    if (res?.ok) {
+      setSettings((s) => ({ ...s, round1ImageCount: imageCount, round1MsPerImage: msPerImage }));
+      setNote(`${label} saved`);
+      setTimeout(() => setNote(null), 2500);
+      return;
+    }
+    if (res?.error?.code === 'ROUND1_FORMAT_LOCKED') setFormatLocked(true);
+    setNote(res?.error?.message ?? 'Failed');
+  }
 
   async function patch(change: Partial<AdminSettings>, label: string) {
     setBusy(label);
@@ -167,6 +224,97 @@ export function AdminPanel({
           </div>
         </section>
 
+        {/* ---- Game format: always 60 seconds (§10, migration 0015) ---- */}
+        <section className="mt-8">
+          <h2 className="text-sm font-semibold tracking-wider text-[var(--color-muted)]">
+            GAME FORMAT
+          </h2>
+          <p className="mt-1 text-xs text-[var(--color-muted)]">
+            Every game is exactly 60 seconds. Only the way Round 1 fills its time can change,
+            and only before any real game has been played.
+          </p>
+
+          <fieldset className="mt-3" disabled={formatLocked || busy === 'Round 1 format'}>
+            <legend className="text-sm font-medium">Round 1 format</legend>
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+              {ROUND1_PRESET_KEYS.map((key) => {
+                const { imageCount, msPerImage } = ROUND1_PRESETS[key];
+                const selected = currentPreset === key;
+                const bankCanFill = bankHealth?.playableByImageCount[String(imageCount)];
+                return (
+                  <label
+                    key={key}
+                    className={`flex items-start gap-3 rounded-xl border px-4 py-4 transition-colors ${
+                      selected
+                        ? 'border-[var(--color-cyan)] bg-[var(--color-navy)]'
+                        : 'border-[var(--color-edge)] bg-[var(--color-navy)]/50'
+                    } ${formatLocked ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
+                  >
+                    <input
+                      type="radio"
+                      name="round1-format"
+                      value={key}
+                      checked={selected}
+                      onChange={() => setRound1Preset(key)}
+                      className="mt-1 accent-[var(--color-cyan)]"
+                    />
+                    <span>
+                      <span className="block text-sm font-medium">
+                        {imageCount} images × {msPerImage / 1000} seconds
+                      </span>
+                      <span className="mt-0.5 block text-xs text-[var(--color-muted)]">
+                        {(imageCount * msPerImage) / 1000} seconds total
+                      </span>
+                      {bankCanFill === false && (
+                        <span className="mt-1 block text-xs text-[var(--color-lose)]">
+                          The image bank cannot fill {imageCount} images yet
+                        </span>
+                      )}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          {formatLocked && (
+            <p className="mt-3 rounded-lg border border-[var(--color-edge)] bg-[var(--color-navy)] px-4 py-3 text-sm">
+              <strong>Round 1 format locked</strong>
+              <span className="mt-1 block text-xs text-[var(--color-muted)]">
+                Games have already been played under this format. Changing image count would
+                make leaderboard comparisons unfair.
+              </span>
+            </p>
+          )}
+
+          <div className="mt-3 grid grid-cols-3 gap-3">
+            <FixedTime label="Round 2" seconds={round2Seconds} />
+            <FixedTime label="Round 3" seconds={round3Seconds} />
+            <FixedTime label="Total" seconds={round1Seconds + round2Seconds + round3Seconds} />
+          </div>
+
+          {bankHealth === null ? (
+            <p className="mt-3 text-xs text-[var(--color-muted)]">Image bank health unavailable.</p>
+          ) : bankHealth.playable ? (
+            <p className="mt-3 text-xs text-[var(--color-muted)]">
+              Image bank ready for {imagesPerGame} images per game ({bankHealth.real} real,{' '}
+              {bankHealth.ai} AI active).
+            </p>
+          ) : (
+            <p className="mt-3 rounded-lg border border-[var(--color-lose)] bg-[var(--color-lose)]/15 px-4 py-3 text-sm">
+              <strong className="text-[var(--color-lose)]">
+                Not playable with {imagesPerGame} images per game.
+              </strong>
+              <span className="mt-1 block text-xs text-[var(--color-muted)]">
+                Needs at least {imagesPerGame} active images, with at least{' '}
+                {Math.ceil(imagesPerGame / 4)} real and {Math.ceil(imagesPerGame / 4)} AI. Now:{' '}
+                {bankHealth.real} real, {bankHealth.ai} AI. New games will be refused until this
+                is fixed.
+              </span>
+            </p>
+          )}
+        </section>
+
         {/* ---- Content ---- */}
         <section className="mt-8">
           <h2 className="text-sm font-semibold tracking-wider text-[var(--color-muted)]">
@@ -215,10 +363,11 @@ export function AdminPanel({
             </p>
           )}
 
-          {initialStats.imageBank < 20 && (
+          {initialStats.imageBank < imagesPerGame * 5 && (
             <p className="mt-3 rounded-lg border border-[var(--color-lose)]/40 bg-[var(--color-lose)]/10 px-4 py-3 text-sm text-[var(--color-lose)]">
-              Only {initialStats.imageBank} images in the bank. With four shown per game,
-              students standing together will often see the same ones. Aim for 40+.
+              Only {initialStats.imageBank} images in the bank. With {imagesPerGame} shown per
+              game, students standing together will often see the same ones. Aim for{' '}
+              {imagesPerGame * 10}+.
             </p>
           )}
         </section>
@@ -251,31 +400,6 @@ export function AdminPanel({
               max={500}
               step={1}
               onCommit={(v) => patch({ round3ScoringTolerance: v }, 'R3 tolerance')}
-            />
-            <NumberField
-              label="Seconds per image"
-              hint="Round 1 time limit per image"
-              value={Math.round(settings.round1MsPerImage / 1000)}
-              min={3}
-              max={30}
-              step={1}
-              onCommit={(v) => patch({ round1MsPerImage: v * 1000 }, 'R1 timer')}
-            />
-            <NumberField
-              label="Drawing seconds"
-              value={Math.round(settings.round2DrawMs / 1000)}
-              min={10}
-              max={60}
-              step={1}
-              onCommit={(v) => patch({ round2DrawMs: v * 1000 }, 'R2 timer')}
-            />
-            <NumberField
-              label="Round 3 seconds"
-              value={Math.round(settings.round3Ms / 1000)}
-              min={5}
-              max={30}
-              step={1}
-              onCommit={(v) => patch({ round3Ms: v * 1000 }, 'R3 timer')}
             />
           </div>
         </section>
@@ -370,6 +494,17 @@ function Toggle({
       </div>
       {hint && <p className="mt-1 text-xs text-[var(--color-muted)]">{hint}</p>}
     </button>
+  );
+}
+
+function FixedTime({ label, seconds }: { label: string; seconds: number }) {
+  return (
+    <div className="rounded-xl border border-[var(--color-edge)] bg-[var(--color-navy)]/50 px-4 py-3">
+      <p className="text-xs uppercase tracking-wider text-[var(--color-muted)]">{label}</p>
+      <p className="mt-1 text-sm">
+        <span className="tabular text-lg font-bold">{seconds}</span> seconds
+      </p>
+    </div>
   );
 }
 

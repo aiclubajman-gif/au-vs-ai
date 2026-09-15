@@ -16,6 +16,12 @@
  *     same 200 response.
  * The client moves on whenever the response is ok, so a retry of a committed
  * submission resolves as success and nothing is written or scored twice.
+ *
+ * The same harness covers the 60-second format (migration 0015): 8- and
+ * 10-image games, resume on the attempt's frozen timing, and a start that
+ * fails cleanly when settings are unavailable. The stand-in's start_attempt
+ * mirrors the SQL's contract; the SQL itself is checked in
+ * sixty-second-format.test.ts and supabase/verification/.
  */
 import { describe, it, expect, vi } from 'vitest';
 import type { AttemptAssignment } from '@/types';
@@ -24,12 +30,13 @@ vi.mock('server-only', () => ({}));
 
 const env = vi.hoisted(() => ({
   db: null as unknown as { client: unknown },
+  userId: 'user-1',
 }));
 
 vi.mock('@/lib/supabase/server', () => ({
   createAdminSupabase: () => env.db.client,
   createServerSupabase: async () => ({
-    auth: { getUser: async () => ({ data: { user: { id: 'user-1' } } }) },
+    auth: { getUser: async () => ({ data: { user: { id: env.userId } } }) },
   }),
 }));
 
@@ -39,6 +46,7 @@ import { POST as round3Answer } from '@/app/api/round3/answer/route';
 import { POST as startAttempt } from '@/app/api/attempt/start/route';
 import { submitWithRetry } from '@/lib/client/submit';
 import { resumeStep } from '@/lib/api/serialize';
+import { isSixtySecondGame } from '@/lib/timing';
 
 // ---------------------------------------------------------------------------
 // In-memory stand-in for the subset of the Supabase query builder the routes use
@@ -46,18 +54,31 @@ import { resumeStep } from '@/lib/api/serialize';
 type Row = Record<string, unknown>;
 type QueryResult = { data: unknown; error: null; count?: number };
 
+/** A database exception, as start_attempt() raises one. */
+class PgError extends Error {}
+
 class FakeSupabase {
   updates: { table: string; rows: number }[] = [];
   rpcCalls: { fn: string; args: Row }[] = [];
+  /** Every table a route touched, in order. */
+  tablesRead: string[] = [];
   private hold: { table: string; expected: number; waiting: (() => void)[] } | null = null;
+  private created = 0;
 
   constructor(public tables: Record<string, Row[]>) {}
 
   readonly client = {
-    from: (table: string) => new FakeQuery(this, table),
+    from: (table: string) => {
+      this.tablesRead.push(table);
+      return new FakeQuery(this, table);
+    },
     rpc: async (fn: string, args: Row) => {
       this.rpcCalls.push({ fn, args });
-      return { data: this.runRpc(fn, args), error: null };
+      try {
+        return { data: this.runRpc(fn, args), error: null };
+      } catch (e) {
+        return { data: null, error: { message: (e as Error).message } };
+      }
     },
   };
 
@@ -84,15 +105,58 @@ class FakeSupabase {
   }
 
   /**
-   * start_attempt() for an existing attempt returns get_attempt_assignment().
-   * That SQL (0003) derives Round 1 `answered` from selected_answer, which is
-   * NULL for a timeout — reproduced here deliberately.
+   * start_attempt(): an existing attempt resumes through
+   * get_attempt_assignment(); otherwise settings are read and validated BEFORE
+   * anything is written, then exactly round1_image_count images are assigned
+   * and the timing is snapshotted onto the attempt.
    */
   runRpc(fn: string, args: Row): unknown {
     if (fn !== 'start_attempt') return null;
-    const attempt = this.tables.attempts.find(
-      (a) => a.user_id === args.p_user_id && a.status !== 'invalidated',
-    )!;
+    const userId = String(args.p_user_id);
+    const existing = this.tables.attempts.find(
+      (a) => a.user_id === userId && a.status !== 'invalidated',
+    );
+    if (existing) return { ...this.assignment(existing), resumed: true };
+
+    const s = this.tables.event_settings.find((r) => r.id === 1);
+    if (!s) throw new PgError('SETTINGS_UNAVAILABLE');
+    const n = Number(s.round1_image_count);
+    const r1 = Number(s.round1_ms_per_image);
+    const r2 = Number(s.round2_draw_ms);
+    const r3 = Number(s.round3_ms);
+    if (!(n * r1 + r2 + r3 === 60_000)) throw new PgError('SETTINGS_UNAVAILABLE');
+
+    const id = `created-attempt-${++this.created}`;
+    const attempt: Row = {
+      id,
+      user_id: userId,
+      status: 'in_progress',
+      current_round: 1,
+      started_at: '2026-09-22T10:00:00.000Z',
+      round2_class_id: 1,
+      round3_question_id: 'question-day-1',
+      is_test: false,
+      round1_ms_per_image: r1,
+      round2_draw_ms: r2,
+      round3_ms: r3,
+    };
+    this.tables.attempts.push(attempt);
+    for (let slot = 1; slot <= n; slot++) {
+      const imageId = `${id}-img-${slot}`;
+      this.tables.round1_images.push({ id: imageId, label: slot % 2 ? 'real' : 'ai_generated' });
+      this.tables.attempt_round1.push(emptySlot(id, slot, imageId));
+    }
+    this.tables.attempt_round2.push({ attempt_id: id, target_class_id: 1, submitted_at: null, points: null });
+    this.tables.attempt_round3.push({ attempt_id: id, question_id: 'question-day-1', guess: null, answered_at: null, points: null });
+    return { ...this.assignment(attempt), resumed: false };
+  }
+
+  /**
+   * get_attempt_assignment(). Derives Round 1 `answered` from selected_answer,
+   * which is NULL for a timeout — reproduced deliberately, as the SQL (0003)
+   * does. Timing comes from the ATTEMPT row, never from event_settings.
+   */
+  private assignment(attempt: Row) {
     const r1 = this.tables.attempt_round1.filter((r) => r.attempt_id === attempt.id);
     const r2 = this.tables.attempt_round2.find((r) => r.attempt_id === attempt.id)!;
     const r3 = this.tables.attempt_round3.find((r) => r.attempt_id === attempt.id)!;
@@ -101,8 +165,15 @@ class FakeSupabase {
       status: attempt.status,
       current_round: attempt.current_round,
       started_at: attempt.started_at,
-      resumed: true,
-      round1: r1
+      timing:
+        attempt.round1_ms_per_image == null
+          ? null
+          : {
+              round1_ms_per_image: attempt.round1_ms_per_image,
+              round2_draw_ms: attempt.round2_draw_ms,
+              round3_ms: attempt.round3_ms,
+            },
+      round1: [...r1]
         .sort((a, b) => Number(a.slot) - Number(b.slot))
         .map((r) => ({
           slot: r.slot,
@@ -213,9 +284,32 @@ class FakeQuery implements PromiseLike<QueryResult> {
 // Fixtures
 // ---------------------------------------------------------------------------
 const ATTEMPT = '3f9c1b2a-4d5e-4f6a-8b9c-0d1e2f3a4b5c';
-const LABELS = ['real', 'ai_generated', 'real', 'ai_generated'] as const;
 
-function seed(): FakeSupabase {
+/** The two production formats. Rounds 2 and 3 are fixed at 12s and 8s. */
+const FORMAT = {
+  8: { round1_image_count: 8, round1_ms_per_image: 5000 },
+  10: { round1_image_count: 10, round1_ms_per_image: 4000 },
+} as const;
+
+/** Alternating labels, so odd slots are real and even slots are AI. */
+const labelFor = (slot: number) => (slot % 2 ? 'real' : 'ai_generated');
+
+function emptySlot(attemptId: unknown, slot: number, imageId: string): Row {
+  return {
+    attempt_id: attemptId,
+    slot,
+    image_id: imageId,
+    selected_answer: null,
+    correct: null,
+    points: null,
+    answered_at: null,
+    response_time_ms: null,
+  };
+}
+
+/** One in-progress attempt for user-1, created under the given format. */
+function seed(images: 8 | 10 = 8): FakeSupabase {
+  const format = FORMAT[images];
   const db = new FakeSupabase({
     attempts: [
       {
@@ -227,19 +321,14 @@ function seed(): FakeSupabase {
         round2_class_id: 1,
         round3_question_id: 'question-day-1',
         is_test: false,
+        // The snapshot start_attempt() froze onto this attempt.
+        round1_ms_per_image: format.round1_ms_per_image,
+        round2_draw_ms: 12000,
+        round3_ms: 8000,
       },
     ],
-    attempt_round1: LABELS.map((_, i) => ({
-      attempt_id: ATTEMPT,
-      slot: i + 1,
-      image_id: `img-${i + 1}`,
-      selected_answer: null,
-      correct: null,
-      points: null,
-      answered_at: null,
-      response_time_ms: null,
-    })),
-    round1_images: LABELS.map((label, i) => ({ id: `img-${i + 1}`, label })),
+    attempt_round1: Array.from({ length: images }, (_, i) => emptySlot(ATTEMPT, i + 1, `img-${i + 1}`)),
+    round1_images: Array.from({ length: images }, (_, i) => ({ id: `img-${i + 1}`, label: labelFor(i + 1) })),
     attempt_round2: [{ attempt_id: ATTEMPT, target_class_id: 1, submitted_at: null, points: null }],
     attempt_round3: [
       { attempt_id: ATTEMPT, question_id: 'question-day-1', guess: null, answered_at: null, points: null },
@@ -252,8 +341,8 @@ function seed(): FakeSupabase {
         new_games_paused: false,
         entries_closed: false,
         maintenance_message: null,
-        round1_ms_per_image: 8000,
-        round2_draw_ms: 20000,
+        ...format,
+        round2_draw_ms: 12000,
         round3_ms: 8000,
         human_win_threshold: 600,
         round2_recognition_threshold: 0.55,
@@ -268,6 +357,7 @@ function seed(): FakeSupabase {
     app_events: [],
   });
   env.db = db;
+  env.userId = 'user-1';
   return db;
 }
 
@@ -304,6 +394,26 @@ const row = (db: FakeSupabase, table: string, slot?: number) =>
 
 const bitmap28 = Buffer.from(new Uint8Array(784)).toString('base64');
 
+/** Answers one Round 1 slot through the real route and returns the response data. */
+async function answer(slot: number, selectedAnswer: 'real' | 'ai_generated' | null) {
+  const res = await call(round1Answer, {
+    attemptId: ATTEMPT,
+    slot,
+    selectedAnswer,
+    responseTimeMs: selectedAnswer === null ? 5000 : 2000,
+    idempotencyKey: crypto.randomUUID(),
+  });
+  const json = await res.json();
+  expect(json.ok).toBe(true);
+  return json.data as { locked: true; roundComplete?: boolean; alreadyAnswered?: boolean };
+}
+
+async function resume() {
+  const json = await (await call(startAttempt, {})).json();
+  expect(json.ok).toBe(true);
+  return json.data as AttemptAssignment;
+}
+
 // ===========================================================================
 // ROUND 1
 // ===========================================================================
@@ -328,23 +438,24 @@ describe('Round 1 — response lost after the answer committed', () => {
     // The retry was the same logical submission: same answer, same key.
     expect(net.sent).toHaveLength(2);
     expect(net.sent[1]).toBe(net.sent[0]);
-    // The committed answer is intact and was written exactly once.
+    // The committed answer is intact and was written exactly once. No per-slot
+    // points: Round 1 is scored once, at completion, from correct / assigned.
     expect(row(db, 'attempt_round1', 2)).toMatchObject({
       selected_answer: 'ai_generated',
       correct: true,
-      points: 125,
+      points: null,
     });
     expect(db.rowsWritten('attempt_round1')).toEqual([1]);
     expect(db.rpcCount('bump_image_stats')).toBe(1);
   });
 
-  it('a lost timeout response resolves the same way and still scores zero', async () => {
+  it('a lost timeout response resolves the same way and is never correct', async () => {
     const db = seed();
     const body = {
       attemptId: ATTEMPT,
       slot: 1,
       selectedAnswer: null,
-      responseTimeMs: 8000,
+      responseTimeMs: 5000,
       idempotencyKey: crypto.randomUUID(),
     };
     const net = lossyNetwork(round1Answer);
@@ -358,14 +469,14 @@ describe('Round 1 — response lost after the answer committed', () => {
     expect(row(db, 'attempt_round1', 1)).toMatchObject({
       selected_answer: null,
       correct: false,
-      points: 0,
+      points: null,
     });
     expect(row(db, 'attempt_round1', 1).answered_at).not.toBeNull();
     expect(db.rowsWritten('attempt_round1')).toEqual([1]);
     expect(db.rpcCount('bump_image_stats')).toBe(0);
   });
 
-  it('two copies of the same submission racing past the check still score once', async () => {
+  it('two copies of the same submission racing past the check still record once', async () => {
     const db = seed();
     const body = {
       attemptId: ATTEMPT,
@@ -383,7 +494,7 @@ describe('Round 1 — response lost after the answer committed', () => {
     expect(bodies.every((r) => r.ok === true)).toBe(true);
     expect(db.rowsWritten('attempt_round1')).toEqual([1, 0]);
     expect(db.rpcCount('bump_image_stats')).toBe(1);
-    expect(row(db, 'attempt_round1', 3).points).toBe(125);
+    expect(row(db, 'attempt_round1', 3).correct).toBe(true);
   });
 
   it('a later, different submission can never replace the committed answer', async () => {
@@ -405,7 +516,7 @@ describe('Round 1 — response lost after the answer committed', () => {
 
     expect((await first.json()).data).toEqual({ locked: true, roundComplete: false });
     expect((await second.json()).data).toEqual({ locked: true, alreadyAnswered: true });
-    expect(row(db, 'attempt_round1', 4)).toMatchObject({ selected_answer: 'real', correct: false, points: 0 });
+    expect(row(db, 'attempt_round1', 4)).toMatchObject({ selected_answer: 'real', correct: false });
     expect(db.rowsWritten('attempt_round1')).toEqual([1]);
   });
 
@@ -422,8 +533,101 @@ describe('Round 1 — response lost after the answer committed', () => {
     const replay = JSON.stringify(await (await call(round1Answer, body)).json());
 
     for (const text of [original, replay]) {
-      expect(text).not.toMatch(/correct|points|label|real|ai_generated/i);
+      expect(text).not.toMatch(/correct|points|label|real|ai_generated|score/i);
     }
+  });
+});
+
+// ===========================================================================
+// ROUND 1 — 8- AND 10-IMAGE GAMES
+// ===========================================================================
+describe('Round 1 — 8- and 10-image games', () => {
+  it('slots 9 and 10 of a 10-image game are accepted and recorded normally', async () => {
+    const db = seed(10);
+    await answer(9, 'real');
+    await answer(10, 'ai_generated');
+
+    expect(row(db, 'attempt_round1', 9)).toMatchObject({ selected_answer: 'real', correct: true });
+    expect(row(db, 'attempt_round1', 10)).toMatchObject({ selected_answer: 'ai_generated', correct: true });
+    expect(db.rpcCount('bump_image_stats')).toBe(2);
+  });
+
+  it('a slot the attempt was not assigned is refused, not created', async () => {
+    const db = seed(8);
+    const res = await call(round1Answer, {
+      attemptId: ATTEMPT,
+      slot: 9,
+      selectedAnswer: 'real',
+      responseTimeMs: 2000,
+      idempotencyKey: crypto.randomUUID(),
+    });
+
+    expect(res.status).toBe(404);
+    expect(db.tables.attempt_round1).toHaveLength(8);
+    expect(db.rowsWritten('attempt_round1')).toEqual([]);
+  });
+
+  it.each([8, 10] as const)(
+    '%i images: Round 2 is reached only after EVERY assigned image is answered',
+    async (images) => {
+      const db = seed(images);
+      // Answered out of order, so nothing can depend on a slot number.
+      const order = Array.from({ length: images }, (_, i) => i + 1).reverse();
+      const last = order.pop()!;
+
+      for (const slot of order) {
+        const data = await answer(slot, slot % 3 ? 'real' : null);
+        expect(data.roundComplete).toBe(false);
+        expect(db.tables.attempts[0].current_round).toBe(1);
+      }
+
+      const final = await answer(last, 'ai_generated');
+      expect(final.roundComplete).toBe(true);
+      expect(db.tables.attempts[0].current_round).toBe(2);
+    },
+  );
+
+  it('the old fixed count cannot end a longer game early', async () => {
+    const db = seed(10);
+    for (const slot of [1, 2, 3, 4]) {
+      expect((await answer(slot, 'real')).roundComplete).toBe(false);
+    }
+    expect(db.tables.attempts[0].current_round).toBe(1);
+  });
+
+  it('a timeout on slot 10 is recorded as null and still completes the round', async () => {
+    const db = seed(10);
+    for (let slot = 1; slot <= 9; slot++) await answer(slot, 'real');
+
+    const final = await answer(10, null);
+
+    expect(final.roundComplete).toBe(true);
+    expect(row(db, 'attempt_round1', 10)).toMatchObject({ selected_answer: null, correct: false });
+    expect(row(db, 'attempt_round1', 10).answered_at).not.toBeNull();
+  });
+
+  it('a lost response on the final answer retries safely and advances once', async () => {
+    const db = seed(10);
+    for (let slot = 1; slot <= 9; slot++) await answer(slot, 'real');
+    const net = lossyNetwork(round1Answer);
+
+    const result = await submitWithRetry(
+      '/api/round1/answer',
+      {
+        attemptId: ATTEMPT,
+        slot: 10,
+        selectedAnswer: 'ai_generated',
+        responseTimeMs: 1800,
+        idempotencyKey: crypto.randomUUID(),
+      },
+      { fetchImpl: net.fetchImpl, sleep: noSleep },
+    );
+
+    expect(result).toEqual({ ok: true, data: { locked: true, alreadyAnswered: true } });
+    expect(row(db, 'attempt_round1', 10).selected_answer).toBe('ai_generated');
+    // Slots 1-10 each written once; the round pointer advanced exactly once.
+    expect(db.rowsWritten('attempt_round1')).toEqual(Array(10).fill(1));
+    expect(db.rowsWritten('attempts')).toEqual([1]);
   });
 });
 
@@ -431,14 +635,14 @@ describe('Round 1 — response lost after the answer committed', () => {
 // ROUND 2
 // ===========================================================================
 describe('Round 2 — response lost after the drawing committed', () => {
-  const drawing = (confidence: number) => ({
+  const drawing = (confidence: number, drawTimeMs = 9000) => ({
     attemptId: ATTEMPT,
     targetConfidence: confidence,
     topPredictions: [
       { label: 'cat', confidence },
       { label: 'fish', confidence: 0.1 },
     ],
-    drawTimeMs: 9000,
+    drawTimeMs,
     bitmap28,
     idempotencyKey: crypto.randomUUID(),
   });
@@ -483,6 +687,51 @@ describe('Round 2 — response lost after the drawing committed', () => {
     expect((await later.json()).data).toEqual({ locked: true, alreadyAnswered: true });
     expect(row(db, 'attempt_round2').target_confidence).toBe(0.8);
     expect(row(db, 'attempt_round2').points).toBe(pointsAfterFirst);
+  });
+});
+
+describe('Round 2 — speed bonus uses the attempt’s frozen timing', () => {
+  it('measures against the attempt’s saved 12s, whatever the settings say now', async () => {
+    const db = seed();
+    // Not a value the real database would allow; it proves the route ignores it.
+    db.tables.event_settings[0].round2_draw_ms = 60_000;
+
+    const res = await call(round2Submit, {
+      attemptId: ATTEMPT,
+      targetConfidence: 0.8,
+      topPredictions: [{ label: 'cat', confidence: 0.8 }],
+      drawTimeMs: 6000,
+      bitmap28,
+      idempotencyKey: crypto.randomUUID(),
+    });
+
+    expect((await res.json()).ok).toBe(true);
+    // Recognised: 210 base + 40 × (12000 − 6000) / 12000 = 230.
+    // Against the current 60s setting it would have been 246.
+    expect(row(db, 'attempt_round2').points).toBe(230);
+  });
+
+  it('refuses an attempt with no timing snapshot rather than scoring it on a guess', async () => {
+    const db = seed();
+    Object.assign(db.tables.attempts[0], {
+      round1_ms_per_image: null,
+      round2_draw_ms: null,
+      round3_ms: null,
+    });
+
+    const res = await call(round2Submit, {
+      attemptId: ATTEMPT,
+      targetConfidence: 0.8,
+      topPredictions: [{ label: 'cat', confidence: 0.8 }],
+      drawTimeMs: 6000,
+      bitmap28,
+      idempotencyKey: crypto.randomUUID(),
+    });
+
+    expect(res.status).toBe(409);
+    expect((await res.json()).error.code).toBe('TIMING_UNAVAILABLE');
+    expect(row(db, 'attempt_round2').submitted_at).toBeNull();
+    expect(db.rowsWritten('attempt_round2')).toEqual([]);
   });
 });
 
@@ -537,19 +786,8 @@ describe('Round 3 — response lost after the guess committed', () => {
 // ROUND 1 TIMEOUT → REFRESH → RESUME
 // ===========================================================================
 describe('Round 1 timeout survives a refresh', () => {
-  async function answer(slot: number, selectedAnswer: 'real' | 'ai_generated' | null) {
-    const res = await call(round1Answer, {
-      attemptId: ATTEMPT,
-      slot,
-      selectedAnswer,
-      responseTimeMs: selectedAnswer === null ? 8000 : 2000,
-      idempotencyKey: crypto.randomUUID(),
-    });
-    expect((await res.json()).ok).toBe(true);
-  }
-
   it('the timed-out image is not handed back as unanswered by /api/attempt/start', async () => {
-    const db = seed();
+    const db = seed(8);
 
     // 1–3. Slots 1 and 2 answered normally; slot 3 times out.
     await answer(1, 'real');
@@ -567,28 +805,137 @@ describe('Round 1 timeout survives a refresh', () => {
     expect(sqlView.round1.find((s) => s.slot === 3)?.answered).toBe(false);
 
     // 4–5. Refresh: the client resumes through /api/attempt/start.
-    const res = await call(startAttempt, {});
-    const json = await res.json();
-    expect(json.ok).toBe(true);
-    const assignment = json.data as AttemptAssignment;
+    const assignment = await resume();
 
-    // 6. Slot 3 is answered; only slot 4 is still to play.
+    // 6. Slot 3 is answered; slots 4–8 are still to play.
     expect(assignment.round1.find((s) => s.slot === 3)?.answered).toBe(true);
-    expect(assignment.round1.filter((s) => !s.answered).map((s) => s.slot)).toEqual([4]);
+    expect(assignment.round1.filter((s) => !s.answered).map((s) => s.slot)).toEqual([4, 5, 6, 7, 8]);
     expect(resumeStep(assignment)).toBe('round1');
   });
 
   it('a student whose last image timed out resumes at Round 2, not Round 1', async () => {
-    seed();
-    await answer(1, 'real');
-    await answer(2, 'real');
-    await answer(3, 'ai_generated');
-    await answer(4, null);
+    seed(8);
+    for (let slot = 1; slot <= 7; slot++) await answer(slot, 'real');
+    await answer(8, null);
 
-    const json = await (await call(startAttempt, {})).json();
-    const assignment = json.data as AttemptAssignment;
+    const assignment = await resume();
 
     expect(assignment.round1.every((s) => s.answered)).toBe(true);
     expect(resumeStep(assignment)).toBe('round2');
+  });
+});
+
+// ===========================================================================
+// RESUME ON FROZEN TIMING
+// ===========================================================================
+describe('Resume uses the attempt’s own frozen timing', () => {
+  it.each([
+    [8, 5000],
+    [10, 4000],
+  ] as const)('%i-image game resumed mid-round keeps %i ms per image', async (images, msPerImage) => {
+    const db = seed(images);
+    await answer(1, 'real');
+    await answer(2, null);
+    await answer(3, 'ai_generated');
+    db.tablesRead.length = 0;
+
+    const assignment = await resume();
+
+    expect(assignment.round1).toHaveLength(images);
+    expect(assignment.round1.filter((s) => !s.answered).map((s) => s.slot)).toEqual(
+      Array.from({ length: images - 3 }, (_, i) => i + 4),
+    );
+    expect(assignment.timing).toEqual({ round1MsPerImage: msPerImage, round2DrawMs: 12000, round3Ms: 8000 });
+    expect(isSixtySecondGame(assignment.round1.length, assignment.timing)).toBe(true);
+    expect(resumeStep(assignment)).toBe('round1');
+    // Timing never comes from the live settings on the way back in.
+    expect(db.tablesRead).not.toContain('event_settings');
+  });
+
+  it('switching the preset after an attempt started changes nothing about that attempt', async () => {
+    const db = seed(8);
+    await answer(1, 'real');
+    await answer(2, 'real');
+
+    // An admin moves the event to 10 × 4 (only possible while no real attempt
+    // exists; the stand-in does not enforce the lock).
+    Object.assign(db.tables.event_settings[0], FORMAT[10]);
+
+    const assignment = await resume();
+
+    expect(assignment.round1).toHaveLength(8);
+    expect(assignment.timing?.round1MsPerImage).toBe(5000);
+    expect(isSixtySecondGame(assignment.round1.length, assignment.timing)).toBe(true);
+  });
+
+  it('an attempt from before the snapshot resumes with null timing, which is not a playable game', async () => {
+    const db = seed(8);
+    Object.assign(db.tables.attempts[0], {
+      round1_ms_per_image: null,
+      round2_draw_ms: null,
+      round3_ms: null,
+    });
+
+    const assignment = await resume();
+
+    expect(assignment.timing).toBeNull();
+    expect(isSixtySecondGame(assignment.round1.length, assignment.timing)).toBe(false);
+  });
+});
+
+// ===========================================================================
+// STARTING A GAME
+// ===========================================================================
+describe('Starting a game', () => {
+  it.each([8, 10] as const)('the %i-image preset creates exactly that many assignments', async (images) => {
+    const db = seed(images);
+    env.userId = 'user-2';
+
+    const res = await call(startAttempt, { modelReady: true });
+    const json = await res.json();
+    const assignment = json.data as AttemptAssignment;
+
+    expect(json.ok).toBe(true);
+    expect(assignment.resumed).toBe(false);
+    expect(assignment.round1).toHaveLength(images);
+    const created = db.tables.attempts.find((a) => a.user_id === 'user-2')!;
+    expect(db.tables.attempt_round1.filter((r) => r.attempt_id === created.id)).toHaveLength(images);
+    // The snapshot on the attempt is what the client receives.
+    expect(created).toMatchObject({
+      round1_ms_per_image: FORMAT[images].round1_ms_per_image,
+      round2_draw_ms: 12000,
+      round3_ms: 8000,
+    });
+    expect(assignment.timing).toEqual({
+      round1MsPerImage: FORMAT[images].round1_ms_per_image,
+      round2DrawMs: 12000,
+      round3Ms: 8000,
+    });
+    expect(isSixtySecondGame(assignment.round1.length, assignment.timing)).toBe(true);
+  });
+
+  it('unavailable settings fail cleanly: no attempt used, and a retry succeeds later', async () => {
+    const db = seed();
+    env.userId = 'user-2';
+    const settings = db.tables.event_settings.splice(0, 1);
+
+    const failed = await call(startAttempt, { modelReady: true });
+    const failure = await failed.json();
+
+    expect(failed.status).toBe(409);
+    expect(failure.ok).toBe(false);
+    expect(failure.error.code).toBe('SETTINGS_UNAVAILABLE');
+    expect(failure.error.ref).toMatch(/^ERR-/);
+    // Nothing was created, so the student's one official attempt is untouched.
+    expect(db.tables.attempts.filter((a) => a.user_id === 'user-2')).toHaveLength(0);
+    expect(db.tables.attempt_round1.filter((r) => r.attempt_id !== ATTEMPT)).toHaveLength(0);
+
+    // Settings come back; the same student tries again.
+    db.tables.event_settings.push(...settings);
+    const retried = await (await call(startAttempt, { modelReady: true })).json();
+
+    expect(retried.ok).toBe(true);
+    expect((retried.data as AttemptAssignment).resumed).toBe(false);
+    expect(db.tables.attempts.filter((a) => a.user_id === 'user-2')).toHaveLength(1);
   });
 });

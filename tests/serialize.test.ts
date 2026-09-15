@@ -72,6 +72,45 @@ describe('Assignment mapping', () => {
   });
 });
 
+describe('Frozen timing mapping', () => {
+  const timing = { round1_ms_per_image: 5000, round2_draw_ms: 12000, round3_ms: 8000 };
+
+  it('maps the attempt’s timing snapshot to camelCase', () => {
+    expect(toAssignment({ ...RAW_ASSIGNMENT, timing }).timing).toEqual({
+      round1MsPerImage: 5000,
+      round2DrawMs: 12000,
+      round3Ms: 8000,
+    });
+  });
+
+  it('coerces numeric strings', () => {
+    const t = toAssignment({
+      ...RAW_ASSIGNMENT,
+      timing: { round1_ms_per_image: '4000', round2_draw_ms: '12000', round3_ms: '8000' },
+    }).timing;
+    expect(t).toEqual({ round1MsPerImage: 4000, round2DrawMs: 12000, round3Ms: 8000 });
+  });
+
+  it('is null — never a default — when the snapshot is missing', () => {
+    expect(toAssignment(RAW_ASSIGNMENT).timing).toBeNull();
+    expect(toAssignment({ ...RAW_ASSIGNMENT, timing: null }).timing).toBeNull();
+    expect(toAssignment({}).timing).toBeNull();
+  });
+
+  it('is null when any part is missing or not a positive whole number', () => {
+    for (const bad of [
+      { ...timing, round3_ms: null },
+      { ...timing, round2_draw_ms: 0 },
+      { ...timing, round1_ms_per_image: -5000 },
+      { ...timing, round1_ms_per_image: 4500.5 },
+      { ...timing, round2_draw_ms: 'soon' },
+      { round1_ms_per_image: 5000 },
+    ]) {
+      expect(toAssignment({ ...RAW_ASSIGNMENT, timing: bad }).timing).toBeNull();
+    }
+  });
+});
+
 describe('Result mapping', () => {
   it('maps every result field', () => {
     const r = toResult({

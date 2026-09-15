@@ -9,6 +9,7 @@ import {
   otpSchema,
   registrationSchema,
   round1SubmitSchema,
+  settingsUpdateSchema,
 } from '@/lib/validation';
 
 describe('AU email restriction (§3)', () => {
@@ -120,14 +121,14 @@ describe('Round 1 submission schema', () => {
     expect(round1SubmitSchema.safeParse(valid).success).toBe(true);
   });
 
-  it('accepts all four slots', () => {
-    for (const slot of [1, 2, 3, 4]) {
+  it('accepts every slot a 10-image game can have, 1 through 10', () => {
+    for (let slot = 1; slot <= 10; slot++) {
       expect(round1SubmitSchema.safeParse({ ...valid, slot }).success).toBe(true);
     }
   });
 
   it('rejects an out-of-range slot', () => {
-    expect(round1SubmitSchema.safeParse({ ...valid, slot: 5 }).success).toBe(false);
+    expect(round1SubmitSchema.safeParse({ ...valid, slot: 11 }).success).toBe(false);
     expect(round1SubmitSchema.safeParse({ ...valid, slot: 0 }).success).toBe(false);
     expect(round1SubmitSchema.safeParse({ ...valid, slot: 2.5 }).success).toBe(false);
   });
@@ -143,6 +144,37 @@ describe('Round 1 submission schema', () => {
   it('requires an idempotency key so retries cannot double-submit', () => {
     const { idempotencyKey: _omit, ...withoutKey } = valid;
     expect(round1SubmitSchema.safeParse(withoutKey).success).toBe(false);
+  });
+});
+
+describe('Admin settings schema — timing only by preset', () => {
+  it('accepts the two Round 1 presets by name', () => {
+    expect(settingsUpdateSchema.safeParse({ round1Preset: '8x5' }).success).toBe(true);
+    expect(settingsUpdateSchema.safeParse({ round1Preset: '10x4' }).success).toBe(true);
+  });
+
+  it('rejects any other preset name', () => {
+    for (const round1Preset of ['8x4', '10x5', '4x8', '12x3', '', 8, null]) {
+      expect(settingsUpdateSchema.safeParse({ round1Preset }).success).toBe(false);
+    }
+  });
+
+  it('rejects raw timer milliseconds instead of silently ignoring them', () => {
+    for (const raw of [
+      { round1MsPerImage: 5000 },
+      { round1ImageCount: 8 },
+      { round2DrawMs: 12000 },
+      { round3Ms: 8000 },
+      { round1Preset: '8x5', round1MsPerImage: 3000 },
+    ]) {
+      expect(settingsUpdateSchema.safeParse(raw).success).toBe(false);
+    }
+  });
+
+  it('still accepts the non-timing settings /admin sends', () => {
+    expect(
+      settingsUpdateSchema.safeParse({ challengeOpen: true, humanWinThreshold: 600 }).success,
+    ).toBe(true);
   });
 });
 

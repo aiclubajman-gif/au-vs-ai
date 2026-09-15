@@ -41,13 +41,21 @@ export async function POST(req: Request) {
 
   if (existing?.submitted_at) return ok({ locked: true, alreadyAnswered: true });
 
+  // The speed bonus is measured against the drawing time THIS attempt was
+  // created with, never today's settings. An attempt from before the timing
+  // snapshot has no such time and is not scored on a guess.
+  const drawTimeLimitMs = guard.attempt.round2_draw_ms;
+  if (drawTimeLimitMs === null) {
+    return fail('TIMING_UNAVAILABLE', messageFor('TIMING_UNAVAILABLE'), 409);
+  }
+
   const settings = await loadSettings();
   const result = scoreRound2(
     { targetConfidence, drawTimeMs },
     {
       recognitionThreshold: settings.round2RecognitionThreshold,
       speedBonusMax: settings.round2SpeedBonusMax,
-      drawTimeMs: settings.round2DrawMs,
+      drawTimeMs: drawTimeLimitMs,
     },
   );
 

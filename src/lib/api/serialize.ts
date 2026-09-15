@@ -8,7 +8,7 @@
  * unit tested against real payload shapes.
  */
 
-import type { AttemptAssignment, PublicAttemptResult, Round1Slot } from '@/types';
+import type { AttemptAssignment, AttemptTiming, PublicAttemptResult, Round1Slot } from '@/types';
 
 type Raw = Record<string, unknown>;
 
@@ -23,6 +23,27 @@ function num(v: unknown, fallback = 0): number {
 
 function bool(v: unknown): boolean {
   return v === true;
+}
+
+/** A positive whole number of milliseconds, or null. */
+function ms(v: unknown): number | null {
+  const n = typeof v === 'string' ? Number(v) : v;
+  return typeof n === 'number' && Number.isInteger(n) && n > 0 ? n : null;
+}
+
+/**
+ * The attempt's frozen timing. Unlike every other field here there is NO
+ * default: a game played on made-up timing is exactly what the snapshot
+ * exists to prevent, so anything incomplete maps to null and is refused.
+ */
+function toTiming(raw: unknown): AttemptTiming | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const t = raw as Raw;
+  const round1MsPerImage = ms(t.round1_ms_per_image);
+  const round2DrawMs = ms(t.round2_draw_ms);
+  const round3Ms = ms(t.round3_ms);
+  if (round1MsPerImage === null || round2DrawMs === null || round3Ms === null) return null;
+  return { round1MsPerImage, round2DrawMs, round3Ms };
 }
 
 export function toAssignment(raw: unknown): AttemptAssignment {
@@ -47,6 +68,7 @@ export function toAssignment(raw: unknown): AttemptAssignment {
     currentRound: num(r.current_round, 1),
     startedAt: str(r.started_at),
     resumed: bool(r.resumed),
+    timing: toTiming(r.timing),
     round1,
     round2: {
       classKey: str(r2.class_key),

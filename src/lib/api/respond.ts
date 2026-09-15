@@ -39,6 +39,12 @@ export const MESSAGES: Record<string, string> = {
   NO_ROUND3_QUESTION: 'The final round is not configured. Show this to an AIDA team member.',
   ROUND1_BANK_TOO_SMALL: 'The question bank is not ready. Show this to an AIDA team member.',
   ROUND1_BANK_UNBALANCED: 'The question bank is not ready. Show this to an AIDA team member.',
+  SETTINGS_UNAVAILABLE:
+    "The game settings couldn't be loaded. Your attempt has not been used — try again in a moment.",
+  TIMING_UNAVAILABLE:
+    'This game was set up before the current format and cannot be played. Show this to an AIDA team member.',
+  ROUND1_FORMAT_LOCKED:
+    'Round 1 format locked. Games have already been played under this format.',
   INVALID_DOMAIN: 'Use your Ajman University email address to play.',
   MODEL_UNAVAILABLE:
     "This device can't run the drawing challenge. Please use one of the AIDA booth tablets.",

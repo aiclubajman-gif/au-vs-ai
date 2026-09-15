@@ -361,6 +361,8 @@ describe('Blocked-start messaging', () => {
       'NEW_GAMES_PAUSED',
       'ROUND1_BANK_TOO_SMALL',
       'ROUND1_BANK_UNBALANCED',
+      'SETTINGS_UNAVAILABLE',
+      'TIMING_UNAVAILABLE',
       'NO_ROUND3_QUESTION',
       'NO_DRAWING_CLASSES',
       'PROFILE_REQUIRED',

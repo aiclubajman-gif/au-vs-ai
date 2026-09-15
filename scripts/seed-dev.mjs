@@ -76,6 +76,7 @@ if (clearing) {
     console.log(`  ${BOLD}Bank now${RESET}`);
     console.log(`    active         ${health.active}`);
     console.log(`    real / ai      ${health.real} / ${health.ai}`);
+    console.log(`    per game       ${health.images_per_game ?? 'unknown'}`);
     console.log(`    placeholders   ${health.placeholders === 0
       ? `${GREEN}0${RESET}`
       : `${RED}${health.placeholders} STILL LIVE${RESET}`}`);
@@ -92,8 +93,9 @@ console.log(`\n  ${BOLD}Seeding development data${RESET}\n`);
 // ---------------------------------------------------------------------------
 // Placeholder Round 1 images.
 //
-// Six real, six AI, so the "at least one of each" rule in start_attempt() can
-// always be satisfied. The SVGs live in /public/game-assets/placeholder and
+// Six real, six AI: enough for either Round 1 preset, since start_attempt()
+// keeps every game 25-75% real (a 10-image game needs 3 of each, at most 7 of
+// either). The SVGs live in /public/game-assets/placeholder and
 // are visually obvious placeholders — nobody could mistake one for content.
 // ---------------------------------------------------------------------------
 const { count: existing } = await admin

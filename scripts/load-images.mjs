@@ -170,21 +170,34 @@ const aiCount = items.filter((i) => i.label === 'ai_generated').length;
 const oversize = items.filter((i) => i.bytes > MAX_BYTES);
 const noExplanation = items.filter((i) => !i.explanation);
 
+// The selected Round 1 preset (8 or 10) decides how many images a game needs.
+// Before migration 0015 the column does not exist; judge against the larger
+// preset rather than pass a bank that could not fill one.
+const { data: format } = await admin
+  .from('event_settings')
+  .select('round1_image_count')
+  .eq('id', 1)
+  .maybeSingle();
+const PER_GAME = format?.round1_image_count ?? 10;
+// start_attempt() keeps every game between 25% and 75% real.
+const MIN_PER_LABEL = Math.ceil(PER_GAME / 4);
+
 console.log(`  ${BOLD}Found${RESET}`);
 console.log(`    real           ${realCount}`);
 console.log(`    ai_generated   ${aiCount}`);
-console.log(`    total          ${items.length}\n`);
+console.log(`    total          ${items.length}`);
+console.log(`    ${DIM}per game       ${PER_GAME}${format ? '' : ' (preset not readable, assuming 10)'}${RESET}\n`);
 
 let blocked = false;
 
-if (realCount === 0 || aiCount === 0) {
-  console.log(`  ${RED}FAIL${RESET}  Need at least one image in EACH folder.`);
-  console.log(`        Every game shows one real and one AI image minimum.\n`);
+if (realCount < MIN_PER_LABEL || aiCount < MIN_PER_LABEL) {
+  console.log(`  ${RED}FAIL${RESET}  Need at least ${MIN_PER_LABEL} images in EACH folder.`);
+  console.log(`        Every ${PER_GAME}-image game shows at least ${MIN_PER_LABEL} real and ${MIN_PER_LABEL} AI.\n`);
   blocked = true;
 }
 
-if (items.length < 4) {
-  console.log(`  ${RED}FAIL${RESET}  Need at least 4 active images; a game shows 4.\n`);
+if (items.length < PER_GAME) {
+  console.log(`  ${RED}FAIL${RESET}  Need at least ${PER_GAME} images; a game shows ${PER_GAME}.\n`);
   blocked = true;
 }
 
@@ -195,9 +208,9 @@ if (skew > 0.3) {
   console.log(`        Students who notice will just guess the common one.\n`);
 }
 
-if (items.length < 40) {
-  console.log(`  ${YELLOW}WARN${RESET}  ${items.length} images. Four are shown per game, so`);
-  console.log(`        neighbours will often see the same ones. Aim for 40+.\n`);
+if (items.length < PER_GAME * 10) {
+  console.log(`  ${YELLOW}WARN${RESET}  ${items.length} images. ${PER_GAME} are shown per game, so`);
+  console.log(`        neighbours will often see the same ones. Aim for ${PER_GAME * 10}+.\n`);
 }
 
 // ---- Resolution -------------------------------------------------------
@@ -239,7 +252,7 @@ if (oversize.length > 0) {
   for (const i of oversize.slice(0, 5)) {
     console.log(`        ${i.file}  ${(i.bytes / 1024).toFixed(0)}KB`);
   }
-  console.log(`        Four of these per game on venue wifi is a stalled round.`);
+  console.log(`        ${PER_GAME} of these per game on venue wifi is a stalled round.`);
   console.log(`        Convert to WebP at ~1200px wide before loading.\n`);
 }
 
@@ -332,6 +345,7 @@ if (health) {
   console.log(`  ${BOLD}Bank now${RESET}`);
   console.log(`    active         ${health.active}`);
   console.log(`    real / ai      ${health.real} / ${health.ai}`);
+  console.log(`    per game       ${health.images_per_game ?? 'unknown'}`);
   console.log(`    playable       ${health.playable ? `${GREEN}yes${RESET}` : `${RED}no${RESET}`}`);
 
   if (health.placeholders > 0) {

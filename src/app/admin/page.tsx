@@ -1,6 +1,13 @@
 import { requireAdmin } from '@/lib/api/admin-guard';
 import { createAdminSupabase } from '@/lib/supabase/server';
-import { AdminPanel, type AdminStats, type AdminSettings, type AttemptRow } from '@/components/admin/AdminPanel';
+import { isRound1FormatLocked } from '@/lib/api/format-lock';
+import {
+  AdminPanel,
+  type AdminStats,
+  type AdminSettings,
+  type AttemptRow,
+  type BankHealth,
+} from '@/components/admin/AdminPanel';
 
 export const dynamic = 'force-dynamic';
 
@@ -92,11 +99,26 @@ export default async function AdminPage() {
   stats.humanWins = eventStats?.human_wins ?? 0;
   stats.aiWins = eventStats?.ai_wins ?? 0;
 
+  const formatLocked = await isRound1FormatLocked(supabase);
+
+  const { data: healthRow } = await supabase.rpc('round1_bank_health');
+  const bankHealth: BankHealth | null = healthRow
+    ? {
+        active: healthRow.active,
+        real: healthRow.real,
+        ai: healthRow.ai,
+        imagesPerGame: healthRow.images_per_game ?? null,
+        playable: healthRow.playable === true,
+        playableByImageCount: healthRow.playable_by_image_count ?? {},
+      }
+    : null;
+
   const settings: AdminSettings = {
     challengeOpen: settingsRow.challenge_open,
     newGamesPaused: settingsRow.new_games_paused,
     entriesClosed: settingsRow.entries_closed,
     humanWinThreshold: settingsRow.human_win_threshold,
+    round1ImageCount: settingsRow.round1_image_count,
     round1MsPerImage: settingsRow.round1_ms_per_image,
     round2DrawMs: settingsRow.round2_draw_ms,
     round3Ms: settingsRow.round3_ms,
@@ -124,6 +146,8 @@ export default async function AdminPage() {
       initialStats={stats}
       initialSettings={settings}
       initialAttempts={attempts}
+      initialFormatLocked={formatLocked}
+      bankHealth={bankHealth}
     />
   );
 }

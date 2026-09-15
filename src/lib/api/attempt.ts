@@ -25,6 +25,10 @@ export interface AttemptRow {
   round3_score: number | null;
   total_score: number | null;
   is_test: boolean;
+  /** Timing frozen at creation (0015). All three are null for older attempts. */
+  round1_ms_per_image: number | null;
+  round2_draw_ms: number | null;
+  round3_ms: number | null;
 }
 
 export type GuardResult =
@@ -41,7 +45,7 @@ export async function requireOwnedAttempt(attemptId: string): Promise<GuardResul
   const { data: attempt } = await admin
     .from('attempts')
     .select(
-      'id, user_id, status, current_round, started_at, round2_class_id, round3_question_id, round1_score, round2_score, round3_score, total_score, is_test',
+      'id, user_id, status, current_round, started_at, round2_class_id, round3_question_id, round1_score, round2_score, round3_score, total_score, is_test, round1_ms_per_image, round2_draw_ms, round3_ms',
     )
     .eq('id', attemptId)
     .maybeSingle();
@@ -67,6 +71,7 @@ export async function loadSettings(): Promise<EventSettings> {
     newGamesPaused: data.new_games_paused,
     entriesClosed: data.entries_closed,
     maintenanceMessage: data.maintenance_message,
+    round1ImageCount: data.round1_image_count,
     round1MsPerImage: data.round1_ms_per_image,
     round2DrawMs: data.round2_draw_ms,
     round3Ms: data.round3_ms,

@@ -5,12 +5,15 @@
  * Students stand next to friends; revealing correctness would let the first
  * player in a group leak the whole image bank. The server records the result
  * privately and the client shows a neutral "Answer locked".
+ *
+ * Only correctness is recorded per image. The Round 1 score is calculated once,
+ * in complete_attempt(), from correct answers over images assigned.
  */
 import { createAdminSupabase } from '@/lib/supabase/server';
 import { round1SubmitSchema } from '@/lib/validation';
 import { ok, fail, messageFor, refCode } from '@/lib/api/respond';
 import { requireOwnedAttempt } from '@/lib/api/attempt';
-import { scoreRound1Slot, isRound1Correct, ROUND1_SLOTS } from '@/lib/scoring';
+import { isRound1Correct } from '@/lib/scoring';
 
 export async function POST(req: Request) {
   let body: unknown;
@@ -66,8 +69,6 @@ export async function POST(req: Request) {
     correct = isRound1Correct(selectedAnswer, image.label);
   }
 
-  const points = scoreRound1Slot(slot, correct);
-
   // Only an unanswered slot is written, so two copies of the same request
   // racing each other cannot both score.
   const { data: written, error: writeError } = await admin
@@ -75,7 +76,6 @@ export async function POST(req: Request) {
     .update({
       selected_answer: selectedAnswer,
       correct,
-      points,
       response_time_ms: responseTimeMs,
       answered_at: new Date().toISOString(),
     })
@@ -105,13 +105,16 @@ export async function POST(req: Request) {
     await admin.rpc('bump_image_stats', { p_image_id: slotRow.image_id, p_correct: correct });
   }
 
-  const { count } = await admin
+  // Complete when every image THIS attempt was assigned has been answered.
+  // The rows are the assignment, so 8- and 10-image games need no constant.
+  const { data: slots } = await admin
     .from('attempt_round1')
-    .select('slot', { count: 'exact', head: true })
-    .eq('attempt_id', attemptId)
-    .not('answered_at', 'is', null);
+    .select('answered_at')
+    .eq('attempt_id', attemptId);
 
-  const roundComplete = (count ?? 0) >= ROUND1_SLOTS;
+  const assigned = slots?.length ?? 0;
+  const answered = (slots ?? []).filter((s) => s.answered_at !== null).length;
+  const roundComplete = assigned > 0 && answered >= assigned;
   if (roundComplete) {
     await admin.from('attempts').update({ current_round: 2 }).eq('id', attemptId);
   }

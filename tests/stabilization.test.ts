@@ -9,7 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { isRound1Correct, scoreRound1Slot, ROUND1_SLOTS } from '@/lib/scoring';
+import { isRound1Correct, scoreRound1 } from '@/lib/scoring';
 import { round1SubmitSchema } from '@/lib/validation';
 import { toAssignment, markAnsweredSlots, resumeStep } from '@/lib/api/serialize';
 import { answerTimeRemaining } from '@/lib/client/answer-window';
@@ -32,10 +32,13 @@ describe('Round 1 timeout', () => {
     expect(isRound1Correct(null, 'ai_generated')).toBe(false);
   });
 
-  it('scores zero on every slot', () => {
-    for (let slot = 1; slot <= ROUND1_SLOTS; slot++) {
-      expect(scoreRound1Slot(slot, isRound1Correct(null, 'real'))).toBe(0);
-      expect(scoreRound1Slot(slot, isRound1Correct(null, 'ai_generated'))).toBe(0);
+  it('adds nothing to the score, whatever the game length', () => {
+    for (const assigned of [4, 8, 10]) {
+      // Every image timed out: nothing is correct, so Round 1 scores zero.
+      const correct = Array.from({ length: assigned }, (_, i) =>
+        isRound1Correct(null, i % 2 ? 'real' : 'ai_generated'),
+      ).filter(Boolean).length;
+      expect(scoreRound1(correct, assigned)).toBe(0);
     }
   });
 
@@ -331,6 +334,83 @@ describe('/debug/draw', () => {
     const src = code('src/app/debug/draw/page.tsx');
     expect(src).toMatch(/if \(process\.env\.NODE_ENV === 'production'\) notFound\(\)/);
     expect(src.indexOf('notFound()')).toBeLessThan(src.indexOf('<DebugDraw'));
+  });
+});
+
+// ===========================================================================
+// 8. The 60-second format: one timing source, frozen on the attempt
+// ===========================================================================
+describe('Game timing source', () => {
+  it('/play no longer reads timing or falls back to defaults', () => {
+    const src = code('src/app/play/page.tsx');
+    expect(src).not.toMatch(/FALLBACK_TIMINGS/);
+    expect(src).not.toMatch(/event_settings/);
+    expect(src).not.toMatch(/round1_ms_per_image|round2_draw_ms|round3_ms/);
+    expect(src).not.toMatch(/timings=/);
+  });
+
+  it('PlayFlow takes no timing prop and plays only from assignment.timing', () => {
+    const src = code('src/components/game/PlayFlow.tsx');
+    expect(src).not.toMatch(/\btimings\b/);
+    expect(src).toMatch(/const timing = assignment\?\.timing \?\? null/);
+    for (const prop of [
+      'round1MsPerImage={timing.round1MsPerImage}',
+      'round2DrawMs={timing.round2DrawMs}',
+      'round3Ms={timing.round3Ms}',
+      'msPerImage={timing.round1MsPerImage}',
+      'drawMs={timing.round2DrawMs}',
+      'durationMs={timing.round3Ms}',
+    ]) {
+      expect(src).toContain(prop);
+    }
+  });
+
+  it('PlayFlow refuses to enter any round unless the frozen timing makes 60 seconds', () => {
+    const src = code('src/components/game/PlayFlow.tsx');
+    const start = src.indexOf("post('/api/attempt/start'");
+    const guard = src.indexOf('isSixtySecondGame(data.round1.length, data.timing)');
+    const landing = src.indexOf('setStep(landing');
+    expect(guard).toBeGreaterThan(start);
+    expect(guard).toBeLessThan(landing);
+    // Refused games go to the blocked screen, and the assignment is only kept
+    // for play after the check passes.
+    const refusal = src.slice(guard, landing);
+    expect(refusal).toMatch(/setStep\('blocked'\);\s*return;\s*\}\s*setAssignment\(data\)/);
+    // Every step that runs a timer requires the timing to be present.
+    for (const step of ['intro1', 'round1', 'intro2', 'round2', 'intro3', 'round3']) {
+      expect(src).toMatch(new RegExp(`step === '${step}'[^)]*&& timing\\)`));
+    }
+  });
+
+  it.each([
+    'src/components/game/Round1.tsx',
+    'src/components/game/Round2.tsx',
+    'src/components/game/Round3.tsx',
+    'src/components/game/HowItWorks.tsx',
+    'src/components/game/Interstitial.tsx',
+  ])('%s hardcodes no game timer value', (file) => {
+    expect(code(file)).not.toMatch(/\b(?:4_?000|5_?000|8_?000|12_?000|20_?000|40_?000|60_?000)\b/);
+  });
+
+  it('How It Works derives every figure from the assignment and its timing', () => {
+    const src = code('src/components/game/HowItWorks.tsx');
+    expect(src).toMatch(/const round1 = round1Images \* perImage/);
+    expect(src).toMatch(/round2DrawMs \/ 1000/);
+    expect(src).toMatch(/round3Ms \/ 1000/);
+    expect(src).toMatch(/\{round1 \+ round2 \+ round3\}/);
+  });
+
+  it('the Round 1 answer route derives completion from the assigned rows, not a constant', () => {
+    const src = code('src/app/api/round1/answer/route.ts');
+    expect(src).not.toMatch(/ROUND1_SLOTS|scoreRound1Slot|points/);
+    expect(src).toMatch(/const roundComplete = assigned > 0 && answered >= assigned/);
+  });
+
+  it('the Round 2 route scores the speed bonus on the attempt’s frozen draw time', () => {
+    const src = code('src/app/api/round2/submit/route.ts');
+    expect(src).toMatch(/guard\.attempt\.round2_draw_ms/);
+    expect(src).toMatch(/drawTimeMs: drawTimeLimitMs/);
+    expect(src).not.toMatch(/settings\.round2DrawMs/);
   });
 });
 

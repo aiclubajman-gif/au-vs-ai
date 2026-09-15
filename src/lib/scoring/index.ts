@@ -6,7 +6,7 @@
  * round records (§9).
  *
  * Total = 1000
- *   Round 1  500   three images, no speed bonus (§12)
+ *   Round 1  500   share of assigned images judged correctly, no speed bonus (§12)
  *   Round 2  250   recognition + partial credit + small speed bonus (§16)
  *   Round 3  250   distance from the shared answer (§20)
  */
@@ -16,25 +16,9 @@ export const MAX_ROUND2 = 250;
 export const MAX_ROUND3 = 250;
 export const MAX_TOTAL = 1000;
 
-/**
- * Four images at 125 points each, summing exactly to 500 (§12).
- *
- * Four divides 500 evenly, which removes the awkward 167/167/166 split, and
- * gives a fairer read on whether a student can actually spot AI rather than
- * getting lucky on three.
- */
-export const ROUND1_SLOTS = 4;
-export const ROUND1_SLOT_POINTS: readonly number[] = [125, 125, 125, 125];
-
 // ---------------------------------------------------------------------------
 // ROUND 1
 // ---------------------------------------------------------------------------
-
-export interface Round1Answer {
-  /** 1 to 4 */
-  slot: number;
-  correct: boolean;
-}
 
 /**
  * Whether a Round 1 selection matches the image's true label.
@@ -50,35 +34,30 @@ export function isRound1Correct(
   return selected !== null && selected === label;
 }
 
-/** Points for a single Round 1 slot. Throws on an out-of-range slot. */
-export function scoreRound1Slot(slot: number, correct: boolean): number {
-  if (!Number.isInteger(slot) || slot < 1 || slot > ROUND1_SLOTS) {
-    throw new RangeError(`Round 1 slot must be 1-${ROUND1_SLOTS}, received ${slot}`);
-  }
-  return correct ? ROUND1_SLOT_POINTS[slot - 1] : 0;
-}
-
 /**
- * Total Round 1 score. Unanswered slots score zero, so an abandoned attempt
- * that is later completed by an admin still produces a coherent number.
+ * Round 1 score: round(500 × correct / assigned), rounding halves up.
+ *
+ * Mirrors complete_attempt() (migration 0015), which is where the score is
+ * actually recorded, once, at the end of the game. There are no per-slot
+ * points: 500 does not divide evenly by 8, and splitting it 63/62 across
+ * shuffled slots would let two students with the same number right score
+ * differently. Only the counts matter.
+ *
+ *   4 images  125 per correct answer (identical to the old per-slot scoring)
+ *   8 images  0, 63, 125, 188, 250, 313, 375, 438, 500
+ *   10 images 50 per correct answer
+ *
+ * Unanswered and timed-out images count as assigned but not correct.
+ * Integer arithmetic, so a half is never lost to floating point.
  */
-export function scoreRound1(answers: Round1Answer[]): number {
-  let total = 0;
-  const seen = new Set<number>();
-
-  for (const a of answers) {
-    if (seen.has(a.slot)) {
-      throw new Error(`Duplicate Round 1 slot ${a.slot}`);
-    }
-    seen.add(a.slot);
-    total += scoreRound1Slot(a.slot, a.correct);
+export function scoreRound1(correct: number, assigned: number): number {
+  if (!Number.isInteger(assigned) || assigned < 1) {
+    throw new RangeError(`Round 1 assigned images must be a positive integer, received ${assigned}`);
   }
-
-  return total;
-}
-
-export function countRound1Correct(answers: Round1Answer[]): number {
-  return answers.filter((a) => a.correct).length;
+  if (!Number.isInteger(correct) || correct < 0 || correct > assigned) {
+    throw new RangeError(`Round 1 correct answers must be 0-${assigned}, received ${correct}`);
+  }
+  return Math.floor((2 * MAX_ROUND1 * correct + assigned) / (2 * assigned));
 }
 
 // ---------------------------------------------------------------------------

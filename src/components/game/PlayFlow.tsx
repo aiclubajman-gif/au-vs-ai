@@ -19,7 +19,8 @@ import { Round3 } from '@/components/game/Round3';
 import { Result } from '@/components/game/Result';
 import { resumeStep, toResult } from '@/lib/api/serialize';
 import { postJson } from '@/lib/client/submit';
-import type { College, AttemptAssignment, PublicAttemptResult, EventSettings } from '@/types';
+import { isSixtySecondGame } from '@/lib/timing';
+import type { College, AttemptAssignment, PublicAttemptResult } from '@/types';
 
 type Step =
   | 'loading' | 'email' | 'otp' | 'profile' | 'device' | 'blocked' | 'ready'
@@ -48,13 +49,7 @@ async function post<T = unknown>(url: string, body: unknown): Promise<PostResult
   return { ok: false, error: { code: res.code, message: res.message, ref: res.ref } };
 }
 
-export function PlayFlow({
-  colleges,
-  timings,
-}: {
-  colleges: College[];
-  timings: Pick<EventSettings, 'round1MsPerImage' | 'round2DrawMs' | 'round3Ms'>;
-}) {
+export function PlayFlow({ colleges }: { colleges: College[] }) {
   const [assignment, setAssignment] = useState<AttemptAssignment | null>(null);
   const [result, setResult] = useState<PublicAttemptResult | null>(null);
   const [returningPlayer, setReturningPlayer] = useState(false);
@@ -240,12 +235,26 @@ export function PlayFlow({
             return;
           }
           const data = res.data as AttemptAssignment;
-          setAssignment(data);
 
           if (data.status === 'completed') {
+            setAssignment(data);
             setStep('completed');
             return;
           }
+
+          // The only way into a round. The timing frozen on the attempt must
+          // make a complete 60-second game with the images it was assigned;
+          // anything else (e.g. an attempt from before the snapshot existed)
+          // is refused here rather than played on made-up timing.
+          if (!isSixtySecondGame(data.round1.length, data.timing)) {
+            setError({
+              message: 'This game cannot be played in its current state.',
+              code: 'TIMING_UNAVAILABLE',
+            });
+            setStep('blocked');
+            return;
+          }
+          setAssignment(data);
 
           // Placement comes from the frozen server state, so a refresh resumes
           // exactly where the student was rather than replaying Round 1.
@@ -384,28 +393,32 @@ export function PlayFlow({
     );
   }
 
+  // Every timer below comes from the attempt's own frozen snapshot, which the
+  // device step has already checked adds up to 60 seconds.
+  const timing = assignment?.timing ?? null;
+
   // Every interstitial gets its own `key`. They render at the same place in the
   // tree, so without one React reuses the previous screen's instance and its
   // countdown: an outro that timed out would instantly skip the next intro.
-  if (step === 'intro1' && assignment) {
+  if (step === 'intro1' && assignment && timing) {
     return (
       <HowItWorks
         key="intro1"
         round1Images={assignment.round1.length}
-        round1MsPerImage={timings.round1MsPerImage}
-        round2DrawMs={timings.round2DrawMs}
-        round3Ms={timings.round3Ms}
+        round1MsPerImage={timing.round1MsPerImage}
+        round2DrawMs={timing.round2DrawMs}
+        round3Ms={timing.round3Ms}
         onDone={() => setStep('round1')}
       />
     );
   }
 
-  if (step === 'round1' && assignment) {
+  if (step === 'round1' && assignment && timing) {
     return (
       <Round1
         attemptId={assignment.attemptId}
         slots={assignment.round1}
-        msPerImage={timings.round1MsPerImage}
+        msPerImage={timing.round1MsPerImage}
         onComplete={() => setStep('outro1')}
       />
     );
@@ -415,23 +428,23 @@ export function PlayFlow({
     return <FunFact key="outro1" onDone={() => setStep('intro2')} />;
   }
 
-  if (step === 'intro2') {
+  if (step === 'intro2' && timing) {
     return (
       <Interstitial
         key="intro2"
         intro={ROUND_INTROS[2]}
-        timerValue={Math.round(timings.round2DrawMs / 1000)}
+        timerValue={Math.round(timing.round2DrawMs / 1000)}
         onDone={() => setStep('round2')}
       />
     );
   }
 
-  if (step === 'round2' && assignment) {
+  if (step === 'round2' && assignment && timing) {
     return (
       <Round2
         attemptId={assignment.attemptId}
         assignment={assignment.round2}
-        drawMs={timings.round2DrawMs}
+        drawMs={timing.round2DrawMs}
         onComplete={() => setStep('outro2')}
       />
     );
@@ -441,23 +454,23 @@ export function PlayFlow({
     return <Interstitial key="outro2" outro={ROUND_OUTROS[2]} onDone={() => setStep('intro3')} />;
   }
 
-  if (step === 'intro3') {
+  if (step === 'intro3' && timing) {
     return (
       <Interstitial
         key="intro3"
         intro={ROUND_INTROS[3]}
-        timerValue={Math.round(timings.round3Ms / 1000)}
+        timerValue={Math.round(timing.round3Ms / 1000)}
         onDone={() => setStep('round3')}
       />
     );
   }
 
-  if (step === 'round3' && assignment) {
+  if (step === 'round3' && assignment && timing) {
     return (
       <Round3
         attemptId={assignment.attemptId}
         assignment={assignment.round3}
-        durationMs={timings.round3Ms}
+        durationMs={timing.round3Ms}
         onComplete={() => setStep('submitting')}
       />
     );
@@ -506,6 +519,17 @@ const BLOCKED_COPY: Record<string, { title: string; body: string; showRef: boole
   ROUND1_BANK_UNBALANCED: {
     title: 'Not ready yet',
     body: 'The challenge is still being set up. Please show this screen to an AIDA team member.',
+    showRef: true,
+  },
+  // start_attempt() refused before creating anything, so nothing was used up.
+  SETTINGS_UNAVAILABLE: {
+    title: 'Not available right now',
+    body: "We couldn't load the game settings. Your attempt has not been used. Try again in a moment.",
+    showRef: true,
+  },
+  TIMING_UNAVAILABLE: {
+    title: 'Not ready yet',
+    body: 'This game was set up in an older format and cannot be played. Please show this screen to an AIDA team member.',
     showRef: true,
   },
   NO_ROUND3_QUESTION: {

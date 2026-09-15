@@ -25,6 +25,7 @@ export interface EventSettings {
   entriesClosed: boolean;
   maintenanceMessage: string | null;
 
+  round1ImageCount: number;
   round1MsPerImage: number;
   round2DrawMs: number;
   round3Ms: number;
@@ -68,12 +69,22 @@ export interface Round3Assignment {
   answered: boolean;
 }
 
+/** The timing a game was created with. Frozen onto the attempt by start_attempt(). */
+export interface AttemptTiming {
+  round1MsPerImage: number;
+  round2DrawMs: number;
+  round3Ms: number;
+}
+
 export interface AttemptAssignment {
   attemptId: string;
   status: AttemptStatus;
   currentRound: number;
   startedAt: string;
   resumed: boolean;
+  /** null only for an attempt created before migration 0015. Never played. */
+  timing: AttemptTiming | null;
+  /** Its length is the attempt's Round 1 image count. */
   round1: Round1Slot[];
   round2: Round2Assignment;
   round3: Round3Assignment;
@@ -149,6 +160,9 @@ export const ERROR_CODES = {
   NO_ROUND3_QUESTION: 'NO_ROUND3_QUESTION',
   ROUND1_BANK_TOO_SMALL: 'ROUND1_BANK_TOO_SMALL',
   ROUND1_BANK_UNBALANCED: 'ROUND1_BANK_UNBALANCED',
+  ROUND1_FORMAT_LOCKED: 'ROUND1_FORMAT_LOCKED',
+  SETTINGS_UNAVAILABLE: 'SETTINGS_UNAVAILABLE',
+  TIMING_UNAVAILABLE: 'TIMING_UNAVAILABLE',
   INVALID_DOMAIN: 'INVALID_DOMAIN',
   ROUND_ALREADY_ANSWERED: 'ROUND_ALREADY_ANSWERED',
   MODEL_UNAVAILABLE: 'MODEL_UNAVAILABLE',
