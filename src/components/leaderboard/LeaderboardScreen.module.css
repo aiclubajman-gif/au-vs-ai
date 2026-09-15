@@ -1,0 +1,262 @@
+/* ==========================================================================
+   Leaderboard. Scoped to this screen.
+
+   The 853 × 1844 plate is one composition: rows are placed in artwork pixels
+   (`--u`) and never stretched. On a phone the stage takes the full width and
+   the page scrolls vertically if the browser's toolbars leave less height
+   than the plate needs, so names stay readable; elsewhere the plate is fitted
+   to the window height, at least 430 px wide.
+
+   Panel 23–830u × 492–1663u. Podium rows 53–800u, centres 609 / 708.5 /
+   805.5u; lower rows centred between their lines at 897–1462u. Laurel and rank
+   column centre 129u, avatar ring 227–292u, name from 318u, scores right-
+   aligned to 765u. Your Rank shell 64–789u × 1524–1627u, painted icon ends
+   310u, arrow starts 578u.
+   ========================================================================== */
+
+.page {
+  --stage-w: min(100vw, max(calc(100svh * 853 / 1844), 430px));
+  --u: calc(var(--stage-w) / 853);
+
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  /* Clips only the scaled backdrop: the page grows with the stage, so a short
+     viewport still scrolls vertically. */
+  overflow: hidden;
+  overflow: clip;
+  background: #02040b;
+  color: #f4f7ff;
+}
+
+.stage {
+  position: relative;
+  width: var(--stage-w);
+  height: calc(var(--u) * 1844);
+}
+
+.plate {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Letterbox bands on tall phones: see HowItWorks.module.css. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(20px) brightness(0.62) saturate(1.1);
+  transform: scale(1.15);
+  user-select: none;
+  pointer-events: none;
+}
+
+@media (max-aspect-ratio: 853 / 1844) {
+  .plate {
+    mask-image: linear-gradient(transparent, #000 2.5%, #000 97.5%, transparent);
+  }
+}
+
+@media (min-width: 768px) {
+  .backdrop {
+    display: none;
+  }
+}
+
+/* --- Rows ---------------------------------------------------------------------- */
+
+.rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  position: absolute;
+  top: calc(var(--u) * var(--y));
+  left: calc(var(--u) * 53);
+  width: calc(var(--u) * 747);
+  height: 0;
+  --rank-size: 30;
+  --name-size: 28;
+  /* To 20u short of the widest score ("1000"). */
+  --name-w: 375;
+  --score-size: 30;
+}
+.row[data-slot='1'] { --y: 609; }
+.row[data-slot='2'] { --y: 708.5; }
+.row[data-slot='3'] { --y: 805.5; }
+.row[data-slot='4'] { --y: 897; }
+.row[data-slot='5'] { --y: 979.5; }
+.row[data-slot='6'] { --y: 1061; }
+.row[data-slot='7'] { --y: 1142; }
+.row[data-slot='8'] { --y: 1222; }
+.row[data-slot='9'] { --y: 1302; }
+.row[data-slot='10'] { --y: 1382; }
+.row[data-slot='11'] { --y: 1462; }
+
+.row[data-podium] {
+  --rank-size: 46;
+  --name-size: 28;
+  --name-w: 322;
+  --score-size: 44;
+}
+
+/* Digits are registered by cap height (see Result.module.css). */
+.rank,
+.score {
+  position: absolute;
+  top: 0;
+  padding-block: 0.12em;
+  line-height: 1;
+  white-space: nowrap;
+  text-box: trim-both cap alphabetic;
+}
+
+.rank {
+  left: calc(var(--u) * 76);
+  translate: -50% -50%;
+  font-size: calc(var(--u) * var(--rank-size));
+  font-weight: 600;
+  color: #dde6ff;
+}
+
+/* Names keep their line box so descenders are never clipped by the ellipsis. */
+.name {
+  position: absolute;
+  top: 0;
+  left: calc(var(--u) * 265);
+  max-width: calc(var(--u) * var(--name-w));
+  translate: 0 -50%;
+  overflow: hidden;
+  font-size: calc(var(--u) * var(--name-size));
+  line-height: 1.3;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #e9eefc;
+}
+
+.score {
+  right: calc(var(--u) * 35);
+  translate: 0 -50%;
+  font-size: calc(var(--u) * var(--score-size));
+  font-weight: 600;
+  color: #e9eefc;
+}
+
+.row[data-podium] .rank,
+.row[data-podium] .score {
+  font-weight: 900;
+  background: linear-gradient(180deg, var(--metal-from) 15%, var(--metal-to) 95%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 calc(var(--u) * 10) var(--metal-glow));
+}
+.row[data-podium] .name {
+  font-weight: 700;
+  color: #ffffff;
+}
+.row[data-podium='1'] {
+  --metal-from: #fff6c2;
+  --metal-to: #ffbd2e;
+  --metal-glow: rgba(255, 180, 40, 0.6);
+}
+.row[data-podium='2'] {
+  --metal-from: #ffffff;
+  --metal-to: #b4c6e8;
+  --metal-glow: rgba(160, 190, 255, 0.55);
+}
+.row[data-podium='3'] {
+  --metal-from: #ffe6c4;
+  --metal-to: #ff9a4a;
+  --metal-glow: rgba(255, 130, 50, 0.55);
+}
+
+/* In the gold row's name column, where the first player will appear, so it
+   never crosses the painted avatars or row lines. */
+.empty {
+  position: absolute;
+  top: calc(var(--u) * 609);
+  left: calc(var(--u) * 318);
+  width: calc(var(--u) * 460);
+  translate: 0 -50%;
+  margin: 0;
+  font-size: calc(var(--u) * 22);
+  line-height: 1.3;
+  white-space: pre-line;
+  color: #fff4d6;
+}
+
+/* --- Your Rank -------------------------------------------------------------------- */
+
+.yourRank {
+  position: absolute;
+  top: calc(var(--u) * 1524);
+  left: calc(var(--u) * 64);
+  width: calc(var(--u) * 725);
+  height: calc(var(--u) * 103);
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--u) * 40);
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+.yourRank::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--u) * -8) 0;
+}
+.yourRank:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.yourRank:active {
+  background: rgba(0, 20, 60, 0.16);
+}
+.yourRank:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: calc(var(--u) * 6);
+}
+.yourRank[aria-busy='true'] {
+  cursor: progress;
+}
+
+/* Centred between the painted icon and arrow. */
+.yourRankLabel {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--u) * 380);
+  translate: -50% -50%;
+  padding-block: 0.12em;
+  font-size: calc(var(--u) * 38);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-box: trim-both cap alphabetic;
+  text-shadow: 0 0 calc(var(--u) * 12) rgba(255, 255, 255, 0.4);
+}
+
+/* Under the panel, above the painted footer. */
+.yourRankStatus {
+  position: absolute;
+  top: calc(var(--u) * 1690);
+  left: 0;
+  right: 0;
+  translate: 0 -50%;
+  margin: 0;
+  font-size: max(11px, calc(var(--u) * 22));
+  line-height: 1.2;
+  text-align: center;
+  color: #cfe0ff;
+}

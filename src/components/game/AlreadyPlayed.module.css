@@ -1,0 +1,240 @@
+/* ==========================================================================
+   You've Already Played. Scoped to this screen.
+
+   Same stage model as the result screens: the 853 × 1844 plate fitted whole
+   inside the viewport, `--u` = one artwork pixel, overlays placed in u.
+   Panel 43–810u × 776–1495u; columns 43–304u, 304–547u, 547–810u. Buttons
+   88–765u: leaderboard 1213–1309u, join 1330–1460u. Painted Back chevron at
+   348–362u × 1537–1559u.
+   ========================================================================== */
+
+.page {
+  --stage-w: min(100vw, calc(100svh * 853 / 1844));
+  --u: calc(var(--stage-w) / 853);
+
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  overflow: hidden;
+  overflow: clip;
+  background: #02040b;
+  color: #f4f7ff;
+}
+
+.stage {
+  position: relative;
+  width: var(--stage-w);
+  height: calc(var(--u) * 1844);
+}
+
+.plate {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Letterbox bands on tall phones: see HowItWorks.module.css. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(20px) brightness(0.62) saturate(1.1);
+  transform: scale(1.15);
+  user-select: none;
+  pointer-events: none;
+}
+
+@media (max-aspect-ratio: 853 / 1844) {
+  .plate {
+    mask-image: linear-gradient(transparent, #000 2.5%, #000 97.5%, transparent);
+  }
+}
+
+@media (min-width: 768px) {
+  .backdrop {
+    display: none;
+  }
+}
+
+/* Text registered by cap height (see Result.module.css). */
+.value,
+.count,
+.buttonLabel,
+.homeLabel {
+  margin: 0;
+  padding-block: 0.12em;
+  line-height: 1;
+  white-space: nowrap;
+  text-box: trim-both cap alphabetic;
+}
+
+/* --- Result values: between each column's label and caption ---------------- */
+
+.value {
+  position: absolute;
+  top: calc(var(--u) * 998);
+  translate: -50% -50%;
+  font-size: calc(var(--u) * 60);
+  font-weight: 900;
+  letter-spacing: -0.005em;
+  background: linear-gradient(180deg, #ffffff 15%, var(--to) 95%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 calc(var(--u) * 12) var(--glow));
+}
+.value[data-col='score'] {
+  left: calc(var(--u) * 173.5);
+  --to: #6fc3ff;
+  --glow: rgba(40, 150, 255, 0.75);
+}
+.value[data-col='rank'] {
+  left: calc(var(--u) * 425.5);
+  --to: #ff9a4d;
+  --glow: rgba(255, 120, 40, 0.7);
+}
+.value[data-col='top'] {
+  left: calc(var(--u) * 678.5);
+  --to: #3fd2ff;
+  --glow: rgba(20, 190, 255, 0.7);
+}
+
+/* The empty middle line of OUT OF / __ / PLAYERS. */
+.count {
+  position: absolute;
+  top: calc(var(--u) * 1069);
+  left: calc(var(--u) * 425.5);
+  translate: -50% -50%;
+  font-size: calc(var(--u) * 22);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+}
+
+/* --- Buttons over the painted shells ---------------------------------------- */
+
+.button {
+  position: absolute;
+  left: calc(var(--u) * 88);
+  width: calc(var(--u) * 677);
+  border-radius: calc(var(--u) * 30);
+  color: #fff;
+  text-decoration: none;
+  transition: background-color 120ms ease;
+}
+/* Taller tap target, into the free space around the shell only. */
+.button::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--u) * var(--hit-above) * -1) 0 calc(var(--u) * var(--hit-below) * -1);
+}
+.button:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.button:active {
+  background: rgba(0, 20, 60, 0.16);
+}
+.button:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: calc(var(--u) * 6);
+}
+
+.button[data-button='leaderboard'] {
+  top: calc(var(--u) * 1213);
+  height: calc(var(--u) * 96);
+  --hit-above: 14;
+  --hit-below: 10;
+  --row-y: 48;
+}
+
+.button[data-button='join'] {
+  top: calc(var(--u) * 1330);
+  height: calc(var(--u) * 130);
+  color: #ffb54a;
+  --hit-above: 10;
+  --hit-below: 14;
+  --row-y: 42;
+}
+
+.buttonRow {
+  position: absolute;
+  top: calc(var(--u) * var(--row-y));
+  left: 50%;
+  translate: -50% -50%;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 22);
+}
+
+.buttonLabel {
+  font-size: calc(var(--u) * 34);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-shadow: 0 0 calc(var(--u) * 10) color-mix(in srgb, currentColor 40%, transparent);
+}
+
+.icon {
+  flex: none;
+  width: calc(var(--u) * 40);
+  height: calc(var(--u) * 40);
+  filter: drop-shadow(0 0 calc(var(--u) * 6) color-mix(in srgb, currentColor 60%, transparent));
+}
+
+.arrow {
+  flex: none;
+  width: calc(var(--u) * 36);
+}
+
+.buttonCaption {
+  position: absolute;
+  top: calc(var(--u) * 94);
+  left: 0;
+  right: 0;
+  translate: 0 -50%;
+  font-size: max(9px, calc(var(--u) * 22));
+  line-height: 1.2;
+  text-align: center;
+  color: #d4dcf2;
+}
+
+/* --- Back to Home, beside the painted chevron ---------------------------------- */
+
+.home {
+  position: absolute;
+  top: calc(var(--u) * 1518);
+  left: calc(var(--u) * 330);
+  width: calc(var(--u) * 290);
+  height: calc(var(--u) * 60);
+  border-radius: calc(var(--u) * 14);
+  color: #a9c4ff;
+  text-decoration: none;
+}
+.home::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--u) * -22) 0;
+}
+.home:hover .homeLabel {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.home:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: calc(var(--u) * 4);
+}
+
+.homeLabel {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--u) * 58);
+  translate: 0 -50%;
+  font-size: calc(var(--u) * 28);
+  font-weight: 500;
+}

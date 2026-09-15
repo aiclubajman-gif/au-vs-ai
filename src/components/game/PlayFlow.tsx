@@ -7,7 +7,7 @@ import { AUTH_PLATE_SRC } from '@/components/auth/AuthShell';
 import { OtpStep } from '@/components/auth/OtpStep';
 import { ProfileStep } from '@/components/auth/ProfileStep';
 import { DeviceStep, type DeviceStage } from '@/components/auth/DeviceStep';
-import { Screen, Title, Hint, Button } from '@/components/ui';
+import { Screen } from '@/components/ui';
 import { resolveClassifier } from '@/lib/ml/classifier';
 import { composeAuEmail } from '@/lib/client/email';
 import { Interstitial, ROUND_INTROS, ROUND_OUTROS } from '@/components/game/Interstitial';
@@ -17,6 +17,12 @@ import { Round1 } from '@/components/game/Round1';
 import { Round2 } from '@/components/game/Round2';
 import { Round3 } from '@/components/game/Round3';
 import { Result } from '@/components/game/Result';
+import { HUMAN_WIN_PLATE_SRC } from '@/components/game/HumanWinResult';
+import { AI_WIN_PLATE_SRC } from '@/components/game/AiWinResult';
+import { AlreadyPlayed } from '@/components/game/AlreadyPlayed';
+import { SomethingWentWrong } from '@/components/game/SomethingWentWrong';
+import { ChallengePaused } from '@/components/game/ChallengePaused';
+import { formatRank, formatTopShare } from '@/lib/client/result-text';
 import { resumeStep, toResult } from '@/lib/api/serialize';
 import { postJson } from '@/lib/client/submit';
 import { isSixtySecondGame } from '@/lib/timing';
@@ -106,6 +112,23 @@ export function PlayFlow({ colleges }: { colleges: College[] }) {
     };
   }, []);
 
+  // A student whose attempt is already finished but who arrived without their
+  // result (signed in again, refused a new game, or the restore read failed)
+  // still sees the real result, loaded the same way as a restored session.
+  useEffect(() => {
+    if (step !== 'completed' || result) return;
+    let cancelled = false;
+    post('/api/attempt/result', {}).then((r) => {
+      if (cancelled || !r.ok) return;
+      setResult(toResult(r.data));
+      setReturningPlayer(true);
+      setStep('result');
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [step, result]);
+
   // Visible resend countdown (§7).
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -118,6 +141,12 @@ export function PlayFlow({ colleges }: { colleges: College[] }) {
   preload(EMAIL_PLATE_SRC, { as: 'image', fetchPriority: 'high' });
   // OTP, Profile and Ready share one plate; have it cached before the code arrives.
   preload(AUTH_PLATE_SRC, { as: 'image', fetchPriority: 'low' });
+  // Which result plate is needed is only known once scoring returns, so fetch
+  // both during the last round and the score is never revealed on a bare page.
+  if (step === 'round3' || step === 'submitting') {
+    preload(HUMAN_WIN_PLATE_SRC, { as: 'image', fetchPriority: 'low' });
+    preload(AI_WIN_PLATE_SRC, { as: 'image', fetchPriority: 'low' });
+  }
 
   // Synchronous guard shared by the button, the Enter key and "Resend", so
   // repeated presses cannot fire overlapping sends before `busy` re-renders.
@@ -347,50 +376,38 @@ export function PlayFlow({ colleges }: { colleges: College[] }) {
 
   if (step === 'blocked') {
     const code = error?.code ?? '';
+    // The pause is enforced by start_attempt(); this only picks the screen.
+    if (code === 'NEW_GAMES_PAUSED') return <ChallengePaused homeHref="/" />;
+
     const copy = BLOCKED_COPY[code] ?? {
       title: 'Not available right now',
       body: error?.message ?? 'Please ask an AIDA team member.',
       showRef: true,
     };
+    // Only a request that never reached the API is described as a connection
+    // problem; every refusal keeps its own explanation.
+    const offline = code === 'NETWORK' || code === 'BAD_RESPONSE';
 
     return (
-      <Screen>
-        <div className="flex flex-1 flex-col justify-center text-center">
-          <Title>{copy.title}</Title>
-          <Hint>{copy.body}</Hint>
-
-          {copy.showRef && error?.ref && (
-            <p className="mt-6 font-mono text-xs text-[var(--color-muted)]">{error.ref}</p>
-          )}
-
-          <div className="mt-10 space-y-3">
-            <Button onClick={() => window.location.reload()}>Try again</Button>
-            <Button variant="ghost" onClick={() => (window.location.href = '/leaderboard')}>
-              View leaderboard
-            </Button>
-          </div>
-        </div>
-      </Screen>
+      <SomethingWentWrong
+        lead={
+          offline
+            ? "We couldn't complete your request right now.\nPlease check your connection and try again."
+            : "We couldn't start your game right now."
+        }
+        cardTitle={offline ? 'No internet connection?' : copy.title}
+        cardBody={offline ? 'Check your network or try again in a few moments.' : copy.body}
+        icon={offline ? 'offline' : 'alert'}
+        reference={copy.showRef ? error?.ref : undefined}
+        onRetry={() => window.location.reload()}
+        homeHref="/"
+      />
     );
   }
 
   if (step === 'completed') {
-    return (
-      <Screen>
-        <div className="flex flex-1 flex-col justify-center">
-          <Title>You&apos;ve already played</Title>
-          <Hint>
-            Your official attempt is complete. Check the AIDA booth screen at the end of the
-            fair for final rankings.
-          </Hint>
-          <div className="mt-8">
-            <Button variant="ghost" onClick={() => (window.location.href = '/leaderboard')}>
-              View leaderboard
-            </Button>
-          </div>
-        </div>
-      </Screen>
-    );
+    // The result is loading (see the effect above) or could not be read.
+    return <AlreadyPlayedScreen result={null} />;
   }
 
   // Every timer below comes from the attempt's own frozen snapshot, which the
@@ -481,7 +498,10 @@ export function PlayFlow({ colleges }: { colleges: College[] }) {
   }
 
   if (step === 'result' && result) {
-    return <Result result={result} returning={returningPlayer} />;
+    // A student reopening a finished game sees Already Played with their
+    // result; one who has just finished sees the Human Win / AI Win reveal.
+    if (returningPlayer) return <AlreadyPlayedScreen result={result} />;
+    return <Result result={result} />;
   }
 
   return (
@@ -490,6 +510,20 @@ export function PlayFlow({ colleges }: { colleges: College[] }) {
         <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-[var(--color-edge)] border-t-[var(--color-cyan)]" />
       </div>
     </Screen>
+  );
+}
+
+function AlreadyPlayedScreen({ result }: { result: PublicAttemptResult | null }) {
+  return (
+    <AlreadyPlayed
+      scoreText={result ? String(result.totalScore) : '—'}
+      rankText={result ? formatRank(result.rank) : '—'}
+      playerCountText={result && result.totalPlayers > 0 ? String(result.totalPlayers) : '—'}
+      topShareText={result ? formatTopShare(result.percentileBeaten, result.totalPlayers) : '—'}
+      leaderboardHref="/leaderboard"
+      joinHref="/club"
+      homeHref="/"
+    />
   );
 }
 

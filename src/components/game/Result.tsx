@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import type { PublicAttemptResult } from '@/types';
+import { MAX_TOTAL } from '@/lib/scoring';
+import { formatRank, formatPercentile, formatBeaten } from '@/lib/client/result-text';
+import { HumanWinResult } from '@/components/game/HumanWinResult';
+import { AiWinResult } from '@/components/game/AiWinResult';
 
 /**
  * Result screen (§24).
@@ -9,7 +13,13 @@ import type { PublicAttemptResult } from '@/types';
  * Shows total, human/AI verdict, rank and percentile — and nothing else.
  * §22 forbids per-round scores, partly to protect the shared Round 3 answer
  * and partly because a single big number is a better booth moment.
+ *
+ * The verdict is the server's `humanWin`; it picks the Human Win or AI Win
+ * artwork, and this component feeds either one the same live values.
  */
+const LEADERBOARD_HREF = '/leaderboard';
+const JOIN_HREF = '/club';
+
 export function Result({
   result,
   returning = false,
@@ -23,23 +33,18 @@ export function Result({
   returning?: boolean;
 }) {
   const [shown, setShown] = useState(returning ? result.totalScore : 0);
-  const [screen, setScreen] = useState<1 | 2>(1);
 
-  // Count-up. Respects reduced motion by finishing immediately.
+  // Count-up. Respects reduced motion by finishing on the first frame.
   useEffect(() => {
     // A returning student has seen this number before; counting it up again
     // would pretend they just earned it.
     if (returning) return;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce) {
-      setShown(result.totalScore);
-      return;
-    }
-    const duration = 1400;
+    const duration = reduce ? 0 : 1400;
     const start = performance.now();
     let frame = 0;
     const step = (now: number) => {
-      const t = Math.min(1, (now - start) / duration);
+      const t = duration === 0 ? 1 : Math.min(1, (now - start) / duration);
       const eased = 1 - Math.pow(1 - t, 3);
       setShown(Math.round(result.totalScore * eased));
       if (t < 1) frame = requestAnimationFrame(step);
@@ -48,88 +53,32 @@ export function Result({
     return () => cancelAnimationFrame(frame);
   }, [result.totalScore, returning]);
 
-  if (screen === 2) {
+  const shared = {
+    scoreText: String(shown),
+    scoreMaxText: String(MAX_TOTAL),
+    rankText: formatRank(result.rank),
+    leaderboardButtonLabel: 'View leaderboard',
+    joinButtonLabel: 'Join AIDA',
+    leaderboardHref: LEADERBOARD_HREF,
+    joinHref: JOIN_HREF,
+    notice: returning ? "You've already played · this is your final score" : undefined,
+  };
+
+  if (result.humanWin) {
+    const standing = formatPercentile(result.percentileBeaten, result.totalPlayers);
     return (
-      <main className="flex min-h-dvh flex-col px-6 py-8">
-        <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center">
-          <h1 className="text-3xl font-bold">You&apos;re on the leaderboard</h1>
-          <p className="mt-4 text-sm leading-relaxed text-[var(--color-muted)]">
-            Keep an eye on the AU vs AI screen at the AIDA booth at the end of the Club Fair
-            to see the final rankings and winners.
-          </p>
-
-          <div className="mt-10 rounded-2xl border border-[var(--color-cyan-dim)] bg-[var(--color-navy)] p-5">
-            <h2 className="text-lg font-semibold">Want to join AIDA?</h2>
-            <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">
-              Your score is already in the running for the leaderboard prize. If you want to
-              join the club, membership goes through the university&apos;s ORS system.
-            </p>
-            <a
-              href="/club"
-              className="mt-5 block w-full rounded-xl bg-[var(--color-cyan)] px-6 py-4 text-center font-semibold text-[var(--color-void)]"
-            >
-              How to join
-            </a>
-          </div>
-
-          <a
-            href="/leaderboard"
-            className="mt-6 block w-full py-3 text-center text-sm text-[var(--color-muted)]"
-          >
-            Finish
-          </a>
-        </div>
-      </main>
+      <HumanWinResult
+        {...shared}
+        percentileText={standing.text}
+        percentileCaption={standing.caption}
+      />
     );
   }
 
   return (
-    <main className="flex min-h-dvh flex-col px-6 py-8">
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center text-center">
-        {returning && (
-          <div className="mb-8 rounded-xl border border-[var(--color-edge)] bg-[var(--color-navy)] px-4 py-3">
-            <p className="text-sm font-semibold">You&apos;ve already played</p>
-            <p className="mt-1 text-xs leading-relaxed text-[var(--color-muted)]">
-              One official attempt per student. This is your final score.
-            </p>
-          </div>
-        )}
-
-        <p className="text-sm tracking-[0.3em] text-[var(--color-cyan-dim)]">
-          {returning ? 'YOUR FINAL SCORE' : 'YOUR SCORE'}
-        </p>
-
-        <p className="tabular mt-4 text-7xl font-bold leading-none">
-          {shown}
-          <span className="text-3xl text-[var(--color-muted)]"> / 1000</span>
-        </p>
-
-        <p
-          className={`mt-6 text-2xl font-bold ${
-            result.humanWin ? 'text-[var(--color-win)]' : 'text-[var(--color-lose)]'
-          }`}
-        >
-          {result.humanWin ? 'Human win' : 'AI win'}
-        </p>
-
-        <div className="mt-10 grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-[var(--color-edge)] bg-[var(--color-navy)] px-4 py-4">
-            <p className="text-xs text-[var(--color-muted)]">Rank</p>
-            <p className="tabular mt-1 text-3xl font-bold">#{result.rank}</p>
-          </div>
-          <div className="rounded-xl border border-[var(--color-edge)] bg-[var(--color-navy)] px-4 py-4">
-            <p className="text-xs text-[var(--color-muted)]">You beat</p>
-            <p className="tabular mt-1 text-3xl font-bold">{result.percentileBeaten}%</p>
-          </div>
-        </div>
-
-        <button
-          onClick={() => setScreen(2)}
-          className="mt-10 min-h-[60px] w-full rounded-xl bg-[var(--color-cyan)] text-base font-semibold text-[var(--color-void)]"
-        >
-          {returning ? 'View leaderboard' : 'Next'}
-        </button>
-      </div>
-    </main>
+    <AiWinResult
+      {...shared}
+      percentileText={formatBeaten(result.percentileBeaten, result.totalPlayers)}
+    />
   );
 }

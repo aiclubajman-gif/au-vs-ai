@@ -1,0 +1,240 @@
+/* ==========================================================================
+   Something Went Wrong and Challenge Paused. Scoped to these screens.
+
+   Same stage model as the result screens: the 853 × 1844 plate fitted whole
+   inside the viewport, `--u` = one artwork pixel, overlays placed in u.
+   Error plate: title ends ~785u, card 55–797u × 891–1118u, button 65–787u ×
+   1175–1282u. Paused plate: button 103–751u × 1083–1183u.
+   ========================================================================== */
+
+.page {
+  --stage-w: min(100vw, calc(100svh * 853 / 1844));
+  --u: calc(var(--stage-w) / 853);
+
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  overflow: hidden;
+  overflow: clip;
+  background: #02040b;
+  color: #f4f7ff;
+}
+
+.stage {
+  position: relative;
+  width: var(--stage-w);
+  height: calc(var(--u) * 1844);
+}
+
+.plate {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Letterbox bands on tall phones: see HowItWorks.module.css. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(20px) brightness(0.62) saturate(1.1);
+  transform: scale(1.15);
+  user-select: none;
+  pointer-events: none;
+}
+
+@media (max-aspect-ratio: 853 / 1844) {
+  .plate {
+    mask-image: linear-gradient(transparent, #000 2.5%, #000 97.5%, transparent);
+  }
+}
+
+@media (min-width: 768px) {
+  .backdrop {
+    display: none;
+  }
+}
+
+/* --- Shared button contents ---------------------------------------------------- */
+
+.ctaLabel {
+  font-size: calc(var(--u) * 36);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-box: trim-both cap alphabetic;
+  text-shadow: 0 0 calc(var(--u) * 12) rgba(255, 255, 255, 0.4);
+}
+
+.retry,
+.pausedHome {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 26);
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--u) * 40);
+  background: transparent;
+  color: #fff;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+.retry::before,
+.pausedHome::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--u) * -10) 0;
+}
+.retry:hover,
+.pausedHome:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.retry:active,
+.pausedHome:active {
+  background: rgba(0, 20, 60, 0.18);
+}
+.retry:focus-visible,
+.pausedHome:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: calc(var(--u) * 6);
+}
+
+.retryIcon,
+.homeIcon {
+  flex: none;
+  width: calc(var(--u) * 46);
+  height: calc(var(--u) * 46);
+  filter: drop-shadow(0 0 calc(var(--u) * 6) rgba(255, 255, 255, 0.45));
+}
+
+/* --- Something Went Wrong ------------------------------------------------------ */
+
+/* Between the painted title and the card. */
+.errorLead {
+  position: absolute;
+  top: calc(var(--u) * 838);
+  left: 50%;
+  width: calc(var(--u) * 780);
+  translate: -50% -50%;
+  margin: 0;
+  font-size: calc(var(--u) * 28);
+  line-height: 1.4;
+  text-align: center;
+  white-space: pre-line;
+  color: #e8eeff;
+}
+
+.errorCard {
+  position: absolute;
+  top: calc(var(--u) * 891);
+  left: calc(var(--u) * 55);
+  width: calc(var(--u) * 742);
+  height: calc(var(--u) * 227);
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 40);
+  padding: 0 calc(var(--u) * 44) 0 calc(var(--u) * 70);
+  box-sizing: border-box;
+}
+
+.errorIcon {
+  flex: none;
+  width: calc(var(--u) * 92);
+  height: calc(var(--u) * 92);
+  color: #cfe2ff;
+  filter: drop-shadow(0 0 calc(var(--u) * 8) rgba(90, 170, 255, 0.6));
+}
+
+.errorCopy {
+  min-width: 0;
+}
+
+.errorTitle {
+  margin: 0 0 calc(var(--u) * 10);
+  font-size: calc(var(--u) * 25);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.errorBody {
+  margin: 0;
+  font-size: calc(var(--u) * 25);
+  line-height: 1.35;
+  color: #a9bde6;
+}
+
+/* Between the card and the button. */
+.errorRef {
+  position: absolute;
+  top: calc(var(--u) * 1146);
+  left: 0;
+  right: 0;
+  translate: 0 -50%;
+  margin: 0;
+  font-size: max(10px, calc(var(--u) * 19));
+  line-height: 1;
+  text-align: center;
+  color: rgba(200, 215, 255, 0.62);
+}
+
+.retry {
+  top: calc(var(--u) * 1175);
+  left: calc(var(--u) * 65);
+  width: calc(var(--u) * 722);
+  height: calc(var(--u) * 107);
+}
+
+.errorHome {
+  position: absolute;
+  top: calc(var(--u) * 1368);
+  left: 50%;
+  translate: -50% -50%;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 18);
+  /* Padding makes the tap target at least 44 px tall at 360 px wide. */
+  padding: calc(var(--u) * 38) calc(var(--u) * 30);
+  border-radius: calc(var(--u) * 16);
+  font-size: calc(var(--u) * 28);
+  line-height: 1;
+  white-space: nowrap;
+  color: #a9c4ff;
+  text-decoration: none;
+}
+.errorHome:hover span {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.errorHome:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: calc(var(--u) * -8);
+}
+
+.chevron {
+  flex: none;
+  width: calc(var(--u) * 26);
+  height: calc(var(--u) * 26);
+}
+
+/* --- Challenge Paused ---------------------------------------------------------- */
+
+.pausedHome {
+  top: calc(var(--u) * 1083);
+  left: calc(var(--u) * 103);
+  width: calc(var(--u) * 648);
+  height: calc(var(--u) * 100);
+}

@@ -1,0 +1,426 @@
+/* ==========================================================================
+   Result screens: Human Win and AI Win. Scoped to these screens.
+
+   Same stage model as How It Works and Fun Fact: the plate (Human Win
+   941 × 1672, AI Win 853 × 1844) is fitted whole inside the viewport, `--u` =
+   one artwork pixel, and every overlay is placed in u against the gaps
+   painted into the plate, so the page scales and never reflows.
+
+   Text is registered by its cap height, not its line box: `text-box` trims
+   each overlay to cap height and baseline, so `translate: 0 -50%` puts the
+   capitals' centre on the measured y whatever the platform font's ascent and
+   descent. The block padding keeps rounded digits' overshoot inside the box,
+   which gradient text needs (its fill is clipped to the box).
+
+   Positions below were measured from the approved mockups against the clean
+   plates (design-source/results/measure.mjs, box.mjs, profile.mjs).
+   ========================================================================== */
+
+.page {
+  --plate-w: 941;
+  --plate-h: 1672;
+  --stage-w: min(100vw, calc(100svh * var(--plate-w) / var(--plate-h)));
+  --u: calc(var(--stage-w) / var(--plate-w));
+
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  overflow: hidden;
+  overflow: clip;
+  background: #02040b;
+  color: #f4f7ff;
+}
+
+.stage {
+  position: relative;
+  width: var(--stage-w);
+  height: calc(var(--u) * var(--plate-h));
+}
+
+.plate {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Letterbox bands on tall phones: see HowItWorks.module.css. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(20px) brightness(0.62) saturate(1.1);
+  transform: scale(1.15);
+  user-select: none;
+  pointer-events: none;
+}
+
+@media (max-aspect-ratio: 941 / 1672) {
+  .page[data-variant='human'] .plate {
+    mask-image: linear-gradient(transparent, #000 2.5%, #000 97.5%, transparent);
+  }
+}
+@media (max-aspect-ratio: 853 / 1844) {
+  .page[data-variant='ai'] .plate {
+    mask-image: linear-gradient(transparent, #000 2.5%, #000 97.5%, transparent);
+  }
+}
+
+@media (min-width: 768px) {
+  .backdrop {
+    display: none;
+  }
+}
+
+/* --- Shared text registration --------------------------------------------- */
+
+.scoreValue,
+.scoreMax,
+.rank,
+.beat,
+.percentile,
+.percentileCaption,
+.buttonLabel {
+  margin: 0;
+  padding-block: 0.12em;
+  line-height: 1;
+  white-space: nowrap;
+  text-box: trim-both cap alphabetic;
+  translate: 0 -50%;
+}
+
+/* --- Score -----------------------------------------------------------------
+   A zero-width anchor at the digits' right edge. The number grows leftwards
+   from it and "/ 1000" starts a fixed gap to its right, so the count-up never
+   moves the maximum and three digits land exactly where the mockup has them.
+   -------------------------------------------------------------------------- */
+
+.score {
+  position: absolute;
+  top: calc(var(--u) * var(--score-y));
+  left: calc(var(--u) * var(--score-right));
+  width: 0;
+  height: 0;
+  margin: 0;
+}
+
+.scoreValue {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: calc(var(--u) * var(--score-size));
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  background: linear-gradient(180deg, var(--score-from) 18%, var(--score-to) 92%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 calc(var(--u) * 14) var(--score-glow));
+}
+
+/* A perfect 1000 is the only four-digit score; it must stay inside the card
+   (Human Win) or its frame (AI Win). */
+.score[data-digits='4'] .scoreValue {
+  font-size: calc(var(--u) * var(--score-size) * var(--score-4-scale));
+}
+
+.scoreMax {
+  position: absolute;
+  top: calc(var(--u) * var(--max-dy));
+  left: calc(var(--u) * var(--max-gap));
+  font-size: calc(var(--u) * var(--max-size));
+  font-weight: var(--max-weight);
+}
+
+/* --- Rank, and "you beat" on AI Win ---------------------------------------- */
+
+.rank,
+.beat {
+  position: absolute;
+  font-weight: 900;
+  letter-spacing: -0.005em;
+  background: linear-gradient(180deg, var(--num-from) 15%, var(--num-to) 95%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 calc(var(--u) * 12) var(--num-glow));
+}
+
+.rank {
+  top: calc(var(--u) * var(--rank-y));
+  font-size: calc(var(--u) * var(--rank-size));
+  --num-from: var(--rank-from);
+  --num-to: var(--rank-to);
+  --num-glow: var(--rank-glow);
+}
+
+/* --- Buttons -----------------------------------------------------------------
+   The link covers the painted shell exactly, so hover, press and the focus
+   ring follow the button the student sees. `::before` extends only the tap
+   target, up and down into the free space around the shell (never into the
+   other button), to at least 44 CSS px at 360 px wide.
+   -------------------------------------------------------------------------- */
+
+.button {
+  position: absolute;
+  top: calc(var(--u) * var(--top));
+  left: calc(var(--u) * var(--left, 118));
+  width: calc(var(--u) * var(--w, 704));
+  height: calc(var(--u) * var(--h));
+  border-radius: calc(var(--u) * var(--radius));
+  color: #fff;
+  text-decoration: none;
+  transition: background-color 120ms ease;
+}
+.button::before {
+  content: '';
+  position: absolute;
+  top: calc(var(--u) * var(--hit-above) * -1);
+  bottom: calc(var(--u) * var(--hit-below) * -1);
+  left: 0;
+  right: 0;
+}
+.button:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.button:active {
+  background: rgba(0, 20, 60, 0.16);
+}
+.button:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: calc(var(--u) * 6);
+}
+
+/* Centred between the painted icon and arrow, as in the mockup. */
+.buttonLabel {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--u) * (var(--label-x) - var(--left, 118)));
+  translate: -50% -50%;
+  font-size: calc(var(--u) * var(--label-size));
+  font-weight: 600;
+  letter-spacing: var(--label-tracking, 0.025em);
+  text-transform: uppercase;
+  text-shadow: 0 0 calc(var(--u) * 10) rgba(255, 255, 255, 0.35);
+}
+
+/* --- Returning student: under the buttons ---------------------------------- */
+
+.notice {
+  position: absolute;
+  top: calc(var(--u) * var(--notice-y));
+  left: 50%;
+  translate: -50% -50%;
+  margin: 0;
+  padding: 0.5em 1.2em;
+  border: 1px solid rgba(150, 190, 255, 0.38);
+  border-radius: 999px;
+  background: rgba(3, 7, 18, 0.78);
+  font-size: max(11px, calc(var(--u) * 24));
+  line-height: 1.2;
+  white-space: nowrap;
+  color: #dfe7ff;
+  /* Information only: it must never take a tap meant for a button. */
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   HUMAN WIN
+   Card 82–858u × 855–1203u, divider at 527u. Buttons 118–822u:
+   leaderboard 1191–1281u, join 1305–1395u.
+   ========================================================================== */
+
+.page[data-variant='human'] {
+  /* "842": ink 159–364u, caps 940–1024u. "/ 1000": ink from 384u, caps 998–1024u. */
+  --score-y: 982;
+  --score-right: 369;
+  --score-size: 120;
+  --score-4-scale: 0.84;
+  --score-from: #eef9ff;
+  --score-to: #6cc6ff;
+  --score-glow: rgba(40, 160, 255, 0.75);
+  --max-dy: 29;
+  --max-gap: 14;
+  --max-size: 38;
+  --max-weight: 500;
+
+  /* "#7": centred on the rank column (527–858u), caps 929–978u. */
+  --rank-y: 953.5;
+  --rank-size: 71;
+  --rank-from: #c8f6ff;
+  --rank-to: #1fbfff;
+  --rank-glow: rgba(20, 170, 255, 0.7);
+
+  /* Clear of the join button's tap area (to 1419u) at the 11px floor. */
+  --notice-y: 1475;
+}
+
+.page[data-variant='human'] .scoreMax {
+  color: #c6cdea;
+}
+
+.page[data-variant='human'] .rank {
+  left: calc(var(--u) * 692.5);
+  translate: -50% -50%;
+}
+
+/* "TOP 4%" caps 998–1020u, "OF CHALLENGERS" caps 1035–1048u, both centred
+   on the rank column. */
+.standing {
+  position: absolute;
+  top: 0;
+  left: calc(var(--u) * 692.5);
+  width: 0;
+  height: 0;
+  margin: 0;
+}
+
+.percentile,
+.percentileCaption {
+  position: absolute;
+  left: 0;
+  translate: -50% -50%;
+  text-transform: uppercase;
+}
+
+.percentile {
+  top: calc(var(--u) * 1009);
+  font-size: calc(var(--u) * 32.5);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #2ccbff;
+  text-shadow: 0 0 calc(var(--u) * 12) rgba(20, 170, 255, 0.55);
+}
+
+.percentileCaption {
+  top: calc(var(--u) * 1041.5);
+  /* Tracking adds space after the last letter too; pad the front to match. */
+  padding-left: 0.12em;
+  font-size: calc(var(--u) * 20);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: #c9d3ef;
+}
+
+.page[data-variant='human'] .leaderboardButton {
+  --top: 1191;
+  --h: 91;
+  --radius: 30;
+  --hit-above: 18;
+  --hit-below: 11;
+  --label-x: 486;
+  --label-size: 35.5;
+}
+
+.page[data-variant='human'] .joinButton {
+  --top: 1305;
+  --h: 91;
+  --radius: 30;
+  --hit-above: 11;
+  --hit-below: 24;
+  --label-x: 489;
+  --label-size: 34;
+}
+
+/* ==========================================================================
+   AI WIN — 853 × 1844 plate
+   Card 82–771u. Score frame 304–704u × 870–960u beside the target tile.
+   Rank tile 106–417u, value frame 237–386u × 1124–1194u. "You beat" tile
+   439–747u, value frame 575–716u × 1121–1178u. Buttons 108–745u:
+   leaderboard 1269–1369u, join 1392–1488u.
+   The plate has no mockup with values; sizes are set to sit in each frame
+   with the same weight as Human Win at the same physical size.
+   ========================================================================== */
+
+.page[data-variant='ai'] {
+  --plate-w: 853;
+  --plate-h: 1844;
+
+  /* Centred in the score frame: digits caps 891–939u, "/ 1000" on the same
+     baseline. The anchor puts three digits and "/ 1000" in the middle. */
+  --score-y: 915;
+  --score-right: 490;
+  --score-size: 68;
+  --score-4-scale: 0.9;
+  --score-from: #ffffff;
+  --score-to: #8db3ff;
+  --score-glow: rgba(50, 130, 255, 0.8);
+  --max-dy: 7;
+  --max-gap: 12;
+  --max-size: 48;
+  --max-weight: 600;
+
+  /* Centred in the rank value frame, caps 36u. */
+  --rank-y: 1159;
+  --rank-size: 51;
+  --rank-from: #ffffff;
+  --rank-to: #ff8f45;
+  --rank-glow: rgba(255, 115, 30, 0.8);
+
+  /* Under the card, clear of the join button's tap area (to 1508u). */
+  --notice-y: 1600;
+}
+
+.page[data-variant='ai'] .scoreMax {
+  letter-spacing: -0.02em;
+  word-spacing: -0.1em;
+  background: linear-gradient(180deg, #ffffff 20%, #c9d3ef 90%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 calc(var(--u) * 10) rgba(120, 160, 255, 0.45));
+}
+
+.page[data-variant='ai'] .rank {
+  left: calc(var(--u) * 311.5);
+  translate: -50% -50%;
+}
+/* Keep a long rank inside its frame (147u inside). */
+.page[data-variant='ai'] .rank[data-length='5'] {
+  font-size: calc(var(--u) * var(--rank-size) * 0.8);
+}
+.page[data-variant='ai'] .rank[data-length='6'],
+.page[data-variant='ai'] .rank[data-length='7'] {
+  font-size: calc(var(--u) * var(--rank-size) * 0.66);
+}
+
+/* "60%" centred in the value frame between YOU BEAT and OF PLAYERS, caps 30u,
+   in the tile's cyan. */
+.beat {
+  top: calc(var(--u) * 1149.5);
+  left: calc(var(--u) * 645.5);
+  translate: -50% -50%;
+  font-size: calc(var(--u) * 42);
+  --num-from: #d9f8ff;
+  --num-to: #2ec5ff;
+  --num-glow: rgba(20, 170, 255, 0.75);
+}
+
+.page[data-variant='ai'] .leaderboardButton {
+  --top: 1269;
+  --left: 108;
+  --w: 637;
+  --h: 100;
+  --radius: 30;
+  --hit-above: 14;
+  --hit-below: 10;
+  --label-x: 433.5;
+  --label-size: 32;
+}
+
+.page[data-variant='ai'] .joinButton {
+  --top: 1392;
+  --left: 108;
+  --w: 637;
+  --h: 96;
+  --radius: 30;
+  --hit-above: 10;
+  --hit-below: 20;
+  --label-x: 433;
+  --label-size: 32;
+}
