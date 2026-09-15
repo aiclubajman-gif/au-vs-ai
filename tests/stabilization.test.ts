@@ -274,9 +274,20 @@ describe('Email send', () => {
     expect(body).toMatch(/finally \{[\s\S]*setBusy\(false\)/);
   });
 
+  // The email screen is a real <form> since the Page 1 redesign: Enter, the
+  // phone keyboard's Send key and the button all arrive as one submit event.
   it('routes the Enter key through the same guarded send', () => {
-    expect(src).toMatch(/if \(e\.key === 'Enter'\) sendCode\(\)/);
+    expect(src).toMatch(/<EmailStep[\s\S]*?onSubmit=\{sendCode\}[\s\S]*?\/>/);
     expect(src).not.toMatch(/emailValid && sendCode\(\)/);
+
+    const step = code('src/components/auth/EmailStep.tsx');
+    expect(step).toMatch(/<form[^>]*onSubmit=\{handleSubmit\}/);
+    expect(step).toMatch(/<button\s+type="submit"/);
+    // Exactly one path out of the form to the guarded send, and no key or
+    // click handler that could fire a second one alongside the submit.
+    expect(step.match(/onSubmit\(\)/g)).toHaveLength(1);
+    expect(step).not.toMatch(/onKeyDown|onKeyUp|onKeyPress/);
+    expect(step).not.toMatch(/onClick=/);
   });
 });
 

@@ -1,0 +1,550 @@
+/* ==========================================================================
+   Page 1 — Email. Scoped to this screen; nothing here touches global tokens.
+
+   The plate is 941 × 1670 artwork pixels. `--u` is one artwork pixel in CSS
+   pixels, and every overlay is placed in u, so the HTML stays registered to
+   the frames painted into the plate at any phone size.
+
+   Stage width on phones: fit the viewport height, but never narrower than
+   1.218× the viewport width. That crops ~9% of the plate off each side (edge
+   of the headphones, back of the AI's helmet) so text stays readable. A short
+   viewport (browser toolbars showing) keeps the card above the fold and lets
+   the campus scroll. svh, not dvh, so toolbars collapsing never rescales it.
+   ========================================================================== */
+
+.page {
+  --plate-ratio: calc(941 / 1670);
+  --stage-w: min(
+    max(calc(100vw * 1.218), calc(100svh * var(--plate-ratio))),
+    max(calc(100svh * var(--plate-ratio)), 480px)
+  );
+  --u: calc(var(--stage-w) / 941);
+
+  --ink: #f4f7ff;
+  --ink-soft: #dde6ff;
+  --lavender: #b3b8f4;
+  --cyan: #5fd4ff;
+
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100dvh;
+  padding-bottom: env(safe-area-inset-bottom);
+  overflow: hidden;
+  overflow: clip;
+  color: var(--ink);
+  background:
+    radial-gradient(55% 45% at 0% 35%, rgba(24, 90, 255, 0.16), transparent 70%),
+    radial-gradient(55% 45% at 100% 35%, rgba(255, 96, 24, 0.12), transparent 70%),
+    #070915;
+}
+
+/* Tablets and desktops: the whole plate, fitted to the window height. */
+@media (min-width: 768px) {
+  .page {
+    --stage-w: min(calc(100svh * var(--plate-ratio)), 100vw);
+  }
+}
+
+.stage {
+  position: relative;
+  flex: none;
+  width: var(--stage-w);
+  height: calc(var(--u) * 1670);
+}
+
+.plate {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Short content entrance. Transform/opacity only; the artwork never moves. */
+.brand,
+.stepper,
+.headline,
+.subtitle,
+.form,
+.info,
+.messageSlot,
+.privacy {
+  animation: rise 420ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.stepper { animation-delay: 40ms; }
+.headline,
+.subtitle { animation-delay: 80ms; }
+.form { animation-delay: 120ms; }
+.info,
+.messageSlot,
+.privacy { animation-delay: 160ms; }
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--u) * 12));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* --- Hero ---------------------------------------------------------------- */
+
+.brand {
+  position: absolute;
+  top: calc(var(--u) * 343);
+  left: 0;
+  right: 0;
+  translate: 0 -50%;
+  text-align: center;
+}
+
+.tagline {
+  margin: 0;
+  font-size: max(10px, calc(var(--u) * 20));
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: var(--ink);
+  text-shadow: 0 0 calc(var(--u) * 12) rgba(8, 12, 30, 0.9);
+}
+
+.stepper {
+  position: absolute;
+  top: calc(var(--u) * 382.5);
+  left: calc(var(--u) * 282.5);
+}
+
+/* --- Card: 125–816 × 509–1274 ---------------------------------------------- */
+
+.headline,
+.subtitle,
+.privacy {
+  position: absolute;
+  left: calc(var(--u) * 125);
+  width: calc(var(--u) * 691);
+  margin: 0;
+  text-align: center;
+}
+
+.headline {
+  top: calc(var(--u) * 577);
+  translate: 0 -50%;
+  /* Installed condensed faces only — no webfont download on venue data (§35). */
+  font-family: 'Avenir Next Condensed', 'Bahnschrift SemiCondensed', 'Roboto Condensed',
+    sans-serif-condensed, 'Arial Narrow', var(--font-sans);
+  font-size: calc(var(--u) * 67);
+  font-weight: 800;
+  font-stretch: semi-condensed;
+  letter-spacing: 0.035em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.headlineHuman,
+.headlineAi {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.headlineHuman {
+  background-image: linear-gradient(180deg, #ffffff 0%, #eef6ff 42%, #a9d2ff 100%);
+  filter: drop-shadow(0 0 calc(var(--u) * 10) rgba(64, 150, 255, 0.75));
+}
+
+.headlineAi {
+  background-image: linear-gradient(180deg, #ffe7a3 0%, #ffb347 45%, #ff7a1a 100%);
+  filter: drop-shadow(0 0 calc(var(--u) * 10) rgba(255, 120, 30, 0.7));
+}
+
+.subtitle {
+  top: calc(var(--u) * 616);
+  left: calc(var(--u) * 210);
+  width: calc(var(--u) * 521);
+  font-size: max(13px, calc(var(--u) * 26));
+  line-height: 1.34;
+  color: var(--ink-soft);
+}
+
+/* --- Email field: 160–781 × 709–783 ------------------------------------------ */
+
+.form {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.field,
+.cta {
+  pointer-events: auto;
+}
+
+.field {
+  /* Hit area grows to 56px (§36). Below the field it may only use the part of
+     the gap the button's own hit area leaves free; the rest goes above. */
+  --field-grow: max(0px, 56px - var(--u) * 74);
+  --cta-grow: max(0px, (56px - var(--u) * 88) / 2);
+  --field-grow-below: min(var(--field-grow) / 2, var(--u) * 28 - var(--cta-grow));
+
+  position: absolute;
+  top: calc(var(--u) * 709);
+  left: calc(var(--u) * 160);
+  width: calc(var(--u) * 621);
+  height: calc(var(--u) * 74);
+  display: flex;
+  align-items: stretch;
+  border-radius: calc(var(--u) * 12);
+  cursor: text;
+  transition: box-shadow 160ms ease;
+}
+
+/* Fill inside the painted border, darker than the plate as in the approved
+   mockup. */
+.field::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--u) * 3);
+  border-radius: calc(var(--u) * 9);
+  background: #030722;
+}
+
+/* Taller touch target than the painted frame, without moving it. */
+.field::after {
+  content: '';
+  position: absolute;
+  top: calc(-1 * (var(--field-grow) - var(--field-grow-below)));
+  bottom: calc(-1 * var(--field-grow-below));
+  left: 0;
+  right: 0;
+}
+
+.field:focus-within {
+  box-shadow:
+    0 0 0 max(1.5px, calc(var(--u) * 3)) rgba(95, 212, 255, 0.95),
+    0 0 calc(var(--u) * 26) rgba(40, 170, 255, 0.55);
+}
+
+.field:has(.input[aria-invalid='true']) {
+  box-shadow: 0 0 0 max(1.5px, calc(var(--u) * 3)) rgba(251, 191, 36, 0.85);
+}
+
+.fieldIcon {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  align-self: center;
+  width: max(16px, calc(var(--u) * 34));
+  height: max(16px, calc(var(--u) * 34));
+  margin-left: calc(var(--u) * 22);
+  margin-right: calc(var(--u) * 16);
+  color: var(--cyan);
+}
+
+.input {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 calc(var(--u) * 14) 0 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font-size: 16px; /* 16px or iOS zooms the page on focus (§36) */
+  caret-color: var(--cyan);
+}
+
+.input:focus-visible {
+  outline: none; /* the whole field frame shows focus instead */
+}
+
+.input::placeholder {
+  color: #9ba1e8;
+  opacity: 1;
+}
+
+.input:read-only {
+  color: var(--ink-soft);
+}
+
+/* The plate has no painted divider; this border is the division. Sized to its
+   text plus even padding, so the real domain (longer than the mockup's) never
+   truncates whatever the platform font, and the input takes the rest. On a
+   390px phone the divider lands at ≈571u, 22u left of the mockup's. */
+.suffix {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 0 max(11px, calc(var(--u) * 24));
+  border-left: max(1px, calc(var(--u) * 2.5)) solid rgba(110, 214, 255, 0.7);
+  font-size: max(11px, calc(var(--u) * 22));
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* --- Send Code: 160–782 × 811–899 ------------------------------------------ */
+
+.cta {
+  position: absolute;
+  top: calc(var(--u) * 811);
+  left: calc(var(--u) * 160);
+  width: calc(var(--u) * 622);
+  height: calc(var(--u) * 88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 22);
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--u) * 20);
+  font-size: max(15px, calc(var(--u) * 32));
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 50, 140, 0.5);
+  background: linear-gradient(180deg, #0c82ff 0%, #0a6cf6 50%, #0c82ff 100%);
+  box-shadow:
+    inset 0 0 0 max(1px, calc(var(--u) * 2.5)) rgba(200, 244, 255, 0.9),
+    inset 0 0 calc(var(--u) * 20) calc(var(--u) * 4) rgba(0, 214, 255, 0.85),
+    0 0 calc(var(--u) * 18) rgba(0, 180, 255, 0.8),
+    0 0 calc(var(--u) * 46) rgba(0, 120, 255, 0.5);
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    filter 160ms ease,
+    box-shadow 160ms ease;
+}
+
+/* Painted button is 42–49px tall on phones; the hit area reaches 56px (§36). */
+.cta::after {
+  content: '';
+  position: absolute;
+  inset: calc(min(0px, (var(--u) * 88 - 56px) / 2)) 0;
+}
+
+@media (hover: hover) {
+  .cta:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+}
+
+.cta:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+.cta:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 3px;
+}
+
+.cta[data-busy] {
+  cursor: progress;
+  filter: saturate(0.75) brightness(0.88);
+}
+
+.ctaIcon {
+  width: 1.15em;
+  height: 1.15em;
+}
+
+.spinner {
+  width: 1em;
+  height: 1em;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 800ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Info box: 159–782 × 924–1174, rows split at 1049 ------------------------ */
+
+.info {
+  position: absolute;
+  top: calc(var(--u) * 924);
+  left: calc(var(--u) * 159);
+  width: calc(var(--u) * 623);
+  height: calc(var(--u) * 250);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.infoRow {
+  display: flex;
+  align-items: center;
+  height: calc(var(--u) * 125);
+  padding-right: calc(var(--u) * 24);
+}
+
+.infoIcon {
+  flex: none;
+  width: max(24px, calc(var(--u) * 62));
+  height: max(24px, calc(var(--u) * 58));
+  margin-left: calc(var(--u) * 38);
+  margin-right: calc(var(--u) * 40);
+  color: #3cc4ff;
+  filter: drop-shadow(0 0 calc(var(--u) * 6) rgba(40, 170, 255, 0.7));
+}
+
+.infoTitle {
+  margin: 0;
+  font-size: max(10.5px, calc(var(--u) * 20));
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.infoBody {
+  margin: calc(var(--u) * 6) 0 0;
+  font-size: max(12px, calc(var(--u) * 21));
+  line-height: 1.28;
+  color: var(--lavender);
+  text-wrap: pretty;
+}
+
+/* --- Hint / error slot, laid over the info box ------------------------------ */
+
+.messageSlot {
+  position: absolute;
+  top: calc(var(--u) * 924);
+  left: calc(var(--u) * 159);
+  width: calc(var(--u) * 623);
+  height: calc(var(--u) * 250);
+  pointer-events: none;
+}
+
+.message {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 26);
+  width: 100%;
+  height: 100%;
+  padding: 0 calc(var(--u) * 30) 0 calc(var(--u) * 40);
+  border-radius: calc(var(--u) * 16);
+  background: #060818;
+  pointer-events: auto;
+}
+
+/* A typing problem is a compact amber callout over the first info row only
+   ("AU students only", which it restates); the second row stays readable. It
+   grows past that row only if its text needs the room. */
+.message[data-tone='hint'] {
+  width: auto;
+  height: auto;
+  min-height: calc(var(--u) * 111);
+  margin: calc(var(--u) * 7) calc(var(--u) * 10) 0;
+  gap: calc(var(--u) * 20);
+  padding: max(4px, calc(var(--u) * 9)) calc(var(--u) * 24) max(4px, calc(var(--u) * 9))
+    calc(var(--u) * 28);
+  border-radius: calc(var(--u) * 12);
+  background: linear-gradient(rgba(251, 191, 36, 0.07), rgba(251, 191, 36, 0.07)), #060818;
+  box-shadow: inset 0 0 0 max(1px, calc(var(--u) * 2)) rgba(251, 191, 36, 0.7);
+  color: #fcd34d;
+}
+
+.message[data-tone='hint'] .messageIcon {
+  width: max(18px, calc(var(--u) * 36));
+  height: max(18px, calc(var(--u) * 36));
+}
+
+.message[data-tone='hint'] .messageBody {
+  margin-top: calc(var(--u) * 4);
+  font-size: max(12px, calc(var(--u) * 21));
+  line-height: 1.28;
+  text-wrap: balance;
+}
+
+.stage:has(.message[data-tone='hint']) .infoRow:first-child {
+  visibility: hidden;
+}
+
+/* A send failure is the heavier treatment: it covers the whole info box. */
+
+.message[data-tone='error'] {
+  box-shadow: inset 0 0 0 max(1px, calc(var(--u) * 2.5)) rgba(248, 113, 113, 0.8);
+  background: #17060d;
+  color: #fca5a5;
+}
+
+.messageIcon {
+  flex: none;
+  width: max(22px, calc(var(--u) * 48));
+  height: max(22px, calc(var(--u) * 48));
+}
+
+.messageTitle {
+  margin: 0;
+  font-size: max(10.5px, calc(var(--u) * 20));
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.messageBody {
+  margin: calc(var(--u) * 6) 0 0;
+  font-size: max(12.5px, calc(var(--u) * 23));
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+.messageRef {
+  margin: calc(var(--u) * 8) 0 0;
+  font-family: var(--font-mono);
+  font-size: max(11px, calc(var(--u) * 20));
+  letter-spacing: 0.04em;
+  color: #cbd5e1;
+  user-select: all;
+}
+
+/* --- Privacy line ----------------------------------------------------------- */
+
+.privacy {
+  top: calc(var(--u) * 1223);
+  left: calc(var(--u) * 190);
+  width: calc(var(--u) * 561);
+  translate: 0 -50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 18);
+  font-size: max(11px, calc(var(--u) * 18));
+  line-height: 1.32;
+  color: #b9c3f2;
+}
+
+.privacy span {
+  max-width: calc(var(--u) * 410);
+  text-wrap: balance;
+}
+
+.privacyIcon {
+  flex: none;
+  width: max(14px, calc(var(--u) * 30));
+  height: max(14px, calc(var(--u) * 30));
+  color: var(--cyan);
+}

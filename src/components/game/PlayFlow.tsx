@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { preload } from 'react-dom';
 import { OtpInput } from '@/components/game/OtpInput';
+import { EmailStep, EMAIL_PLATE_SRC } from '@/components/auth/EmailStep';
 import { Screen, Title, Hint, Button, ErrorBanner, Spacer } from '@/components/ui';
 import { resolveClassifier } from '@/lib/ml/classifier';
-import { isAuEmail, AU_DOMAIN_HINT } from '@/lib/client/email';
+import { composeAuEmail } from '@/lib/client/email';
 import { Interstitial, ROUND_INTROS, ROUND_OUTROS } from '@/components/game/Interstitial';
 import { Round1 } from '@/components/game/Round1';
 import { Round2 } from '@/components/game/Round2';
@@ -52,7 +54,10 @@ export function PlayFlow({
   const [result, setResult] = useState<PublicAttemptResult | null>(null);
   const [returningPlayer, setReturningPlayer] = useState(false);
   const [step, setStep] = useState<Step>('loading');
-  const [email, setEmail] = useState('');
+  // The student types only the part before @ajmanuni.ac.ae. Everything that
+  // talks to the API (send, resend, verify) uses the composed full address.
+  const [emailLocal, setEmailLocal] = useState('');
+  const email = composeAuEmail(emailLocal) ?? '';
   const [code, setCode] = useState('');
   const [fullName, setFullName] = useState('');
   const [collegeId, setCollegeId] = useState<string>('');
@@ -108,14 +113,16 @@ export function PlayFlow({
     return () => clearTimeout(t);
   }, [cooldown]);
 
-  const emailValid = isAuEmail(email);
+  // Most visitors land on the email screen, so start fetching its artwork while
+  // the session check runs rather than after it.
+  preload(EMAIL_PLATE_SRC, { as: 'image', fetchPriority: 'high' });
 
   // Synchronous guard shared by the button, the Enter key and "Resend", so
   // repeated presses cannot fire overlapping sends before `busy` re-renders.
   const sending = useRef(false);
 
   async function sendCode() {
-    if (sending.current || !isAuEmail(email)) return;
+    if (sending.current || !email) return;
     sending.current = true;
     setBusy(true);
     setError(null);
@@ -261,46 +268,13 @@ export function PlayFlow({
 
   if (step === 'email') {
     return (
-      <Screen>
-        <Title>Sign in to play</Title>
-        <Hint>
-          Enter your Ajman University email. We&apos;ll send a 6-digit code. One official
-          attempt per student.
-        </Hint>
-
-        <input
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') sendCode();
-          }}
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          autoCapitalize="off"
-          autoCorrect="off"
-          spellCheck={false}
-          placeholder={AU_DOMAIN_HINT}
-          aria-label="Ajman University email"
-          className="mt-8 w-full rounded-xl border border-[var(--color-edge)] bg-[var(--color-navy)] px-4 py-4 text-[var(--color-ink)] placeholder:text-[var(--color-muted)]/60 focus:border-[var(--color-cyan)]"
-        />
-
-        {email.length > 3 && !emailValid && (
-          <p className="mt-2 text-sm text-[var(--color-muted)]">
-            Must end in @ajmanuni.ac.ae
-          </p>
-        )}
-
-        <ErrorBanner message={error?.message ?? ''} refCode={error?.ref} />
-        <Spacer />
-
-        <p className="mb-4 text-xs leading-relaxed text-[var(--color-muted)]">
-          Check your Junk folder if the code doesn&apos;t appear. It can take up to a minute.
-        </p>
-        <Button onClick={sendCode} disabled={!emailValid} busy={busy}>
-          Send code
-        </Button>
-      </Screen>
+      <EmailStep
+        localPart={emailLocal}
+        onLocalPartChange={setEmailLocal}
+        onSubmit={sendCode}
+        busy={busy}
+        error={error}
+      />
     );
   }
 

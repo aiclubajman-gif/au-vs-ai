@@ -1,0 +1,87 @@
+/* Geometry is in artwork pixels (--u). Ring centres are 112.3u apart and each
+   ring is 41u across, matching the rings painted into the auth plates. */
+
+.stepper {
+  --ring: calc(var(--u, 0.5px) * 41);
+  --stroke: calc(var(--u, 0.5px) * 3);
+
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  width: calc(var(--u, 0.5px) * 377.9);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  position: relative;
+  width: var(--ring);
+  height: var(--ring);
+}
+
+/* Connector to the next ring. */
+.step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 100%;
+  width: calc((var(--u, 0.5px) * 377.9 - var(--ring) * 4) / 3);
+  height: max(1px, calc(var(--u, 0.5px) * 2));
+  translate: 0 -50%;
+  background: rgba(132, 140, 232, 0.75);
+}
+
+.ring {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border: var(--stroke) solid rgba(170, 176, 245, 0.9);
+  border-radius: 50%;
+  font-size: max(10px, calc(var(--u, 0.5px) * 21));
+  font-weight: 500;
+  line-height: 1;
+  color: #b9befa;
+  font-variant-numeric: tabular-nums;
+}
+
+.label {
+  position: absolute;
+  top: calc(var(--ring) + var(--u, 0.5px) * 22);
+  left: 50%;
+  translate: -50% -50%;
+  font-size: max(10px, calc(var(--u, 0.5px) * 17));
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #a9aef0;
+}
+
+.step[data-state='current'] .ring {
+  border-color: #6fdcff;
+  background: radial-gradient(circle, rgba(18, 88, 190, 0.55) 0%, rgba(4, 18, 52, 0.9) 70%);
+  box-shadow:
+    0 0 calc(var(--u, 0.5px) * 12) rgba(30, 160, 255, 0.85),
+    inset 0 0 calc(var(--u, 0.5px) * 8) rgba(60, 180, 255, 0.55);
+  color: #ffffff;
+}
+
+.step[data-state='current'] .label {
+  font-weight: 500;
+  color: #e8f1ff;
+  text-shadow: 0 0 calc(var(--u, 0.5px) * 10) rgba(80, 170, 255, 0.6);
+}
+
+.step[data-state='done'] .ring {
+  border-color: #6fdcff;
+  background: rgba(20, 110, 220, 0.55);
+  color: #ffffff;
+}
+
+.step[data-state='done']::after {
+  background: rgba(111, 220, 255, 0.8);
+}

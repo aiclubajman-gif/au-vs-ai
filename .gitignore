@@ -51,3 +51,7 @@ yarn-error.log*
 /images/ai/*
 /images/manifest.csv
 !/images/README.md
+
+# Design masters, approved mockups and QA captures. Multi-megabyte and never
+# loaded by the app; only the optimized derivatives under public/ ship.
+/design-source/
