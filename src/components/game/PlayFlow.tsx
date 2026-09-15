@@ -11,6 +11,8 @@ import { Screen, Title, Hint, Button } from '@/components/ui';
 import { resolveClassifier } from '@/lib/ml/classifier';
 import { composeAuEmail } from '@/lib/client/email';
 import { Interstitial, ROUND_INTROS, ROUND_OUTROS } from '@/components/game/Interstitial';
+import { HowItWorks } from '@/components/game/HowItWorks';
+import { FunFact } from '@/components/game/FunFact';
 import { Round1 } from '@/components/game/Round1';
 import { Round2 } from '@/components/game/Round2';
 import { Round3 } from '@/components/game/Round3';
@@ -385,12 +387,14 @@ export function PlayFlow({
   // Every interstitial gets its own `key`. They render at the same place in the
   // tree, so without one React reuses the previous screen's instance and its
   // countdown: an outro that timed out would instantly skip the next intro.
-  if (step === 'intro1') {
+  if (step === 'intro1' && assignment) {
     return (
-      <Interstitial
+      <HowItWorks
         key="intro1"
-        intro={ROUND_INTROS[1]}
-        timerValue={Math.round(timings.round1MsPerImage / 1000)}
+        round1Images={assignment.round1.length}
+        round1MsPerImage={timings.round1MsPerImage}
+        round2DrawMs={timings.round2DrawMs}
+        round3Ms={timings.round3Ms}
         onDone={() => setStep('round1')}
       />
     );
@@ -408,7 +412,7 @@ export function PlayFlow({
   }
 
   if (step === 'outro1') {
-    return <Interstitial key="outro1" outro={ROUND_OUTROS[1]} onDone={() => setStep('intro2')} />;
+    return <FunFact key="outro1" onDone={() => setStep('intro2')} />;
   }
 
   if (step === 'intro2') {

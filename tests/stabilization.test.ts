@@ -118,7 +118,8 @@ describe('Round 1 timeout', () => {
 describe('Interstitial lifecycle', () => {
   it('gives every interstitial in the play flow its own distinct key', () => {
     const src = code('src/components/game/PlayFlow.tsx');
-    const elements = src.match(/<Interstitial\b[\s\S]*?\/>/g) ?? [];
+    // How It Works and Fun Fact are the Round 1 intro and outro.
+    const elements = src.match(/<(?:Interstitial|HowItWorks|FunFact)\b[\s\S]*?\/>/g) ?? [];
 
     expect(elements.length).toBe(5);
 

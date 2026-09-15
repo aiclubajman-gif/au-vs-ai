@@ -1,0 +1,398 @@
+/* ==========================================================================
+   How It Works. Scoped to this screen; nothing here touches global tokens.
+
+   The plate is 941 × 1672 artwork pixels and `--u` is one artwork pixel in CSS
+   pixels. Every overlay is placed in u against the frames painted into the
+   plate, so the page is one composition that scales, never reflows.
+
+   The stage is the whole plate fitted inside the viewport: full width on a
+   phone, centred against the page background wherever the screen is a
+   different shape (taller phones, tablets, desktop). Nothing is cropped,
+   because the round cards run to within 35u of the plate's edges.
+   ========================================================================== */
+
+.page {
+  --stage-w: min(100vw, calc(100svh * 941 / 1672));
+  --u: calc(var(--stage-w) / 941);
+  --condensed: 'Avenir Next Condensed', 'Bahnschrift SemiCondensed', 'Roboto Condensed',
+    sans-serif-condensed, 'Arial Narrow', var(--font-sans);
+
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  overflow: hidden;
+  overflow: clip;
+  background: #03050d;
+  color: #f4f7ff;
+}
+
+.stage {
+  position: relative;
+  width: var(--stage-w);
+  height: calc(var(--u) * 1672);
+}
+
+.plate {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* A phone taller than the plate leaves bands above and below it. The same
+   plate fills the whole viewport behind it (cover, softly blurred, dimmed
+   just enough that the sharp plate stays in front), and the plate's top and
+   bottom edges fade into it, so the screen reads as one continuous scene
+   rather than an image between black bars. The scale keeps the blur's soft
+   edge off-screen. Tablets and desktop keep a plain dark surround. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(20px) brightness(0.62) saturate(1.1);
+  transform: scale(1.15);
+  user-select: none;
+  pointer-events: none;
+}
+
+@media (max-aspect-ratio: 941 / 1672) {
+  .plate {
+    mask-image: linear-gradient(transparent, #000 2.5%, #000 97.5%, transparent);
+  }
+}
+
+@media (min-width: 768px) {
+  .backdrop {
+    display: none;
+  }
+}
+
+/* --- Under the title: plate rules at 602u flank 270–670u ---------------- */
+
+.summary {
+  position: absolute;
+  top: calc(var(--u) * 602);
+  left: calc(var(--u) * 270);
+  width: calc(var(--u) * 400);
+  translate: 0 -50%;
+  margin: 0;
+  font-family: var(--condensed);
+  font-size: calc(var(--u) * 34);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-shadow: 0 0 calc(var(--u) * 12) rgba(70, 150, 255, 0.55);
+}
+
+.tagline {
+  position: absolute;
+  top: calc(var(--u) * 643);
+  left: 0;
+  right: 0;
+  translate: 0 -50%;
+  margin: 0;
+  font-size: calc(var(--u) * 21);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #8fdcff;
+}
+
+.times {
+  margin: 0 0.35em;
+  color: #f4f7ff;
+}
+
+/* --- Round cards ------------------------------------------------------------
+   Each card's slots, measured on the plate:
+     --top/--h   inside of the card frame
+     --num       centre line of the number box (59–155u wide)
+     --thumb     top of the thumbnail opening (181–382u wide), --thumb-h its height
+     --time      just under the painted stopwatch (752–904u wide)
+   -------------------------------------------------------------------------- */
+
+.rounds {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+}
+
+.round {
+  position: absolute;
+  inset: 0;
+  --accent: #5fe0ff;
+  --glow: rgba(40, 150, 255, 0.6);
+  --ink: #f4f8ff;
+  --body: #e2ebff;
+  --num-from: #c4f8ff;
+  --num-to: #2bbfff;
+}
+.round[data-round='1'] {
+  --top: 684;
+  --h: 174;
+  --num: 772;
+  --thumb: 706;
+  --thumb-h: 135;
+  --time: 782;
+}
+.round[data-round='2'],
+.round[data-round='3'] {
+  --accent: #ffc04a;
+  --glow: rgba(255, 110, 30, 0.6);
+  --ink: #fff5ee;
+  --body: #fdeee4;
+  --num-from: #ffe89a;
+  --num-to: #ff9a2a;
+}
+.round[data-round='2'] {
+  --top: 880;
+  --h: 170;
+  --num: 968;
+  --thumb: 901;
+  --thumb-h: 132;
+  --time: 976;
+}
+.round[data-round='3'] {
+  --top: 1070;
+  --h: 170;
+  --num: 1159;
+  --thumb: 1092;
+  --thumb-h: 132;
+  --time: 1167;
+}
+
+.number {
+  position: absolute;
+  top: calc(var(--u) * var(--num));
+  left: calc(var(--u) * 59);
+  width: calc(var(--u) * 96);
+  translate: 0 -50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  font-family: var(--condensed);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.numberLabel {
+  font-size: calc(var(--u) * 18);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.numberValue {
+  margin-top: calc(var(--u) * 2);
+  font-size: calc(var(--u) * 62);
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: 0.01em;
+  background: linear-gradient(180deg, var(--num-from), var(--num-to));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 calc(var(--u) * 14) var(--glow);
+}
+
+.thumb {
+  position: absolute;
+  top: calc(var(--u) * var(--thumb));
+  left: calc(var(--u) * 181);
+  width: calc(var(--u) * 201);
+  height: calc(var(--u) * var(--thumb-h));
+  border-radius: calc(var(--u) * 12);
+  object-fit: cover;
+  user-select: none;
+}
+.round[data-round='3'] .thumb {
+  object-position: 50% 30%;
+}
+
+.copy {
+  position: absolute;
+  top: calc(var(--u) * (var(--top) + var(--h) / 2 + 2));
+  left: calc(var(--u) * 409);
+  width: calc(var(--u) * 328);
+  translate: 0 -50%;
+}
+
+.title {
+  margin: 0 0 calc(var(--u) * 10);
+  font-family: var(--condensed);
+  font-size: calc(var(--u) * 47);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--ink);
+  text-shadow: 0 0 calc(var(--u) * 12) var(--glow);
+}
+
+.vs {
+  font-size: 0.82em;
+  font-style: italic;
+  text-transform: none;
+}
+
+.body {
+  margin: 0;
+  font-size: calc(var(--u) * 27.5);
+  line-height: 1.24;
+  white-space: nowrap;
+  color: var(--body);
+}
+
+.time {
+  position: absolute;
+  top: calc(var(--u) * var(--time));
+  left: calc(var(--u) * 752);
+  width: calc(var(--u) * 152);
+  margin: 0;
+  font-family: var(--condensed);
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  color: var(--accent);
+}
+
+.seconds {
+  display: block;
+  font-size: calc(var(--u) * 51);
+  text-shadow: 0 0 calc(var(--u) * 12) var(--glow);
+}
+
+.secondsLabel {
+  display: block;
+  margin-top: calc(var(--u) * 2);
+  font-size: calc(var(--u) * 18);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* --- One attempt: icon box 134–262u × 1299–1415u --------------------------- */
+
+/* The sign's own frame sits on the painted one; its box is 203u so the two
+   frames coincide. */
+.star {
+  position: absolute;
+  top: calc(var(--u) * 1257);
+  left: calc(var(--u) * 97);
+  width: calc(var(--u) * 203);
+  height: calc(var(--u) * 203);
+  user-select: none;
+  pointer-events: none;
+}
+
+.attempt {
+  position: absolute;
+  top: calc(var(--u) * 1357);
+  left: calc(var(--u) * 300);
+  width: calc(var(--u) * 545);
+  translate: 0 -50%;
+}
+
+.attemptTitle {
+  margin: 0 0 calc(var(--u) * 9);
+  font-family: var(--condensed);
+  font-size: calc(var(--u) * 36);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.attemptBody {
+  margin: 0;
+  font-size: calc(var(--u) * 28);
+  line-height: 1.27;
+  white-space: nowrap;
+  color: #a4e2ff;
+}
+
+/* --- CTA: the painted button is 78–861u × 1455–1608u ----------------------- */
+
+.cta {
+  position: absolute;
+  top: calc(var(--u) * 1453);
+  left: calc(var(--u) * 74);
+  width: calc(var(--u) * 792);
+  height: calc(var(--u) * 157);
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--u) * 44);
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+.cta:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.cta:active {
+  background: rgba(0, 20, 60, 0.16);
+}
+.cta:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: calc(var(--u) * 6);
+}
+
+.ctaIcon,
+.ctaLabel,
+.ctaArrow {
+  position: absolute;
+  top: 50%;
+  translate: -50% -50%;
+}
+
+/* Centred in the painted icon square (215–300u). */
+.ctaIcon {
+  left: calc(var(--u) * 183);
+  width: calc(var(--u) * 66);
+  filter: drop-shadow(0 0 calc(var(--u) * 6) rgba(255, 255, 255, 0.5));
+}
+
+.ctaLabel {
+  left: calc(var(--u) * 428);
+  font-family: var(--condensed);
+  font-size: calc(var(--u) * 65);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-shadow: 0 0 calc(var(--u) * 14) rgba(255, 255, 255, 0.45);
+}
+
+.ctaArrow {
+  left: calc(var(--u) * 648);
+  width: calc(var(--u) * 50);
+}
+
+.auto {
+  position: absolute;
+  top: calc(var(--u) * 1652);
+  left: 0;
+  right: 0;
+  translate: 0 -50%;
+  margin: 0;
+  font-size: max(10px, calc(var(--u) * 23));
+  line-height: 1;
+  text-align: center;
+  color: rgba(214, 226, 255, 0.72);
+}

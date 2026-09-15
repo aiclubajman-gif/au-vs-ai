@@ -1,0 +1,279 @@
+/* ==========================================================================
+   Fun Fact (after Round 1). Scoped to this screen.
+
+   Same stage model as How It Works: the 941 × 1672 plate fitted whole inside
+   the viewport, `--u` = one artwork pixel, every overlay placed in u. The
+   panel is 52–890u × 388–1527u and the painted button 137–802u × 1297–1402u.
+   ========================================================================== */
+
+.page {
+  --stage-w: min(100vw, calc(100svh * 941 / 1672));
+  --u: calc(var(--stage-w) / 941);
+
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  overflow: hidden;
+  overflow: clip;
+  background: #02040b;
+  color: #eef3ff;
+}
+
+.stage {
+  position: relative;
+  width: var(--stage-w);
+  height: calc(var(--u) * 1672);
+}
+
+.plate {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Letterbox bands on tall phones: see HowItWorks.module.css. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(20px) brightness(0.62) saturate(1.1);
+  transform: scale(1.15);
+  user-select: none;
+  pointer-events: none;
+}
+
+@media (max-aspect-ratio: 941 / 1672) {
+  .plate {
+    mask-image: linear-gradient(transparent, #000 2.5%, #000 97.5%, transparent);
+  }
+}
+
+@media (min-width: 768px) {
+  .backdrop {
+    display: none;
+  }
+}
+
+/* Between the plate's heading rules (311–626u at 440u). */
+.heading {
+  position: absolute;
+  top: calc(var(--u) * 440);
+  left: calc(var(--u) * 311);
+  width: calc(var(--u) * 315);
+  translate: 0 -50%;
+  margin: 0;
+  /* Tracking adds space after the last letter too; pad the front to match. */
+  padding-left: 0.24em;
+  font-size: calc(var(--u) * 42);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.24em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #d8edff;
+  text-shadow: 0 0 calc(var(--u) * 14) rgba(60, 170, 255, 0.75);
+}
+
+.logo,
+.brain,
+.mascot {
+  position: absolute;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Centred over the earth's horizon, as in the approved mockup (248–663u). */
+.logo {
+  top: calc(var(--u) * 77);
+  left: calc(var(--u) * 252);
+  width: calc(var(--u) * 420);
+  height: auto;
+}
+
+.brain {
+  top: calc(var(--u) * 420);
+  left: calc(var(--u) * 252);
+  width: calc(var(--u) * 460);
+  height: calc(var(--u) * 460);
+  object-fit: contain;
+}
+
+/* Left column of the panel, 72–468u, standing on the painted floor glow at
+   1250u. The text column starts at 503u, so the open hand points at the fact
+   without reaching it. The glow is the neon rim the flat cutout lacks. */
+.mascot {
+  top: calc(var(--u) * 767);
+  left: calc(var(--u) * 72);
+  width: calc(var(--u) * 396);
+  height: auto;
+  filter: drop-shadow(0 0 calc(var(--u) * 12) rgba(60, 160, 255, 0.38));
+}
+
+/* --- The fact: column 503–883u, right of the mascot ------------------------ */
+
+.fact {
+  position: absolute;
+  top: calc(var(--u) * 843);
+  left: calc(var(--u) * 503);
+  width: calc(var(--u) * 380);
+}
+
+.lead,
+.clues {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.lead {
+  font-size: calc(var(--u) * 37);
+  line-height: calc(var(--u) * 42);
+}
+
+.clues {
+  font-size: calc(var(--u) * 38);
+  font-weight: 700;
+  line-height: calc(var(--u) * 46);
+  color: #fff;
+}
+
+.small {
+  font-size: calc(var(--u) * 28.5);
+  font-weight: 400;
+  color: #e3eaff;
+}
+
+.or {
+  font-size: calc(var(--u) * 30);
+  font-weight: 400;
+  color: #e3eaff;
+}
+
+.strong {
+  font-weight: 700;
+}
+
+.mark {
+  position: relative;
+  font-weight: 700;
+  color: var(--tone);
+}
+.mark[data-tone='cyan'] {
+  --tone: #3ccaff;
+}
+.mark[data-tone='orange'] {
+  --tone: #ffa23c;
+}
+.mark[data-tone='yellow'] {
+  --tone: #ffd21c;
+}
+
+/* A tapered stroke under the word, like the approved mockup's marker lines. */
+.mark::after {
+  content: '';
+  position: absolute;
+  left: -4%;
+  right: -2%;
+  bottom: -0.2em;
+  height: 0.09em;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--tone) 14%, var(--tone) 78%, transparent);
+  box-shadow: 0 0 0.18em color-mix(in srgb, var(--tone) 60%, transparent);
+  rotate: -1.2deg;
+}
+
+/* --- Button, countdown, footer --------------------------------------------- */
+
+.cta {
+  position: absolute;
+  top: calc(var(--u) * 1295);
+  left: calc(var(--u) * 136);
+  width: calc(var(--u) * 668);
+  height: calc(var(--u) * 109);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 26);
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--u) * 30);
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+.cta:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.cta:active {
+  background: rgba(0, 20, 60, 0.16);
+}
+.cta:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: calc(var(--u) * 6);
+}
+
+.ctaLabel {
+  font-size: calc(var(--u) * 38);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-shadow: 0 0 calc(var(--u) * 12) rgba(255, 255, 255, 0.4);
+}
+
+.ctaArrow {
+  width: calc(var(--u) * 40);
+  flex: none;
+}
+
+.auto {
+  position: absolute;
+  top: calc(var(--u) * 1426);
+  left: 0;
+  right: 0;
+  translate: 0 -50%;
+  margin: 0;
+  font-size: max(10px, calc(var(--u) * 22));
+  line-height: 1;
+  text-align: center;
+  color: rgba(205, 220, 255, 0.7);
+}
+
+.footer {
+  position: absolute;
+  top: calc(var(--u) * 1478);
+  left: 0;
+  right: 0;
+  translate: 0 -50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 34);
+  margin: 0;
+}
+
+.rule {
+  flex: none;
+  width: calc(var(--u) * 90);
+  height: max(1px, calc(var(--u) * 2));
+  background: rgba(120, 165, 235, 0.55);
+}
+
+.footerText {
+  margin-right: -0.24em;
+  font-size: max(7px, calc(var(--u) * 17));
+  line-height: 1.45;
+  letter-spacing: 0.24em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #c4d1ef;
+}
