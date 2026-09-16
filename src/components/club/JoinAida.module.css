@@ -1,0 +1,249 @@
+/* ==========================================================================
+   Join AIDA. Scoped to this screen.
+
+   Same stage model as the game screens, but this plate is 853 × 1844, so `--u`
+   is derived from that. Measured off the clean plate
+   (design-source/round3/frames.mjs + probes):
+
+     OPEN ORS button      242–610u × 555–634u   (shell + icon + arrow painted)
+     WhatsApp button      242–610u × 650–736u   (shell + icon + arrow painted)
+     steps panel          92–762u  × 753–1334u
+       heading icon       132–169u × 762–818u
+       heading rule       y 833u
+       numbered circles   140–189u, centres y 875.5 938.5 1000.5 1064.5 1184 1290.5
+     footer band          92–762u  × 1350–1441u, dividers at x 222u and x 552u
+
+   The plate paints everything except words: branding, both mascots, the
+   campus, the button shells with their icons and arrows, the panel frame, the
+   clipboard icon, the six numbered circles and the footer dividers. Only text
+   and link hit areas are HTML.
+   ========================================================================== */
+
+.page {
+  --stage-w: min(100vw, calc(100svh * 853 / 1844));
+  --u: calc(var(--stage-w) / 853);
+
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  overflow: hidden;
+  overflow: clip;
+  background: #02040f;
+  color: #eaf2ff;
+}
+
+.stage {
+  position: relative;
+  width: var(--stage-w);
+  height: calc(var(--u) * 1844);
+}
+
+.plate {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  pointer-events: none;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(20px) brightness(0.6) saturate(1.1);
+  transform: scale(1.15);
+  user-select: none;
+  pointer-events: none;
+}
+
+@media (max-aspect-ratio: 853 / 1844) {
+  .plate {
+    mask-image: linear-gradient(transparent, #000 2.5%, #000 97.5%, transparent);
+  }
+}
+
+@media (min-width: 768px) {
+  .backdrop {
+    display: none;
+  }
+}
+
+/* --- Buttons ---------------------------------------------------------------- */
+/* The plate paints each shell with its icon and arrow; these are the real
+   controls over them, with the label centred in the gap between the two. */
+
+.cta {
+  position: absolute;
+  left: calc(var(--u) * 242);
+  width: calc(var(--u) * 368);
+  display: grid;
+  place-items: center;
+  padding: 0 calc(var(--u) * 76);
+  border: 0;
+  border-radius: calc(var(--u) * 44);
+  background: transparent;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: calc(var(--u) * 25);
+  font-weight: 700;
+  line-height: 1.14;
+  letter-spacing: 0.02em;
+  text-align: center;
+  text-transform: uppercase;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ors {
+  top: calc(var(--u) * 555);
+  height: calc(var(--u) * 79);
+}
+
+.whatsapp {
+  top: calc(var(--u) * 650);
+  height: calc(var(--u) * 86);
+  font-size: calc(var(--u) * 23);
+}
+
+/* No invite link configured: the label still reads, but nothing is clickable. */
+.unavailable {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.unavailableNote {
+  display: block;
+  margin-top: calc(var(--u) * 3);
+  font-size: calc(var(--u) * 16);
+  font-weight: 600;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: 0.01em;
+  color: #ffd9a8;
+}
+
+/* --- Steps panel ------------------------------------------------------------ */
+
+.panelTitle {
+  position: absolute;
+  left: calc(var(--u) * 192);
+  top: calc(var(--u) * 790);
+  width: calc(var(--u) * 550);
+  translate: 0 -50%;
+  margin: 0;
+  font-size: calc(var(--u) * 33);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Each step is placed against its own painted circle; the circle supplies the
+   number, so the list never renders one. */
+.step {
+  position: absolute;
+  left: calc(var(--u) * 203);
+  width: calc(var(--u) * 543);
+  margin: 0;
+  font-size: calc(var(--u) * 21);
+  line-height: 1.34;
+  color: #e7f1ff;
+}
+
+.step[data-n='1'] { top: calc(var(--u) * 861); }
+.step[data-n='2'] { top: calc(var(--u) * 924); }
+.step[data-n='3'] { top: calc(var(--u) * 986); }
+.step[data-n='4'] { top: calc(var(--u) * 1050); }
+.step[data-n='5'] { top: calc(var(--u) * 1169); }
+.step[data-n='6'] { top: calc(var(--u) * 1276); }
+
+/* The exact ORS field values, so a student can match them character for
+   character on a form that will not accept anything else. */
+.em {
+  font-weight: 700;
+  color: #4fd2ff;
+}
+
+.choices {
+  margin: calc(var(--u) * 4) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.choice {
+  position: relative;
+  padding-left: calc(var(--u) * 22);
+}
+
+.choice::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--u) * 3);
+  top: calc(var(--u) * 12);
+  width: calc(var(--u) * 7);
+  height: calc(var(--u) * 7);
+  border-radius: 50%;
+  background: #7fb8e8;
+}
+
+.choiceValue {
+  font-weight: 700;
+  color: #4fd2ff;
+}
+
+/* --- Footer band ------------------------------------------------------------ */
+
+.footerText {
+  position: absolute;
+  left: calc(var(--u) * 240);
+  top: calc(var(--u) * 1395);
+  width: calc(var(--u) * 302);
+  translate: 0 -50%;
+  margin: 0;
+  font-size: calc(var(--u) * 19);
+  line-height: 1.32;
+  color: #dceaff;
+}
+
+.footerMotto {
+  position: absolute;
+  left: calc(var(--u) * 566);
+  top: calc(var(--u) * 1395);
+  width: calc(var(--u) * 190);
+  translate: 0 -50%;
+  margin: 0;
+  font-size: calc(var(--u) * 15);
+  line-height: 1.5;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #6fd0ff;
+}
+
+/* --- Back ------------------------------------------------------------------- */
+
+.back {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--u) * 1800);
+  translate: -50% -50%;
+  padding: calc(var(--u) * 14) calc(var(--u) * 28);
+  font-size: calc(var(--u) * 24);
+  color: #cfe6ff;
+  text-decoration: none;
+  text-shadow: 0 calc(var(--u) * 2) calc(var(--u) * 10) rgba(0, 0, 0, 0.9);
+}
+
+.back:hover {
+  color: #ffffff;
+}

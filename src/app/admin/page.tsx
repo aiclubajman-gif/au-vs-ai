@@ -25,8 +25,8 @@ export default async function AdminPage() {
         <div className="max-w-sm text-center">
           <h1 className="text-2xl font-bold">Not authorised</h1>
           <p className="mt-3 text-sm text-[var(--color-muted)]">
-            This page is for AIDA board members. Sign in at /play with an approved
-            account.
+            This page is for AIDA board members. Sign in on the home page with
+            an approved account.
           </p>
         </div>
       </main>

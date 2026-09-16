@@ -121,10 +121,13 @@ describe('Round 1 timeout', () => {
 describe('Interstitial lifecycle', () => {
   it('gives every interstitial in the play flow its own distinct key', () => {
     const src = code('src/components/game/PlayFlow.tsx');
-    // How It Works and Fun Fact are the Round 1 intro and outro.
-    const elements = src.match(/<(?:Interstitial|HowItWorks|FunFact)\b[\s\S]*?\/>/g) ?? [];
+    // The only untimed screens left: How It Works, and the two Fun Facts. The
+    // generic round intros were removed, so a Fun Fact leads straight into the
+    // next round.
+    const elements = src.match(/<(?:HowItWorks|FunFact)\b[\s\S]*?\/>/g) ?? [];
 
-    expect(elements.length).toBe(5);
+    expect(elements.length).toBe(3);
+    expect(src).not.toMatch(/\bInterstitial\b/);
 
     const keys = elements.map((el) => el.match(/\bkey="([^"]+)"/)?.[1]);
     expect(keys.every(Boolean)).toBe(true);
@@ -341,28 +344,41 @@ describe('/debug/draw', () => {
 // 8. The 60-second format: one timing source, frozen on the attempt
 // ===========================================================================
 describe('Game timing source', () => {
-  it('/play no longer reads timing or falls back to defaults', () => {
-    const src = code('src/app/play/page.tsx');
-    expect(src).not.toMatch(/FALLBACK_TIMINGS/);
-    expect(src).not.toMatch(/event_settings/);
-    expect(src).not.toMatch(/round1_ms_per_image|round2_draw_ms|round3_ms/);
+  it('the entry page passes settings only as the explainer, never as gameplay timing', () => {
+    const src = code('src/app/page.tsx');
+    // It reads event_settings for the numbers How It Works prints before an
+    // attempt exists, and hands them over under a name that cannot be mistaken
+    // for the attempt's frozen timing.
+    expect(src).toMatch(/ExplainerTiming/);
+    expect(src).toMatch(/explainer=\{explainer\}/);
     expect(src).not.toMatch(/timings=/);
+    expect(src).not.toMatch(/FALLBACK_TIMINGS/);
   });
 
-  it('PlayFlow takes no timing prop and plays only from assignment.timing', () => {
+  it('PlayFlow times every round from assignment.timing alone', () => {
     const src = code('src/components/game/PlayFlow.tsx');
     expect(src).not.toMatch(/\btimings\b/);
     expect(src).toMatch(/const timing = assignment\?\.timing \?\? null/);
     for (const prop of [
-      'round1MsPerImage={timing.round1MsPerImage}',
-      'round2DrawMs={timing.round2DrawMs}',
-      'round3Ms={timing.round3Ms}',
       'msPerImage={timing.round1MsPerImage}',
       'drawMs={timing.round2DrawMs}',
       'durationMs={timing.round3Ms}',
     ]) {
       expect(src).toContain(prop);
     }
+  });
+
+  it('the explainer never reaches a component that runs a timer', () => {
+    const src = code('src/components/game/PlayFlow.tsx');
+    // How It Works is shown before an attempt exists, so its figures come from
+    // event settings. Nothing else may touch them: every round is timed from
+    // the attempt's own snapshot.
+    const howItWorks = src.match(/<HowItWorks[\s\S]*?\/>/)?.[0] ?? '';
+    expect(howItWorks).toContain('explainer.round1MsPerImage');
+    const everywhere = src.match(/explainer\.\w+/g) ?? [];
+    const inExplainerScreen = howItWorks.match(/explainer\.\w+/g) ?? [];
+    expect(everywhere.length).toBe(inExplainerScreen.length);
+    expect(everywhere.length).toBe(4);
   });
 
   it('PlayFlow refuses to enter any round unless the frozen timing makes 60 seconds', () => {
@@ -376,8 +392,9 @@ describe('Game timing source', () => {
     // for play after the check passes.
     const refusal = src.slice(guard, landing);
     expect(refusal).toMatch(/setStep\('blocked'\);\s*return;\s*\}\s*setAssignment\(data\)/);
-    // Every step that runs a timer requires the timing to be present.
-    for (const step of ['intro1', 'round1', 'intro2', 'round2', 'intro3', 'round3']) {
+    // Every step that runs a timer requires the timing to be present. How It
+    // Works is no longer one of them: it is shown before the attempt exists.
+    for (const step of ['round1', 'round2', 'round3']) {
       expect(src).toMatch(new RegExp(`step === '${step}'[^)]*&& timing\\)`));
     }
   });
@@ -387,7 +404,7 @@ describe('Game timing source', () => {
     'src/components/game/Round2.tsx',
     'src/components/game/Round3.tsx',
     'src/components/game/HowItWorks.tsx',
-    'src/components/game/Interstitial.tsx',
+    'src/components/game/auto-advance.ts',
   ])('%s hardcodes no game timer value', (file) => {
     expect(code(file)).not.toMatch(/\b(?:4_?000|5_?000|8_?000|12_?000|20_?000|40_?000|60_?000)\b/);
   });

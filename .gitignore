@@ -55,3 +55,12 @@ yarn-error.log*
 # Design masters, approved mockups and QA captures. Multi-megabyte and never
 # loaded by the app; only the optimized derivatives under public/ ship.
 /design-source/
+
+# Written by `next dev` (node_modules/next/dist/server/lib/generate-agent-files.js)
+# whenever it detects an AI coding agent, and re-created after any deletion.
+# AGENTS.md holds only the managed nextjs-agent-rules block and CLAUDE.md only
+# an @AGENTS.md include: neither has ever carried project documentation, and
+# both are regenerated from the installed Next.js version. Ours lives in
+# README.md, TODO.md and docs/.
+/AGENTS.md
+/CLAUDE.md

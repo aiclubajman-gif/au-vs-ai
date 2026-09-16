@@ -1,0 +1,395 @@
+/* ==========================================================================
+   Round 3 — You vs AIDA. Scoped to this screen.
+
+   Same stage model as Round 1 and Round 2: the 941 × 1672 plate fitted whole
+   inside the viewport, `--u` = one artwork pixel, every overlay placed in u
+   against the painted chrome. Measured off the clean plate
+   (design-source/round3/frames.mjs):
+
+     round pill      69–318u × 129–199u   (identical to Round 1's)
+     timer ring      centre 804.5u, 166u; band radius 72.5u
+     outer panel     31–910u × 382–1319u  (painted, EMPTY inside)
+     lock button     37–903u × 1390–1505u (painted shell, no label)
+
+   The plate paints the background, wordmark, round pill, ring shell, the outer
+   panel frame and the button shell. It paints NOTHING inside the panel — no
+   inner question frame, no value box, no slider track — so those four pieces
+   are drawn here, styled to sit inside the painted panel as the reference
+   shows. Everything that carries live data is HTML.
+   ========================================================================== */
+
+.page {
+  --stage-w: min(100vw, calc(100svh * 941 / 1672));
+  --u: calc(var(--stage-w) / 941);
+  --condensed: 'Avenir Next Condensed', 'Bahnschrift SemiCondensed', 'Roboto Condensed',
+    sans-serif-condensed, 'Arial Narrow', var(--font-sans);
+
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  overflow: hidden;
+  overflow: clip;
+  background: #020610;
+  color: #f2f6ff;
+}
+
+.stage {
+  position: relative;
+  width: var(--stage-w);
+  height: calc(var(--u) * 1672);
+}
+
+.plate {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Letterbox bands on tall phones: see HowItWorks.module.css. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(20px) brightness(0.62) saturate(1.1);
+  transform: scale(1.15);
+  user-select: none;
+  pointer-events: none;
+}
+
+@media (max-aspect-ratio: 941 / 1672) {
+  .plate {
+    mask-image: linear-gradient(transparent, #000 2.5%, #000 97.5%, transparent);
+  }
+}
+
+@media (min-width: 768px) {
+  .backdrop {
+    display: none;
+  }
+}
+
+/* --- HUD -------------------------------------------------------------------- */
+
+.timer {
+  position: absolute;
+  top: calc(var(--u) * 66);
+  left: calc(var(--u) * 704.5);
+  width: calc(var(--u) * 200);
+  height: calc(var(--u) * 200);
+  display: grid;
+  place-items: center;
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.track,
+.arc {
+  fill: none;
+}
+
+/* Covers the plate's static arc with its own track colour. */
+.track {
+  stroke: #0047ab;
+  stroke-width: 12;
+}
+
+.arc {
+  stroke: #03f2fd;
+  stroke-width: 9.5;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 3px rgba(0, 220, 255, 0.7));
+  transition: stroke-dashoffset 100ms linear;
+}
+.arc[data-empty] {
+  opacity: 0;
+}
+
+.seconds {
+  position: relative;
+  font-family: var(--condensed);
+  font-size: calc(var(--u) * 70);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.unit {
+  margin-left: 0.02em;
+}
+
+/* --- Panel heading ---------------------------------------------------------- */
+
+.heading {
+  position: absolute;
+  top: calc(var(--u) * 470);
+  left: calc(var(--u) * 31);
+  width: calc(var(--u) * 879);
+  translate: 0 -50%;
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: calc(var(--u) * 22);
+  font-family: var(--condensed);
+  font-size: calc(var(--u) * 82);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.you {
+  color: #47d8ff;
+  text-shadow:
+    0 0 calc(var(--u) * 10) rgba(60, 200, 255, 0.9),
+    0 0 calc(var(--u) * 30) rgba(30, 140, 255, 0.5);
+}
+
+.vsWord {
+  font-size: calc(var(--u) * 60);
+  color: #f3f8ff;
+}
+
+.aida {
+  color: #ffb43c;
+  text-shadow:
+    0 0 calc(var(--u) * 10) rgba(255, 170, 50, 0.85),
+    0 0 calc(var(--u) * 32) rgba(255, 120, 20, 0.5);
+}
+
+/* --- Inner question frame --------------------------------------------------- */
+/* Not in the plate: the painted panel is empty, so this is drawn to match it. */
+
+.card {
+  position: absolute;
+  left: calc(var(--u) * 72);
+  top: calc(var(--u) * 545);
+  width: calc(var(--u) * 797);
+  height: calc(var(--u) * 715);
+  border: calc(var(--u) * 2) solid rgba(90, 200, 255, 0.55);
+  border-radius: calc(var(--u) * 34);
+  background: rgba(6, 22, 52, 0.42);
+  box-shadow:
+    0 0 calc(var(--u) * 18) rgba(40, 150, 255, 0.28),
+    inset 0 0 calc(var(--u) * 26) rgba(20, 90, 200, 0.22);
+  pointer-events: none;
+}
+
+.question {
+  position: absolute;
+  left: calc(var(--u) * 110);
+  top: calc(var(--u) * 690);
+  width: calc(var(--u) * 721);
+  translate: 0 -50%;
+  margin: 0;
+  font-size: calc(var(--u) * 38);
+  line-height: 1.32;
+  text-align: center;
+  text-wrap: balance;
+  color: #eaf4ff;
+}
+
+/* --- Selected value --------------------------------------------------------- */
+
+.valueBox {
+  position: absolute;
+  left: calc(var(--u) * 280);
+  top: calc(var(--u) * 820);
+  width: calc(var(--u) * 381);
+  height: calc(var(--u) * 132);
+  display: grid;
+  place-items: center;
+  border: calc(var(--u) * 2) solid rgba(90, 200, 255, 0.7);
+  border-radius: calc(var(--u) * 22);
+  background: rgba(4, 16, 42, 0.55);
+  box-shadow: 0 0 calc(var(--u) * 16) rgba(40, 160, 255, 0.35);
+  pointer-events: none;
+}
+
+.value {
+  font-size: calc(var(--u) * 78);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+  text-shadow: 0 0 calc(var(--u) * 14) rgba(80, 200, 255, 0.55);
+}
+
+.unitLabel {
+  position: absolute;
+  left: calc(var(--u) * 31);
+  top: calc(var(--u) * 992);
+  width: calc(var(--u) * 879);
+  translate: 0 -50%;
+  margin: 0;
+  font-size: calc(var(--u) * 32);
+  line-height: 1;
+  text-align: center;
+  color: #9fc4e8;
+}
+
+/* --- Slider ----------------------------------------------------------------- */
+/* A real <input type="range">: touch, mouse and keyboard all stay native. */
+
+.slider {
+  position: absolute;
+  left: calc(var(--u) * 112);
+  top: calc(var(--u) * 1085);
+  width: calc(var(--u) * 717);
+  height: calc(var(--u) * 76);
+  translate: 0 -50%;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  /* The stage never scrolls, so claiming the gesture makes dragging reliable. */
+  touch-action: none;
+  cursor: pointer;
+}
+
+.slider:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.slider::-webkit-slider-runnable-track {
+  height: calc(var(--u) * 14);
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    #03f2fd 0 calc(var(--fill) * 100%),
+    rgba(120, 165, 215, 0.35) calc(var(--fill) * 100%) 100%
+  );
+  box-shadow: 0 0 calc(var(--u) * 12) rgba(0, 200, 255, 0.35);
+}
+
+.slider::-moz-range-track {
+  height: calc(var(--u) * 14);
+  border-radius: 999px;
+  background: rgba(120, 165, 215, 0.35);
+}
+
+.slider::-moz-range-progress {
+  height: calc(var(--u) * 14);
+  border-radius: 999px;
+  background: #03f2fd;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: calc(var(--u) * 46);
+  height: calc(var(--u) * 46);
+  /* Centres the thumb on the 14u track. */
+  margin-top: calc(var(--u) * -16);
+  border: none;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow:
+    0 0 calc(var(--u) * 10) rgba(255, 255, 255, 0.9),
+    0 0 calc(var(--u) * 26) rgba(0, 200, 255, 0.85);
+}
+
+.slider::-moz-range-thumb {
+  width: calc(var(--u) * 46);
+  height: calc(var(--u) * 46);
+  border: none;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow:
+    0 0 calc(var(--u) * 10) rgba(255, 255, 255, 0.9),
+    0 0 calc(var(--u) * 26) rgba(0, 200, 255, 0.85);
+}
+
+.slider:focus-visible {
+  outline: calc(var(--u) * 3) solid #67e8f9;
+  outline-offset: calc(var(--u) * 4);
+  border-radius: calc(var(--u) * 12);
+}
+
+.bounds {
+  position: absolute;
+  left: calc(var(--u) * 112);
+  top: calc(var(--u) * 1168);
+  width: calc(var(--u) * 717);
+  translate: 0 -50%;
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  font-size: calc(var(--u) * 34);
+  line-height: 1;
+  color: #9fc4e8;
+  pointer-events: none;
+}
+
+/* --- Lock button ------------------------------------------------------------ */
+/* The plate paints the gradient pill; this is the real control over it. */
+
+.lock {
+  position: absolute;
+  left: calc(var(--u) * 37);
+  top: calc(var(--u) * 1390);
+  width: calc(var(--u) * 866);
+  height: calc(var(--u) * 117);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 22);
+  border: 0;
+  border-radius: calc(var(--u) * 58);
+  background: transparent;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: calc(var(--u) * 44);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lock:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.lockIcon {
+  width: calc(var(--u) * 44);
+  height: calc(var(--u) * 50);
+  flex: none;
+}
+
+/* --- Save failure ----------------------------------------------------------- */
+
+.notice {
+  position: absolute;
+  left: calc(var(--u) * 72);
+  top: calc(var(--u) * 1240);
+  width: calc(var(--u) * 797);
+  translate: 0 -100%;
+}
+
+.status {
+  position: absolute;
+  left: calc(var(--u) * 31);
+  top: calc(var(--u) * 1350);
+  width: calc(var(--u) * 879);
+  margin: 0;
+  font-size: calc(var(--u) * 30);
+  line-height: 1;
+  text-align: center;
+  color: #9fc4e8;
+}

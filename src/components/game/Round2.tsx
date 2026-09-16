@@ -10,6 +10,7 @@ import {
   describeSaveFailure,
   type SubmitFailure,
 } from '@/lib/client/submit';
+import { REVEAL_WINDOW_MS, revealTimeRemaining } from '@/lib/client/reveal-window';
 import type { Round2Assignment } from '@/types';
 import styles from './Round2.module.css';
 
@@ -55,15 +56,6 @@ const RENDER_SCALE = 2;
 const STROKE_WIDTH = 12;
 /** Minimum suspense so the reveal reads as a moment, not a flicker. */
 const ANALYSE_MS = 900;
-/**
- * How long the predictions stay on screen before moving on.
- *
- * Long enough to actually read five prediction rows. This is readout time, not
- * gameplay: the drawing clock stopped at submit and drawTimeMs was frozen
- * there, so nothing here reaches the Round 2 score, the timer or the speed
- * bonus.
- */
-const REVEAL_MS = 7000;
 /** Ceiling in round2SubmitSchema. A backgrounded tab can otherwise exceed it. */
 const MAX_DRAW_MS = 120_000;
 /** Prediction rows painted on the analysis plate. */
@@ -90,8 +82,8 @@ export function Round2({
   const [saved, setSaved] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
   const [failure, setFailure] = useState<SubmitFailure | null>(null);
-  /** When the reveal auto-advances, once saved. Null while there is no timer. */
-  const [advanceAt, setAdvanceAt] = useState<number | null>(null);
+  /** When the result was saved — the readout window runs from here. Null until then. */
+  const [savedAtMs, setSavedAtMs] = useState<number | null>(null);
   const [autoSeconds, setAutoSeconds] = useState(0);
   const drawing = useRef(false);
   const startedAt = useRef(0);
@@ -102,7 +94,6 @@ export function Round2({
   const submission = useRef<Round2SubmitBody | null>(null);
   const analysing = useRef(false);
   const inFlight = useRef(false);
-  const revealedAt = useRef(0);
   /** Continue and the reveal timeout share this, so the round ends once. */
   const completed = useRef(false);
   const unmounted = useRef(false);
@@ -211,11 +202,14 @@ export function Round2({
       }
 
       setSaved(true);
-      const wait = Math.max(0, REVEAL_MS - (Date.now() - revealedAt.current));
+      // The readout window starts HERE — the moment the result is both on
+      // screen and saved — never when the classifier returned. A first save
+      // that failed and succeeded on retry would otherwise have spent it, and
+      // the screen would close the instant Continue lit up.
+      setSavedAtMs(Date.now());
       // finish() is guarded by completed.current, so this and the Continue
       // button together still advance the round exactly once.
-      setAdvanceAt(Date.now() + wait);
-      setTimeout(finish, wait);
+      setTimeout(finish, REVEAL_WINDOW_MS);
     },
     [finish],
   );
@@ -263,7 +257,6 @@ export function Round2({
     };
     submission.current = body;
 
-    revealedAt.current = Date.now();
     setPredictions(preds.slice(0, RESULT_ROWS));
     setPhase('revealed');
     save(body);
@@ -284,12 +277,15 @@ export function Round2({
   // Display only: counts the reveal down so the wait is not a dead pause. The
   // advance itself is the timeout above, not this.
   useEffect(() => {
-    if (advanceAt === null) return;
-    const tick = () => setAutoSeconds(Math.max(0, Math.ceil((advanceAt - Date.now()) / 1000)));
+    if (savedAtMs === null) return;
+    const tick = () =>
+      setAutoSeconds(
+        Math.ceil(revealTimeRemaining(savedAtMs, Date.now(), REVEAL_WINDOW_MS) / 1000),
+      );
     tick();
     const id = setInterval(tick, 200);
     return () => clearInterval(id);
-  }, [advanceAt]);
+  }, [savedAtMs]);
 
   useEffect(() => {
     if (phase !== 'drawing') return;
@@ -583,7 +579,7 @@ export function Round2({
               </span>
               {!reconnecting && <ArrowIcon className={styles.continueArrow} />}
             </button>
-            {advanceAt !== null && (
+            {savedAtMs !== null && (
               <p className={styles.auto}>
                 Continues by itself in <span className="tabular">{autoSeconds}</span>s
               </p>

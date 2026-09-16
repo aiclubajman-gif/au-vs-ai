@@ -2,7 +2,16 @@ import { createAdminSupabase } from '@/lib/supabase/server';
 import { LeaderboardScreen, LEADERBOARD_SLOTS } from '@/components/leaderboard/LeaderboardScreen';
 import type { LeaderboardDisplayMode } from '@/types';
 
-export const revalidate = 10;
+/**
+ * Rendered per request, never cached.
+ *
+ * A student finishes, taps View Leaderboard and expects to be on it. With ISR
+ * they instead got whatever had been rendered up to ten seconds earlier — at
+ * the start of an event, the empty "No scores yet" board they had just
+ * disproved. This page is eleven rows read by the handful of people standing
+ * at one booth, so rendering it on every request costs nothing worth having.
+ */
+export const dynamic = 'force-dynamic';
 
 interface Row {
   rank: number;

@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useAutoAdvance } from '@/components/game/Interstitial';
+import { useAutoAdvance } from '@/components/game/auto-advance';
 import styles from './FunFact.module.css';
 
 /**

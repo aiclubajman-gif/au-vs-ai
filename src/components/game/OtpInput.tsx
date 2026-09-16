@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect, type ClipboardEvent, type KeyboardEvent } from 'react';
+import { useRef, useEffect, type ClipboardEvent, type KeyboardEvent } from 'react';
 
 /**
  * Six-box verification code entry.
@@ -30,17 +30,20 @@ export function OtpInput({
   inputClassName?: string;
 }) {
   const refs = useRef<(HTMLInputElement | null)[]>([]);
-  const [submitted, setSubmitted] = useState(false);
+  // A ref, not state: nothing renders it, and as state it re-rendered the whole
+  // input on submit for no visible reason (react-hooks/set-state-in-effect).
+  const submitted = useRef(false);
 
   const digits = value.padEnd(6, ' ').slice(0, 6).split('');
 
   useEffect(() => {
-    if (value.length === 6 && !submitted) {
-      setSubmitted(true);
+    if (value.length === 6 && !submitted.current) {
+      submitted.current = true;
       onComplete(value);
     }
-    if (value.length < 6 && submitted) setSubmitted(false);
-  }, [value, submitted, onComplete]);
+    // Cleared after a rejected code, so the next six digits submit again.
+    if (value.length < 6) submitted.current = false;
+  }, [value, onComplete]);
 
   useEffect(() => {
     refs.current[0]?.focus();

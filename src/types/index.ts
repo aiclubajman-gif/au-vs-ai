@@ -76,6 +76,19 @@ export interface AttemptTiming {
   round3Ms: number;
 }
 
+/**
+ * What How It Works shows before an attempt exists, read from event_settings.
+ *
+ * Display only. No round is ever timed from this: start_attempt() snapshots the
+ * timing onto the attempt and the game plays from that snapshot alone.
+ */
+export interface ExplainerTiming {
+  round1Images: number;
+  round1MsPerImage: number;
+  round2DrawMs: number;
+  round3Ms: number;
+}
+
 export interface AttemptAssignment {
   attemptId: string;
   status: AttemptStatus;

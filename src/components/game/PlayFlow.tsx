@@ -10,7 +10,6 @@ import { DeviceStep, type DeviceStage } from '@/components/auth/DeviceStep';
 import { Screen } from '@/components/ui';
 import { resolveClassifier } from '@/lib/ml/classifier';
 import { composeAuEmail } from '@/lib/client/email';
-import { Interstitial, ROUND_INTROS } from '@/components/game/Interstitial';
 import { HowItWorks } from '@/components/game/HowItWorks';
 import { FunFact, ROUND2_FUN_FACT_PLATE_SRC } from '@/components/game/FunFact';
 import { Round1 } from '@/components/game/Round1';
@@ -19,7 +18,7 @@ import {
   ROUND2_DRAW_PLATE_SRC,
   ROUND2_RESULTS_PLATE_SRC,
 } from '@/components/game/Round2';
-import { Round3 } from '@/components/game/Round3';
+import { Round3, ROUND3_PLATE_SRC } from '@/components/game/Round3';
 import { Result } from '@/components/game/Result';
 import { HUMAN_WIN_PLATE_SRC } from '@/components/game/HumanWinResult';
 import { AI_WIN_PLATE_SRC } from '@/components/game/AiWinResult';
@@ -30,13 +29,18 @@ import { formatRank, formatTopShare } from '@/lib/client/result-text';
 import { resumeStep, toResult } from '@/lib/api/serialize';
 import { postJson } from '@/lib/client/submit';
 import { isSixtySecondGame } from '@/lib/timing';
-import type { College, AttemptAssignment, PublicAttemptResult } from '@/types';
+import type {
+  College,
+  AttemptAssignment,
+  PublicAttemptResult,
+  ExplainerTiming,
+} from '@/types';
 
 type Step =
   | 'loading' | 'email' | 'otp' | 'profile' | 'device' | 'blocked' | 'ready'
   | 'intro1' | 'round1' | 'outro1'
-  | 'intro2' | 'round2' | 'outro2'
-  | 'intro3' | 'round3'
+  | 'round2' | 'outro2'
+  | 'round3'
   | 'submitting' | 'result' | 'completed';
 
 interface ApiError {
@@ -59,10 +63,23 @@ async function post<T = unknown>(url: string, body: unknown): Promise<PostResult
   return { ok: false, error: { code: res.code, message: res.message, ref: res.ref } };
 }
 
-export function PlayFlow({ colleges }: { colleges: College[] }) {
+export function PlayFlow({
+  colleges,
+  explainer,
+}: {
+  colleges: College[];
+  /**
+   * What How It Works shows BEFORE an attempt exists, read from event_settings
+   * by the page. Gameplay never uses it: every timer below comes from the
+   * attempt's own frozen snapshot, which start_attempt() writes.
+   */
+  explainer: ExplainerTiming;
+}) {
   const [assignment, setAssignment] = useState<AttemptAssignment | null>(null);
   const [result, setResult] = useState<PublicAttemptResult | null>(null);
   const [returningPlayer, setReturningPlayer] = useState(false);
+  /** Their official attempt is already complete: never start another one. */
+  const [alreadyPlayed, setAlreadyPlayed] = useState(false);
   const [step, setStep] = useState<Step>('loading');
   // The student types only the part before @ajmanuni.ac.ae. Everything that
   // talks to the API (send, resend, verify) uses the composed full address.
@@ -87,26 +104,28 @@ export function PlayFlow({ colleges }: { colleges: College[] }) {
           setStep('email');
           return;
         }
-        if (res.data.attemptStatus === 'completed') {
-          // Show the actual score, not a bare "already played" (§7). A student
-          // who reopens the link wants to see how they did and their rank.
-          const r = await fetch('/api/attempt/result', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({}),
-          }).then((x) => x.json()).catch(() => null);
-
-          if (cancelled) return;
-          if (r?.ok) {
-            setResult(toResult(r.data));
-            setReturningPlayer(true);
-            setStep('result');
-          } else {
-            setStep('completed');
-          }
+        if (res.data.needsProfile) {
+          setStep('profile');
           return;
         }
-        setStep(res.data.needsProfile ? 'profile' : 'device');
+
+        // A finished player still gets the explainer, then Already Played with
+        // their real score (§7) — never the device check, and never a second
+        // attempt.
+        if (res.data.attemptStatus === 'completed') {
+          setAlreadyPlayed(true);
+          setStep('intro1');
+          return;
+        }
+
+        // A game already in progress resumes where it was, with no explainer
+        // in the way: the student has read it once already.
+        if (res.data.attemptStatus === 'in_progress' || res.data.attemptStatus === 'abandoned') {
+          setStep('device');
+          return;
+        }
+
+        setStep('intro1');
       } catch {
         if (!cancelled) setStep('email');
       }
@@ -147,12 +166,16 @@ export function PlayFlow({ colleges }: { colleges: College[] }) {
   preload(AUTH_PLATE_SRC, { as: 'image', fetchPriority: 'low' });
   // Round 2 swaps plates mid-round (drawing → analysis), so each is fetched
   // before it is needed and the analysis never appears on a bare page.
-  if (step === 'outro1' || step === 'intro2') {
-    preload(ROUND2_DRAW_PLATE_SRC, { as: 'image', fetchPriority: 'low' });
+  if (step === 'outro1') {
+    preload(ROUND2_DRAW_PLATE_SRC, { as: 'image', fetchPriority: 'high' });
   }
   if (step === 'round2') {
     preload(ROUND2_RESULTS_PLATE_SRC, { as: 'image', fetchPriority: 'low' });
     preload(ROUND2_FUN_FACT_PLATE_SRC, { as: 'image', fetchPriority: 'low' });
+  }
+  // Fun Fact 2 leads straight into Round 3, so its plate is fetched during it.
+  if (step === 'outro2') {
+    preload(ROUND3_PLATE_SRC, { as: 'image', fetchPriority: 'high' });
   }
   // Which result plate is needed is only known once scoring returns, so fetch
   // both during the last round and the score is never revealed on a bare page.
@@ -202,11 +225,20 @@ export function PlayFlow({ colleges }: { colleges: College[] }) {
           return;
         }
 
-        if (res.data.attemptStatus === 'completed') {
-          setStep('completed');
+        if (res.data.needsProfile) {
+          setStep('profile');
           return;
         }
-        setStep(res.data.needsProfile ? 'profile' : 'device');
+        if (res.data.attemptStatus === 'completed') {
+          setAlreadyPlayed(true);
+          setStep('intro1');
+          return;
+        }
+        if (res.data.attemptStatus === 'in_progress' || res.data.attemptStatus === 'abandoned') {
+          setStep('device');
+          return;
+        }
+        setStep('intro1');
       } finally {
         setBusy(false);
       }
@@ -228,7 +260,7 @@ export function PlayFlow({ colleges }: { colleges: College[] }) {
         setError({ message: res.error.message, ref: res.error.ref });
         return;
       }
-      setStep('device');
+      setStep('intro1');
     } finally {
       setBusy(false);
     }
@@ -301,9 +333,9 @@ export function PlayFlow({ colleges }: { colleges: College[] }) {
           // Placement comes from the frozen server state, so a refresh resumes
           // exactly where the student was rather than replaying Round 1.
           const next = resumeStep(data);
-          // A fresh game gets the Round 1 explainer. A resuming student goes
-          // straight back to their round — they have already read it.
-          const landing = data.resumed ? next : 'intro1';
+          // How It Works is now the entry screen, shown before the attempt was
+          // created, so a fresh game goes straight into Round 1.
+          const landing = data.resumed ? next : 'round1';
           setDeviceStage('done');
           setTimeout(() => {
             if (!cancelled) setStep(landing as Step);
@@ -430,15 +462,17 @@ export function PlayFlow({ colleges }: { colleges: College[] }) {
   // Every interstitial gets its own `key`. They render at the same place in the
   // tree, so without one React reuses the previous screen's instance and its
   // countdown: an outro that timed out would instantly skip the next intro.
-  if (step === 'intro1' && assignment && timing) {
+  if (step === 'intro1') {
     return (
       <HowItWorks
         key="intro1"
-        round1Images={assignment.round1.length}
-        round1MsPerImage={timing.round1MsPerImage}
-        round2DrawMs={timing.round2DrawMs}
-        round3Ms={timing.round3Ms}
-        onDone={() => setStep('round1')}
+        round1Images={explainer.round1Images}
+        round1MsPerImage={explainer.round1MsPerImage}
+        round2DrawMs={explainer.round2DrawMs}
+        round3Ms={explainer.round3Ms}
+        // Both the button and the auto-advance come through here, so a player
+        // who has already finished reaches Already Played either way.
+        onDone={() => setStep(alreadyPlayed ? 'completed' : 'device')}
       />
     );
   }
@@ -455,18 +489,7 @@ export function PlayFlow({ colleges }: { colleges: College[] }) {
   }
 
   if (step === 'outro1') {
-    return <FunFact key="outro1" onDone={() => setStep('intro2')} />;
-  }
-
-  if (step === 'intro2' && timing) {
-    return (
-      <Interstitial
-        key="intro2"
-        intro={ROUND_INTROS[2]}
-        timerValue={Math.round(timing.round2DrawMs / 1000)}
-        onDone={() => setStep('round2')}
-      />
-    );
+    return <FunFact key="outro1" onDone={() => setStep('round2')} />;
   }
 
   if (step === 'round2' && assignment && timing) {
@@ -481,18 +504,7 @@ export function PlayFlow({ colleges }: { colleges: College[] }) {
   }
 
   if (step === 'outro2') {
-    return <FunFact key="outro2" round={2} onDone={() => setStep('intro3')} />;
-  }
-
-  if (step === 'intro3' && timing) {
-    return (
-      <Interstitial
-        key="intro3"
-        intro={ROUND_INTROS[3]}
-        timerValue={Math.round(timing.round3Ms / 1000)}
-        onDone={() => setStep('round3')}
-      />
-    );
+    return <FunFact key="outro2" round={2} onDone={() => setStep('round3')} />;
   }
 
   if (step === 'round3' && assignment && timing) {

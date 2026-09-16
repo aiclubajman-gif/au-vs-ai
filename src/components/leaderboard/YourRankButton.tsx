@@ -7,9 +7,9 @@ import { postJson } from '@/lib/client/submit';
 /**
  * Your Rank. The public leaderboard knows nothing about the viewer, so this
  * asks the existing result endpoint: a student with a finished game is taken
- * to /play, which shows their final result and rank. Anyone else gets a short
- * explanation instead of being sent to /play, where a signed-in student who
- * has not played would start their one official attempt.
+ * to the player flow at /, which shows their final result and rank. Anyone else
+ * gets a short explanation instead of being sent there, where a signed-in
+ * student who has not played would start their one official attempt.
  */
 export function YourRankButton({
   className,
@@ -33,7 +33,7 @@ export function YourRankButton({
     try {
       const res = await postJson('/api/attempt/result', {});
       if (res.ok) {
-        router.push('/play');
+        router.push('/');
         return;
       }
       if (res.code === 'UNAUTHORIZED' || res.code === 'ATTEMPT_NOT_FOUND') {
