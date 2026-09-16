@@ -19,11 +19,25 @@
 .page {
   --plate-w: 941;
   --plate-h: 1672;
-  --stage-w: min(100vw, calc(100svh * var(--plate-w) / var(--plate-h)));
+  /* Human Win's plate is close enough to the shape of a phone to fit whole, so
+     it takes no crop. AI Win's is much taller and sets its own overscan below:
+     the stage may run that much taller than the height actually visible, and
+     the excess is cropped off the plate's ends, --crop-bias of it from the
+     bottom. */
+  --overscan: 1;
+  --crop-bias: 0.5;
+  --stage-w: min(100vw, calc(100svh * var(--plate-w) / var(--plate-h) * var(--overscan)));
   --u: calc(var(--stage-w) / var(--plate-w));
+  --crop: max(0px, calc(var(--u) * var(--plate-h) - 100svh));
 
   position: relative;
   display: grid;
+  /* The composition lives inside one svh-tall row pinned to the top of the
+     page, so it is whole inside the viewport a phone shows with its toolbars
+     out. The page box itself still runs the full dvh, so the background reaches
+     the bottom of the window when they retract. */
+  grid-template-rows: 100svh;
+  align-content: start;
   place-items: center;
   min-height: 100dvh;
   overflow: hidden;
@@ -36,6 +50,9 @@
   position: relative;
   width: var(--stage-w);
   height: calc(var(--u) * var(--plate-h));
+  /* Centred in the row by default; this shifts the crop onto the plate's
+     empty end. */
+  translate: 0 calc(var(--crop) * (var(--crop-bias) - 0.5));
 }
 
 .plate {
@@ -71,7 +88,15 @@
   }
 }
 
+/* Tablets and desktop have height to spare: fit the plate whole, no crop. */
 @media (min-width: 768px) {
+  /* Both selectors: the variant rule below would otherwise outrank a bare
+     .page here. */
+  .page,
+  .page[data-variant='ai'] {
+    --overscan: 1;
+  }
+
   .backdrop {
     display: none;
   }
@@ -340,6 +365,11 @@
 .page[data-variant='ai'] {
   --plate-w: 853;
   --plate-h: 1844;
+
+  /* 120u is what the plate has to spare above the wordmark and below the
+     painted footer line; split evenly, both survive. */
+  --overscan: 1.0696;
+  --crop-bias: 0.5;
 
   /* Centred in the score frame: digits caps 891–939u, "/ 1000" on the same
      baseline. The anchor puts three digits and "/ 1000" in the middle. */

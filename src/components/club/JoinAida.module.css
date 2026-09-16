@@ -20,11 +20,29 @@
    ========================================================================== */
 
 .page {
-  --stage-w: min(100vw, calc(100svh * 853 / 1844));
-  --u: calc(var(--stage-w) / 853);
+  --plate-w: 853;
+  --plate-h: 1844;
+  /* This plate is taller than the shape of a phone, so fitting it whole leaves
+     wide bands down both sides once the browser's toolbars take their cut. The
+     stage is allowed to run up to --overscan taller than the height that is
+     actually visible and the excess is cropped off the plate's ends — never
+     more than the 260u of campus below the footer band. --crop-bias is the
+     share of that crop taken off the bottom. */
+  --overscan: 1.164;
+  --crop-bias: 0.96;
+  --stage-w: min(100vw, calc(100svh * var(--plate-w) / var(--plate-h) * var(--overscan)));
+  --u: calc(var(--stage-w) / var(--plate-w));
+  --crop: max(0px, calc(var(--u) * var(--plate-h) - 100svh));
+  --crop-bottom: calc(var(--crop) * var(--crop-bias));
 
   position: relative;
   display: grid;
+  /* The composition lives inside one svh-tall row pinned to the top of the
+     page, so it is whole inside the viewport a phone shows with its toolbars
+     out. The page box itself still runs the full dvh, so the background reaches
+     the bottom of the window when they retract. */
+  grid-template-rows: 100svh;
+  align-content: start;
   place-items: center;
   min-height: 100dvh;
   overflow: hidden;
@@ -36,7 +54,10 @@
 .stage {
   position: relative;
   width: var(--stage-w);
-  height: calc(var(--u) * 1844);
+  height: calc(var(--u) * var(--plate-h));
+  /* Centred in the row by default; this shifts the crop onto the plate's
+     empty end. */
+  translate: 0 calc(var(--crop) * (var(--crop-bias) - 0.5));
 }
 
 .plate {
@@ -66,7 +87,12 @@
   }
 }
 
+/* Tablets and desktop have height to spare: fit the plate whole, no crop. */
 @media (min-width: 768px) {
+  .page {
+    --overscan: 1;
+  }
+
   .backdrop {
     display: none;
   }
@@ -235,9 +261,19 @@
 .back {
   position: absolute;
   left: 50%;
-  top: calc(var(--u) * 1800);
+  /* Painted position, unless the crop has taken the bottom of the plate with
+     it: then this rides up to sit just above the cut rather than under it.
+     Where it lands is campus either way, so it carries its own scrim — the
+     plaza it was drawn over is not always what is behind it. */
+  top: min(
+    calc(var(--u) * 1800),
+    calc(var(--u) * var(--plate-h) - var(--crop-bottom) - var(--u) * 64)
+  );
   translate: -50% -50%;
-  padding: calc(var(--u) * 14) calc(var(--u) * 28);
+  padding: calc(var(--u) * 14) calc(var(--u) * 32);
+  border-radius: 999px;
+  background: rgba(2, 8, 26, 0.62);
+  box-shadow: inset 0 0 0 1px rgba(150, 195, 255, 0.22);
   font-size: calc(var(--u) * 24);
   color: #cfe6ff;
   text-decoration: none;

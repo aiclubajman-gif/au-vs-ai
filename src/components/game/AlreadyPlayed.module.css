@@ -9,11 +9,28 @@
    ========================================================================== */
 
 .page {
-  --stage-w: min(100vw, calc(100svh * 853 / 1844));
-  --u: calc(var(--stage-w) / 853);
+  --plate-w: 853;
+  --plate-h: 1844;
+  /* This plate is taller than the shape of a phone, so fitting it whole leaves
+     wide bands down both sides once the browser's toolbars take their cut. The
+     stage is allowed to run up to --overscan taller than the height that is
+     actually visible and the excess is cropped off the plate's ends — never
+     more than the 250u of empty plate above the logo and below Back to Home.
+     --crop-bias is the share of that crop taken off the bottom. */
+  --overscan: 1.157;
+  --crop-bias: 0.9;
+  --stage-w: min(100vw, calc(100svh * var(--plate-w) / var(--plate-h) * var(--overscan)));
+  --u: calc(var(--stage-w) / var(--plate-w));
+  --crop: max(0px, calc(var(--u) * var(--plate-h) - 100svh));
 
   position: relative;
   display: grid;
+  /* The composition lives inside one svh-tall row pinned to the top of the
+     page, so it is whole inside the viewport a phone shows with its toolbars
+     out. The page box itself still runs the full dvh, so the background reaches
+     the bottom of the window when they retract. */
+  grid-template-rows: 100svh;
+  align-content: start;
   place-items: center;
   min-height: 100dvh;
   overflow: hidden;
@@ -25,7 +42,10 @@
 .stage {
   position: relative;
   width: var(--stage-w);
-  height: calc(var(--u) * 1844);
+  height: calc(var(--u) * var(--plate-h));
+  /* Centred in the row by default; this shifts the crop onto the plate's
+     empty end. */
+  translate: 0 calc(var(--crop) * (var(--crop-bias) - 0.5));
 }
 
 .plate {
@@ -56,7 +76,12 @@
   }
 }
 
+/* Tablets and desktop have height to spare: fit the plate whole, no crop. */
 @media (min-width: 768px) {
+  .page {
+    --overscan: 1;
+  }
+
   .backdrop {
     display: none;
   }

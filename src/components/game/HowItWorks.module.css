@@ -8,7 +8,9 @@
    The stage is the whole plate fitted inside the viewport: full width on a
    phone, centred against the page background wherever the screen is a
    different shape (taller phones, tablets, desktop). Nothing is cropped,
-   because the round cards run to within 35u of the plate's edges.
+   because the round cards run to within 35u of the plate's edges. The
+   viewport it is fitted and centred in is the small one (toolbars out), so
+   the auto-advance line at 1652u cannot end up under a restored toolbar.
    ========================================================================== */
 
 .page {
@@ -19,6 +21,13 @@
 
   position: relative;
   display: grid;
+  /* The composition lives inside one svh-tall row pinned to the top of the
+     page, so it is whole inside the viewport a phone shows with its toolbars
+     out. The page box itself still runs the full dvh, so the background reaches
+     the bottom of the window when they retract. Centring in dvh instead is what
+     pushed the last line under a restored toolbar. */
+  grid-template-rows: 100svh;
+  align-content: start;
   place-items: center;
   min-height: 100dvh;
   overflow: hidden;
