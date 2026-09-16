@@ -13,8 +13,25 @@
 
 import type { Classifier, Prediction } from './classifier';
 
-const MODEL_URL = process.env.NEXT_PUBLIC_MODEL_URL ?? '/models/quickdraw/model.json';
+/**
+ * Where the exported model lives.
+ *
+ * `||`, not `??`. Vercel injects an environment variable that exists but has
+ * no readable value as an EMPTY STRING, and `'' ?? fallback` keeps the empty
+ * string. That shipped a production build whose MODEL_URL was '', so `fetch('')`
+ * re-requested the current page, got HTML back, and EVERY device — desktop
+ * included — failed the device check and was told its phone could not run the
+ * drawing AI. Unset, empty and whitespace-only must all fall back to the path
+ * the model is actually committed at.
+ */
+const DEFAULT_MODEL_URL = '/models/quickdraw/model.json';
+const MODEL_URL = process.env.NEXT_PUBLIC_MODEL_URL?.trim() || DEFAULT_MODEL_URL;
 const LABELS_URL = MODEL_URL.replace(/model\.json$/, 'labels.json');
+
+/** The URL the browser will actually use. Surfaced on /debug/draw and in logs. */
+export function modelUrl(): string {
+  return MODEL_URL;
+}
 
 type TfModule = typeof import('@tensorflow/tfjs');
 type TfGraphModel = Awaited<ReturnType<TfModule['loadLayersModel']>>;
@@ -202,7 +219,21 @@ export async function probeModel(): Promise<ModelProbe> {
       };
     }
 
-    const json = await res.json();
+    // Read as text first. A misrouted request — an auth redirect, a rewrite, or
+    // an empty MODEL_URL resolving to the page itself — answers 200 with HTML,
+    // and res.json() would throw a bare SyntaxError naming neither the URL nor
+    // the fact that a web page came back in place of the model.
+    const body = await res.text();
+    let json: { modelTopology?: unknown; format?: unknown };
+    try {
+      json = JSON.parse(body);
+    } catch {
+      const type = res.headers.get('content-type') ?? 'no content-type';
+      return {
+        installed: false,
+        reason: `${MODEL_URL} did not return JSON (${type}). Something is serving a page in place of the model.`,
+      };
+    }
 
     // Guard against a truncated or wrong-format file looking like success.
     if (!json.modelTopology && !json.format) {

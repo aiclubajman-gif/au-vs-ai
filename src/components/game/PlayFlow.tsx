@@ -6,9 +6,17 @@ import { EmailStep, EMAIL_PLATE_SRC } from '@/components/auth/EmailStep';
 import { AUTH_PLATE_SRC } from '@/components/auth/AuthShell';
 import { OtpStep } from '@/components/auth/OtpStep';
 import { ProfileStep } from '@/components/auth/ProfileStep';
-import { DeviceStep, type DeviceStage } from '@/components/auth/DeviceStep';
+import {
+  DeviceStep,
+  type DeviceStage,
+  type DeviceFailure,
+} from '@/components/auth/DeviceStep';
 import { Screen } from '@/components/ui';
-import { resolveClassifier } from '@/lib/ml/classifier';
+import {
+  resolveClassifier,
+  ClassifierUnavailableError,
+  getResolutionNote,
+} from '@/lib/ml/classifier';
 import { composeAuEmail } from '@/lib/client/email';
 import { HowItWorks } from '@/components/game/HowItWorks';
 import { FunFact, ROUND2_FUN_FACT_PLATE_SRC } from '@/components/game/FunFact';
@@ -274,6 +282,12 @@ export function PlayFlow({
   const [deviceState, setDeviceState] = useState<'checking' | 'ok' | 'failed'>('checking');
   // Which milestone the check has reached, for the progress display only.
   const [deviceStage, setDeviceStage] = useState<DeviceStage>('model');
+  // A model that will not download and a device that cannot run it are
+  // different failures and must not share copy: telling a student on a
+  // perfectly good laptop that their phone is unsupported sent people looking
+  // for booth tablets during an outage that was ours. Defaults to 'model'
+  // because the first thing the check does is fetch the model.
+  const [deviceFailure, setDeviceFailure] = useState<DeviceFailure>('model');
 
   useEffect(() => {
     if (step !== 'device') return;
@@ -287,6 +301,12 @@ export function PlayFlow({
         if (!cancelled) setDeviceStage('selftest');
         const passed = await classifier.selfTest();
         if (cancelled) return;
+        // The model is loaded by this point, so anything failing now is the
+        // browser's own capabilities.
+        if (!passed) {
+          setDeviceFailure('device');
+          console.error('[device-check] self-test failed:', getResolutionNote());
+        }
         setDeviceState(passed ? 'ok' : 'failed');
 
         // §8 — the attempt is only created once the model has proven it runs
@@ -341,8 +361,17 @@ export function PlayFlow({
             if (!cancelled) setStep(landing as Step);
           }, 500);
         }
-      } catch {
-        if (!cancelled) setDeviceState('failed');
+      } catch (err) {
+        if (cancelled) return;
+        // resolveClassifier rejects when the model could not be fetched,
+        // parsed or run — our deployment's problem, not the student's device.
+        const modelFailed = err instanceof ClassifierUnavailableError;
+        setDeviceFailure(modelFailed ? 'model' : 'device');
+        // The reason is otherwise invisible in the field: the UI only ever
+        // shows a friendly line, and this is what makes a venue failure
+        // diagnosable from a phone's console.
+        console.error('[device-check] failed:', getResolutionNote(), err);
+        setDeviceState('failed');
       }
     })();
 
@@ -414,6 +443,7 @@ export function PlayFlow({
       <DeviceStep
         state={deviceState}
         stage={deviceStage}
+        failure={deviceFailure}
         onRetry={() => window.location.reload()}
       />
     );

@@ -15,6 +15,18 @@ import styles from './DeviceStep.module.css';
  */
 export type DeviceStage = 'model' | 'selftest' | 'start' | 'done';
 
+/**
+ * Why the check failed.
+ *
+ * 'model'  — the drawing model could not be downloaded, parsed or run. That is
+ *            a deployment problem and is fixable by retrying or by the AIDA
+ *            team; the student's device is fine.
+ * 'device' — the browser genuinely lacks what Round 2 needs, confirmed by the
+ *            hidden self-test. Only this one earns "this device can't run it"
+ *            and a trip to a booth tablet.
+ */
+export type DeviceFailure = 'model' | 'device';
+
 const STAGES: { key: Exclude<DeviceStage, 'done'>; label: string }[] = [
   { key: 'model', label: 'Loading the drawing model' },
   { key: 'selftest', label: 'Testing this device' },
@@ -24,11 +36,14 @@ const STAGES: { key: Exclude<DeviceStage, 'done'>; label: string }[] = [
 export function DeviceStep({
   state,
   stage,
+  failure = 'model',
   onRetry,
 }: {
   state: 'checking' | 'ok' | 'failed';
   /** The stage in progress, or the one that failed. */
   stage: DeviceStage;
+  /** Which failure to explain. Ignored unless state is 'failed'. */
+  failure?: DeviceFailure;
   onRetry: () => void;
 }) {
   const ids = useId();
@@ -37,6 +52,7 @@ export function DeviceStep({
   const done = stage === 'done';
   const completed = done ? STAGES.length : STAGES.findIndex((s) => s.key === stage);
 
+  const modelFailed = failed && failure === 'model';
   const deviceCheck = failed && stage !== 'start' ? 'failed' : completed >= 2 ? 'done' : 'current';
   const start = done ? 'done' : stage === 'start' ? (failed ? 'failed' : 'current') : 'upcoming';
 
@@ -51,12 +67,22 @@ export function DeviceStep({
       {failed ? (
         <>
           <h1 id={titleId} className={`${shell.title} ${styles.title}`}>
-            <span className={shell.human}>This phone can&rsquo;t run</span>{' '}
-            <span className={shell.ai}>the drawing AI</span>
+            {modelFailed ? (
+              <>
+                <span className={shell.human}>Drawing AI</span>{' '}
+                <span className={shell.ai}>couldn&rsquo;t load</span>
+              </>
+            ) : (
+              <>
+                <span className={shell.human}>This device can&rsquo;t run</span>{' '}
+                <span className={shell.ai}>the drawing AI</span>
+              </>
+            )}
           </h1>
           <p className={shell.subtitle}>
-            Round 2 needs features your browser doesn&rsquo;t support. Ask an AIDA team member
-            for a booth tablet.
+            {modelFailed
+              ? 'The drawing model couldn’t be loaded. Please try again, or ask the AIDA team.'
+              : 'Round 2 needs features your browser doesn’t support. Ask an AIDA team member for a booth tablet.'}
           </p>
         </>
       ) : (
@@ -108,7 +134,9 @@ export function DeviceStep({
 
       <p className="sr-only" aria-live="polite">
         {failed
-          ? 'This device cannot run the drawing round. Your attempt has not been used.'
+          ? modelFailed
+            ? 'The drawing model could not be loaded. Your attempt has not been used.'
+            : 'This device cannot run the drawing round. Your attempt has not been used.'
           : done
             ? 'Ready. Starting the game.'
             : STAGES[completed]?.label}
@@ -117,7 +145,8 @@ export function DeviceStep({
       {failed ? (
         <>
           <p className={styles.safe}>
-            <strong>Your attempt has not been used.</strong> You can still play on another device.
+            <strong>Your attempt has not been used.</strong>{' '}
+            {modelFailed ? 'Nothing was lost — try again.' : 'You can still play on another device.'}
           </p>
           <button type="button" className={`${shell.secondary} ${styles.retry}`} onClick={onRetry}>
             Try again

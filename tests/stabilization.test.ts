@@ -158,7 +158,48 @@ describe('Round 2 classifier use', () => {
     // The attempt is only requested after the classifier resolved and passed.
     expect(effect).toMatch(/selfTest\(\)/);
     expect(effect).toMatch(/if \(passed\)/);
-    expect(src).toMatch(/catch \{\s*if \(!cancelled\) setDeviceState\('failed'\)/);
+
+    // A thrown load error must still fail the check, so no attempt is created.
+    const tail = src.slice(src.indexOf('} catch (err) {', start));
+    expect(tail).toMatch(/setDeviceState\('failed'\)/);
+  });
+
+  it('blames the model, not the device, when the model is what failed', () => {
+    const src = code('src/components/game/PlayFlow.tsx');
+    const tail = src.slice(src.indexOf('} catch (err) {', src.indexOf('await resolveClassifier()')));
+    // Telling a student on a working laptop that their phone is unsupported is
+    // what a shipped empty MODEL_URL did to every device at once.
+    expect(tail).toMatch(/ClassifierUnavailableError/);
+    expect(tail).toMatch(/setDeviceFailure\(/);
+
+    const step = code('src/components/auth/DeviceStep.tsx');
+    expect(step).toMatch(/couldn&rsquo;t load/);
+    // The device verdict must be gated on the failure kind, never shown for a
+    // model that simply would not download.
+    expect(step).toMatch(/modelFailed \?/);
+    // Whatever failed, the attempt is never spent.
+    expect(step).toMatch(/Your attempt has not been used/);
+  });
+});
+
+// ===========================================================================
+// 3b. The model URL can never resolve to the empty string
+// ===========================================================================
+describe('Drawing model URL', () => {
+  it('falls back when NEXT_PUBLIC_MODEL_URL is empty, not just when unset', () => {
+    const src = code('src/lib/ml/tfjs-classifier.ts');
+    // Vercel injects a valueless environment variable as '', and '' ?? x keeps
+    // the empty string. fetch('') then re-requests the current page, returns
+    // HTML, and every device fails the check. `||` is load-bearing here.
+    expect(src).toMatch(/NEXT_PUBLIC_MODEL_URL\?\.trim\(\) \|\| DEFAULT_MODEL_URL/);
+    expect(src).not.toMatch(/NEXT_PUBLIC_MODEL_URL \?\? /);
+    expect(src).toMatch(/DEFAULT_MODEL_URL = '\/models\/quickdraw\/model\.json'/);
+  });
+
+  it('reports a page served in place of the model instead of a bare SyntaxError', () => {
+    const src = code('src/lib/ml/tfjs-classifier.ts');
+    expect(src).toMatch(/JSON\.parse\(body\)/);
+    expect(src).toMatch(/did not return JSON/);
   });
 });
 
