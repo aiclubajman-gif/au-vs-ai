@@ -1,19 +1,20 @@
-import Image from 'next/image';
-import Link from 'next/link';
-import { CLUB } from '@/lib/club';
+import { CLUB, type OrsPart } from '@/lib/club';
+import { PlateScreen } from '@/components/ui/PlateScreen';
 import styles from './JoinAida.module.css';
 
 /**
  * Join AIDA.
  *
- * The plate is the finished artwork: branding, both mascots, the campus, the
- * JOIN AIDA hero, the two button shells with their icons and arrows, the ORS
- * panel frame with its clipboard icon and six numbered circles, and the footer
- * band with its dividers. The HTML supplies only words and link hit areas, in
- * artwork pixels (see the stylesheet), so it stays registered at any size.
+ * The plate is the finished artwork: the AIDA logo, both mascots and their
+ * signs, the JOIN US headline, the two button shells with their icons and
+ * arrows, and the ORS panel with its clipboard icon, heading rule, six numbered
+ * circles and the line joining them. Everything a student reads or taps is
+ * HTML over it, in artwork pixels (see the stylesheet), so it stays registered
+ * at any size: both links, the panel heading and every step.
  *
- * The ORS steps are the real ones a student has to follow. The field values
- * are emphasised because ORS will not accept anything but an exact match.
+ * The ORS steps are the real ones a student has to follow. What they have to
+ * find or pick in ORS is emphasised, because the form will not accept anything
+ * else.
  */
 export const JOIN_AIDA_PLATE_SRC = '/design/join-aida/plate.webp';
 
@@ -21,108 +22,90 @@ export function JoinAida() {
   const whatsappUrl = CLUB.whatsappUrl;
 
   return (
-    <main className={styles.page}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={JOIN_AIDA_PLATE_SRC} alt="" aria-hidden="true" className={styles.backdrop} />
-      <div className={styles.stage}>
-        <Image
-          src={JOIN_AIDA_PLATE_SRC}
-          alt=""
-          aria-hidden="true"
-          width={853}
-          height={1844}
-          unoptimized
-          loading="eager"
-          fetchPriority="high"
-          draggable={false}
-          className={styles.plate}
-        />
+    <PlateScreen
+      plateSrc={JOIN_AIDA_PLATE_SRC}
+      plateWidth={941}
+      plateHeight={1672}
+      className={styles.page}
+    >
+      {/* JOIN US is painted into the plate: announced here, not drawn twice. */}
+      <h1 className="sr-only">Join us</h1>
 
-        <h1 className="sr-only">
-          Join {CLUB.name} at {CLUB.university}
-        </h1>
+      {/* What the right mascot says: decoration, so it is not read out. */}
+      <p className={styles.bubble} aria-hidden="true">
+        <span>Think</span>
+        <span>Analyze</span>
+        <span>Build</span>
+      </p>
 
-        {/* The plate paints both shells; these are the real controls over them. */}
+      {/* The plate paints both shells; these are the real links over them. */}
+      <a
+        href={CLUB.ors.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`${styles.cta} ${styles.ors}`}
+      >
+        <span className={styles.ctaLabel}>Open ORS</span>
+        <span className="sr-only"> (opens in a new tab)</span>
+      </a>
+
+      {whatsappUrl ? (
         <a
-          href={CLUB.ors.url}
+          href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className={`${styles.cta} ${styles.ors}`}
+          className={`${styles.cta} ${styles.whatsapp}`}
         >
-          Open ORS
+          <span className={styles.ctaLabel}>
+            <span className={styles.ctaLine}>Join WhatsApp</span>{' '}
+            <span className={styles.ctaLine}>community</span>
+          </span>
+          <span className="sr-only"> (opens in a new tab)</span>
         </a>
-
-        {whatsappUrl ? (
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`${styles.cta} ${styles.whatsapp}`}
-          >
-            <span>
-              Join WhatsApp
-              <br />
-              community
-            </span>
-          </a>
-        ) : (
-          <span
-            className={`${styles.cta} ${styles.whatsapp} ${styles.unavailable}`}
-            aria-disabled="true"
-          >
-            <span>
-              Join WhatsApp
-              <br />
-              community
-              {/* Inside the shell: there are only 17u between it and the panel. */}
-              <span className={styles.unavailableNote}>Invite link coming soon</span>
+      ) : (
+        // No invite link configured: the shell still reads, but nothing is clickable.
+        <p className={`${styles.cta} ${styles.whatsapp} ${styles.unavailable}`}>
+          <span className={styles.ctaLabel}>
+            <span className={styles.ctaLine}>WhatsApp community</span>{' '}
+            <span className={`${styles.ctaLine} ${styles.unavailableNote}`}>
+              Invite link coming soon
             </span>
           </span>
-        )}
-
-        <h2 className={styles.panelTitle}>ORS registration process</h2>
-
-        <ol className={styles.steps}>
-          {CLUB.ors.steps.map((step, i) => (
-            <li key={i} className={styles.step} data-n={i + 1}>
-              {step.parts.map((part, j) =>
-                typeof part === 'string' ? (
-                  <span key={j}>{part}</span>
-                ) : (
-                  <strong key={j} className={styles.em}>
-                    {part.em}
-                  </strong>
-                ),
-              )}
-
-              {'choices' in step && step.choices && (
-                <ul className={styles.choices}>
-                  {step.choices.map((choice) => (
-                    <li key={choice.value} className={styles.choice}>
-                      <strong className={styles.choiceValue}>{choice.value}</strong> {choice.who}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          ))}
-        </ol>
-
-        <p className={styles.footerText}>
-          Join the official {CLUB.name} community at {CLUB.university}.
         </p>
-        <p className={styles.footerMotto}>
-          Good data
-          <br />
-          Better decisions
-          <br />
-          Brighter tomorrows
-        </p>
+      )}
 
-        <Link href="/" className={styles.back}>
-          Back to Home
-        </Link>
-      </div>
-    </main>
+      <h2 className={styles.panelTitle}>ORS registration process</h2>
+
+      {/* The painted circles carry the numbers, so the list never renders one.
+          role="list": Safari drops list semantics once list-style is removed. */}
+      <ol className={styles.steps} role="list">
+        {CLUB.ors.steps.map((step, i) => (
+          <li key={i} className={styles.step} data-n={i + 1}>
+            <Parts parts={step.parts} />
+            {'choices' in step && step.choices && (
+              <ul className={styles.choices} role="list">
+                {step.choices.map((choice, j) => (
+                  <li key={j} className={styles.choice}>
+                    <Parts parts={choice} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        ))}
+      </ol>
+    </PlateScreen>
+  );
+}
+
+function Parts({ parts }: { parts: readonly OrsPart[] }) {
+  return parts.map((part, i) =>
+    typeof part === 'string' ? (
+      <span key={i}>{part}</span>
+    ) : (
+      <strong key={i} className={styles.em}>
+        {part.em}
+      </strong>
+    ),
   );
 }

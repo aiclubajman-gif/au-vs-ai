@@ -57,7 +57,7 @@ export function DeviceStep({
   const start = done ? 'done' : stage === 'start' ? (failed ? 'failed' : 'current') : 'upcoming';
 
   return (
-    <AuthShell step="ready" labelledBy={titleId}>
+    <AuthShell step="ready" labelledBy={titleId} fullscreen>
       <ol className={styles.phases} aria-label="Before you play">
         <Phase n={1} label="Device check" state={deviceCheck} />
         <li className={styles.phaseLine} data-lit={completed >= 2 || undefined} aria-hidden="true" />

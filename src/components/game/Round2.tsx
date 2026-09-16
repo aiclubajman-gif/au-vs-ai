@@ -1,8 +1,8 @@
 'use client';
 
 import { useRef, useState, useEffect, useCallback } from 'react';
-import NextImage from 'next/image';
 import { RetryNotice } from '@/components/ui';
+import { PlateScreen } from '@/components/ui/PlateScreen';
 import { resolveClassifier, type Prediction } from '@/lib/ml/classifier';
 import {
   submitWithRetry,
@@ -348,246 +348,228 @@ export function Round2({
   const article = /^[aeiou]/i.test(name) ? 'an' : 'a';
 
   return (
-    <main className={styles.page}>
+    <PlateScreen plateSrc={plateSrc} plateWidth={941} plateHeight={1672} className={styles.page}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={plateSrc} alt="" aria-hidden="true" className={styles.backdrop} />
-      <div className={styles.stage}>
-        <NextImage
-          key={plateSrc}
-          src={plateSrc}
-          alt=""
-          aria-hidden="true"
-          width={941}
-          height={1672}
-          unoptimized
-          loading="eager"
-          fetchPriority="high"
-          draggable={false}
-          className={styles.plate}
-        />
+      <img
+        src="/design/fun-fact/au-vs-ai-logo.webp"
+        alt="AU vs AI"
+        width={840}
+        height={294}
+        className={styles.logo}
+        draggable={false}
+      />
 
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/design/fun-fact/au-vs-ai-logo.webp"
-          alt="AU vs AI"
-          width={840}
-          height={294}
-          className={styles.logo}
-          draggable={false}
-        />
+      <p className={styles.round}>
+        <span aria-hidden="true">Round 2 / 3</span>
+        <span className="sr-only">Round 2 of 3</span>
+      </p>
 
-        <p className={styles.round}>
-          <span aria-hidden="true">Round 2 / 3</span>
-          <span className="sr-only">Round 2 of 3</span>
-        </p>
+      {isDrawing ? (
+        <>
+          <div className={styles.timer} role="timer" aria-label={`${seconds} seconds left`}>
+            {/* Redraws the plate's ring band with the real time left. */}
+            <svg viewBox="0 0 200 200" className={styles.ring} aria-hidden="true">
+              <circle cx="100" cy="100" r={RING_R} className={styles.track} />
+              <circle
+                cx="100"
+                cy="100"
+                r={RING_R}
+                className={styles.arc}
+                data-empty={progress <= 0 || undefined}
+                strokeDasharray={RING_C}
+                strokeDashoffset={RING_C * (1 - progress)}
+                transform="rotate(-90 100 100)"
+              />
+            </svg>
+            <span className={`${styles.seconds} tabular`} aria-hidden="true">
+              {seconds}
+              <span className={styles.unit}>s</span>
+            </span>
+          </div>
 
-        {isDrawing ? (
-          <>
-            <div className={styles.timer} role="timer" aria-label={`${seconds} seconds left`}>
-              {/* Redraws the plate's ring band with the real time left. */}
-              <svg viewBox="0 0 200 200" className={styles.ring} aria-hidden="true">
-                <circle cx="100" cy="100" r={RING_R} className={styles.track} />
-                <circle
-                  cx="100"
-                  cy="100"
-                  r={RING_R}
-                  className={styles.arc}
-                  data-empty={progress <= 0 || undefined}
-                  strokeDasharray={RING_C}
-                  strokeDashoffset={RING_C * (1 - progress)}
-                  transform="rotate(-90 100 100)"
-                />
-              </svg>
-              <span className={`${styles.seconds} tabular`} aria-hidden="true">
-                {seconds}
-                <span className={styles.unit}>s</span>
-              </span>
-            </div>
+          <h1 className={styles.drawTitle}>
+            <span className={styles.drawWord}>Draw</span>
+            <span className={styles.vs}>vs</span>
+            <span className={styles.aiWord}>AI</span>
+          </h1>
+          <p className={styles.instruction}>
+            Draw the object below in {Math.round(drawMs / 1000)} seconds.
+          </p>
 
-            <h1 className={styles.drawTitle}>
-              <span className={styles.drawWord}>Draw</span>
-              <span className={styles.vs}>vs</span>
-              <span className={styles.aiWord}>AI</span>
-            </h1>
-            <p className={styles.instruction}>
-              Draw the object below in {Math.round(drawMs / 1000)} seconds.
-            </p>
+          <p className={styles.prompt}>
+            <span className={styles.promptLead}>Draw {article}:</span>
+            <strong className={styles.promptName}>{name}</strong>
+          </p>
 
-            <p className={styles.prompt}>
-              <span className={styles.promptLead}>Draw {article}:</span>
-              <strong className={styles.promptName}>{name}</strong>
-            </p>
+          <canvas
+            ref={canvasRef}
+            width={CANVAS_W * RENDER_SCALE}
+            height={CANVAS_H * RENDER_SCALE}
+            onPointerDown={start}
+            onPointerMove={move}
+            onPointerUp={end}
+            onPointerCancel={end}
+            className={`canvas-surface ${styles.canvas}`}
+            aria-label={`Drawing canvas. Draw ${article} ${name}.`}
+          />
 
+          {/* The plate paints the three buttons; these are the real, transparent controls over them. */}
+          <button
+            type="button"
+            onClick={() => setStrokes((s) => s.slice(0, -1))}
+            disabled={strokes.length === 0}
+            className={styles.tool}
+            data-tool="undo"
+          >
+            <UndoIcon className={styles.toolIcon} />
+            <span className={styles.toolLabel}>Undo</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setStrokes([])}
+            disabled={strokes.length === 0}
+            className={styles.tool}
+            data-tool="clear"
+          >
+            <TrashIcon className={styles.toolIcon} />
+            <span className={styles.toolLabel}>Clear</span>
+          </button>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={strokes.length === 0}
+            className={styles.submit}
+          >
+            <SendIcon className={styles.submitIcon} />
+            <span className={styles.submitLabel}>Submit drawing</span>
+            <ArrowIcon className={styles.submitArrow} />
+          </button>
+        </>
+      ) : (
+        <>
+          {/* Decorative: the drawing clock stopped when the drawing was submitted. */}
+          <p className={styles.frozen}>
+            <span className={`${styles.frozenValue} tabular`} aria-hidden="true">
+              {seconds}
+            </span>
+            <span className={styles.frozenUnit} aria-hidden="true">
+              Seconds
+            </span>
+            <span className="sr-only">Submitted with {seconds} seconds left</span>
+          </p>
+
+          <h1 className={styles.analysisTitle}>
+            <span className={styles.analysisLine}>AI analysing</span>
+            <span className={styles.analysisLine}>
+              Your <span className={styles.analysisAccent}>drawing…</span>
+            </span>
+          </h1>
+          <p className={styles.tagline}>Turning creativity into possibilities</p>
+
+          <div className={styles.scan} data-phase={phase}>
             <canvas
-              ref={canvasRef}
+              ref={previewRef}
               width={CANVAS_W * RENDER_SCALE}
               height={CANVAS_H * RENDER_SCALE}
-              onPointerDown={start}
-              onPointerMove={move}
-              onPointerUp={end}
-              onPointerCancel={end}
-              className={`canvas-surface ${styles.canvas}`}
-              aria-label={`Drawing canvas. Draw ${article} ${name}.`}
+              className={styles.preview}
+              role="img"
+              aria-label="Your submitted drawing"
             />
-
-            {/* The plate paints the three buttons; these are the real, transparent controls over them. */}
-            <button
-              type="button"
-              onClick={() => setStrokes((s) => s.slice(0, -1))}
-              disabled={strokes.length === 0}
-              className={styles.tool}
-              data-tool="undo"
-            >
-              <UndoIcon className={styles.toolIcon} />
-              <span className={styles.toolLabel}>Undo</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setStrokes([])}
-              disabled={strokes.length === 0}
-              className={styles.tool}
-              data-tool="clear"
-            >
-              <TrashIcon className={styles.toolIcon} />
-              <span className={styles.toolLabel}>Clear</span>
-            </button>
-            <button
-              type="button"
-              onClick={submit}
-              disabled={strokes.length === 0}
-              className={styles.submit}
-            >
-              <SendIcon className={styles.submitIcon} />
-              <span className={styles.submitLabel}>Submit drawing</span>
-              <ArrowIcon className={styles.submitArrow} />
-            </button>
-          </>
-        ) : (
-          <>
-            {/* Decorative: the drawing clock stopped when the drawing was submitted. */}
-            <p className={styles.frozen}>
-              <span className={`${styles.frozenValue} tabular`} aria-hidden="true">
-                {seconds}
-              </span>
-              <span className={styles.frozenUnit} aria-hidden="true">
-                Seconds
-              </span>
-              <span className="sr-only">Submitted with {seconds} seconds left</span>
+            {phase === 'analysing' && <span className={styles.sweep} aria-hidden="true" />}
+            <p className={styles.scanStatus} role="status">
+              {phase === 'analysing'
+                ? 'Scanning…'
+                : phase === 'revealed'
+                  ? 'Scan complete'
+                  : 'Scan failed'}
             </p>
+          </div>
 
-            <h1 className={styles.analysisTitle}>
-              <span className={styles.analysisLine}>AI analysing</span>
-              <span className={styles.analysisLine}>
-                Your <span className={styles.analysisAccent}>drawing…</span>
-              </span>
-            </h1>
-            <p className={styles.tagline}>Turning creativity into possibilities</p>
+          <p className={styles.thinks}>AI thinks:</p>
 
-            <div className={styles.scan} data-phase={phase}>
-              <canvas
-                ref={previewRef}
-                width={CANVAS_W * RENDER_SCALE}
-                height={CANVAS_H * RENDER_SCALE}
-                className={styles.preview}
-                role="img"
-                aria-label="Your submitted drawing"
-              />
-              {phase === 'analysing' && <span className={styles.sweep} aria-hidden="true" />}
-              <p className={styles.scanStatus} role="status">
-                {phase === 'analysing'
-                  ? 'Scanning…'
-                  : phase === 'revealed'
-                    ? 'Scan complete'
-                    : 'Scan failed'}
-              </p>
-            </div>
-
-            <p className={styles.thinks}>AI thinks:</p>
-
-            <ol className={styles.rows} aria-label="AI predictions">
-              {Array.from({ length: RESULT_ROWS }, (_, i) => {
-                const p = phase === 'revealed' ? predictions[i] : undefined;
-                const isTarget = p?.label === assignment.classKey;
-                const percent = p ? Math.round(p.confidence * 100) : null;
-                return (
-                  <li
-                    key={i}
-                    className={styles.row}
-                    style={{ '--row': i } as React.CSSProperties}
-                    data-target={isTarget || undefined}
-                    aria-hidden={!p || undefined}
-                  >
-                    <span className={`${styles.rank} tabular`} aria-hidden="true">
-                      {p ? (isTarget ? '✓' : i + 1) : ''}
+          <ol className={styles.rows} aria-label="AI predictions">
+            {Array.from({ length: RESULT_ROWS }, (_, i) => {
+              const p = phase === 'revealed' ? predictions[i] : undefined;
+              const isTarget = p?.label === assignment.classKey;
+              const percent = p ? Math.round(p.confidence * 100) : null;
+              return (
+                <li
+                  key={i}
+                  className={styles.row}
+                  style={{ '--row': i } as React.CSSProperties}
+                  data-target={isTarget || undefined}
+                  aria-hidden={!p || undefined}
+                >
+                  <span className={`${styles.rank} tabular`} aria-hidden="true">
+                    {p ? (isTarget ? '✓' : i + 1) : ''}
+                  </span>
+                  {p && (
+                    <span
+                      className={styles.label}
+                      style={{ '--len': p.label.length } as React.CSSProperties}
+                    >
+                      {capitalise(p.label)}
+                      {isTarget && <span className="sr-only"> (your drawing prompt)</span>}
                     </span>
-                    {p && (
+                  )}
+                  {/* Hides the plate's example fill; the live bar is drawn over it. */}
+                  <span className={styles.barCover} aria-hidden="true" />
+                  <span className={styles.bar} aria-hidden="true">
+                    {p && percent ? (
                       <span
-                        className={styles.label}
-                        style={{ '--len': p.label.length } as React.CSSProperties}
-                      >
-                        {capitalise(p.label)}
-                        {isTarget && <span className="sr-only"> (your drawing prompt)</span>}
-                      </span>
-                    )}
-                    {/* Hides the plate's example fill; the live bar is drawn over it. */}
-                    <span className={styles.barCover} aria-hidden="true" />
-                    <span className={styles.bar} aria-hidden="true">
-                      {p && percent ? (
-                        <span
-                          className={styles.barFill}
-                          style={{ '--confidence': Math.min(1, p.confidence) } as React.CSSProperties}
-                        />
-                      ) : null}
-                    </span>
-                    {p && <span className={`${styles.percent} tabular`}>{percent}%</span>}
-                  </li>
-                );
-              })}
-            </ol>
+                        className={styles.barFill}
+                        style={{ '--confidence': Math.min(1, p.confidence) } as React.CSSProperties}
+                      />
+                    ) : null}
+                  </span>
+                  {p && <span className={`${styles.percent} tabular`}>{percent}%</span>}
+                </li>
+              );
+            })}
+          </ol>
 
-            {phase === 'analysisFailed' && (
-              <div className={styles.failed} role="alert">
-                <p className={styles.failedTitle}>The AI couldn&apos;t analyse your drawing.</p>
-                <p className={styles.failedText}>
-                  Your drawing is still here. Try again, or show this screen to an AIDA team
-                  member.
-                </p>
-                <button type="button" onClick={analyse} className={styles.failedButton}>
-                  Try again
-                </button>
-              </div>
-            )}
-
-            {failure && (
-              <div className={styles.notice}>
-                <RetryNotice
-                  message={describeSaveFailure(failure, 'drawing')}
-                  refCode={failure.ref}
-                  retryable={isRetryable(failure)}
-                  busy={saving}
-                  onRetry={() => {
-                    if (submission.current) save(submission.current);
-                  }}
-                />
-              </div>
-            )}
-
-            {/* The plate paints the button; this is the real, transparent control over it. */}
-            <button type="button" onClick={finish} disabled={!saved} className={styles.continue}>
-              <span className={styles.continueLabel}>
-                {reconnecting ? 'Saving… reconnecting' : 'Continue'}
-              </span>
-              {!reconnecting && <ArrowIcon className={styles.continueArrow} />}
-            </button>
-            {savedAtMs !== null && (
-              <p className={styles.auto}>
-                Continues by itself in <span className="tabular">{autoSeconds}</span>s
+          {phase === 'analysisFailed' && (
+            <div className={styles.failed} role="alert">
+              <p className={styles.failedTitle}>The AI couldn&apos;t analyse your drawing.</p>
+              <p className={styles.failedText}>
+                Your drawing is still here. Try again, or show this screen to an AIDA team
+                member.
               </p>
-            )}
-          </>
-        )}
-      </div>
-    </main>
+              <button type="button" onClick={analyse} className={styles.failedButton}>
+                Try again
+              </button>
+            </div>
+          )}
+
+          {failure && (
+            <div className={styles.notice}>
+              <RetryNotice
+                message={describeSaveFailure(failure, 'drawing')}
+                refCode={failure.ref}
+                retryable={isRetryable(failure)}
+                busy={saving}
+                onRetry={() => {
+                  if (submission.current) save(submission.current);
+                }}
+              />
+            </div>
+          )}
+
+          {/* The plate paints the button; this is the real, transparent control over it. */}
+          <button type="button" onClick={finish} disabled={!saved} className={styles.continue}>
+            <span className={styles.continueLabel}>
+              {reconnecting ? 'Saving… reconnecting' : 'Continue'}
+            </span>
+            {!reconnecting && <ArrowIcon className={styles.continueArrow} />}
+          </button>
+          {savedAtMs !== null && (
+            <p className={styles.auto}>
+              Continues by itself in <span className="tabular">{autoSeconds}</span>s
+            </p>
+          )}
+        </>
+      )}
+    </PlateScreen>
   );
 }
 

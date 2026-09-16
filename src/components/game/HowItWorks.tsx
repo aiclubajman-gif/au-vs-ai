@@ -1,8 +1,8 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import Image from 'next/image';
 import { useAutoAdvance } from '@/components/game/auto-advance';
+import { PlateScreen } from '@/components/ui/PlateScreen';
 import styles from './HowItWorks.module.css';
 
 /**
@@ -95,87 +95,75 @@ export function HowItWorks({
   ];
 
   return (
-    <main className={styles.page}>
+    <PlateScreen
+      plateSrc={HOW_IT_WORKS_PLATE_SRC}
+      plateWidth={941}
+      plateHeight={1672}
+      className={styles.page}
+    >
+      {/* Logo, wordmark and title are painted into the plate. */}
+      <h1 className="sr-only">AU vs AI. How it works.</h1>
+
+      <p className={styles.summary}>
+        3 rounds. <span className="tabular">{round1 + round2 + round3}</span> seconds.
+      </p>
+      <p className={styles.tagline} aria-hidden="true">
+        Human creativity <span className={styles.times}>×</span> AI possibilities
+      </p>
+
+      <ol className={styles.rounds}>
+        {rounds.map((r) => (
+          <li key={r.n} className={styles.round} data-round={r.n}>
+            <p className={styles.number}>
+              <span className={styles.numberLabel}>Round</span>
+              <span className={styles.numberValue}>{String(r.n).padStart(2, '0')}</span>
+            </p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={r.thumb} alt="" className={styles.thumb} draggable={false} />
+            <div className={styles.copy}>
+              <h2 className={styles.title}>{r.title}</h2>
+              <p className={styles.body}>{r.body}</p>
+            </div>
+            <p className={styles.time}>
+              <span className={`${styles.seconds} tabular`} aria-hidden="true">
+                {r.seconds}
+              </span>
+              <span className={styles.secondsLabel} aria-hidden="true">
+                Seconds
+              </span>
+              <span className="sr-only">{`${r.seconds} seconds: ${r.spoken}.`}</span>
+            </p>
+          </li>
+        ))}
+      </ol>
+
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={HOW_IT_WORKS_PLATE_SRC} alt="" aria-hidden="true" className={styles.backdrop} />
-      <div className={styles.stage}>
-        <Image
-          src={HOW_IT_WORKS_PLATE_SRC}
-          alt=""
-          aria-hidden="true"
-          width={941}
-          height={1672}
-          unoptimized
-          loading="eager"
-          fetchPriority="high"
-          draggable={false}
-          className={styles.plate}
-        />
-
-        {/* Logo, wordmark and title are painted into the plate. */}
-        <h1 className="sr-only">AU vs AI. How it works.</h1>
-
-        <p className={styles.summary}>
-          3 rounds. <span className="tabular">{round1 + round2 + round3}</span> seconds.
-        </p>
-        <p className={styles.tagline} aria-hidden="true">
-          Human creativity <span className={styles.times}>×</span> AI possibilities
-        </p>
-
-        <ol className={styles.rounds}>
-          {rounds.map((r) => (
-            <li key={r.n} className={styles.round} data-round={r.n}>
-              <p className={styles.number}>
-                <span className={styles.numberLabel}>Round</span>
-                <span className={styles.numberValue}>{String(r.n).padStart(2, '0')}</span>
-              </p>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={r.thumb} alt="" className={styles.thumb} draggable={false} />
-              <div className={styles.copy}>
-                <h2 className={styles.title}>{r.title}</h2>
-                <p className={styles.body}>{r.body}</p>
-              </div>
-              <p className={styles.time}>
-                <span className={`${styles.seconds} tabular`} aria-hidden="true">
-                  {r.seconds}
-                </span>
-                <span className={styles.secondsLabel} aria-hidden="true">
-                  Seconds
-                </span>
-                <span className="sr-only">{`${r.seconds} seconds: ${r.spoken}.`}</span>
-              </p>
-            </li>
-          ))}
-        </ol>
-
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/design/how-it-works/one-attempt-star.png"
-          alt=""
-          aria-hidden="true"
-          className={styles.star}
-          draggable={false}
-        />
-        <div className={styles.attempt}>
-          <p className={styles.attemptTitle}>One attempt only</p>
-          <p className={styles.attemptBody}>
-            Each challenge can only be played once.
-            <br />
-            Give it your best shot!
-          </p>
-        </div>
-
-        {/* The plate paints the button; this is the real, transparent control over it. */}
-        <button type="button" className={styles.cta} onClick={advance}>
-          <GamepadIcon className={styles.ctaIcon} />
-          <span className={styles.ctaLabel}>Let&rsquo;s play</span>
-          <ArrowIcon className={styles.ctaArrow} />
-        </button>
-        <p className={styles.auto}>
-          Starts by itself in <span className="tabular">{remaining}</span>s
+      <img
+        src="/design/how-it-works/one-attempt-star.png"
+        alt=""
+        aria-hidden="true"
+        className={styles.star}
+        draggable={false}
+      />
+      <div className={styles.attempt}>
+        <p className={styles.attemptTitle}>One attempt only</p>
+        <p className={styles.attemptBody}>
+          Each challenge can only be played once.
+          <br />
+          Give it your best shot!
         </p>
       </div>
-    </main>
+
+      {/* The plate paints the button; this is the real, transparent control over it. */}
+      <button type="button" className={styles.cta} onClick={advance}>
+        <GamepadIcon className={styles.ctaIcon} />
+        <span className={styles.ctaLabel}>Let&rsquo;s play</span>
+        <ArrowIcon className={styles.ctaArrow} />
+      </button>
+      <p className={styles.auto}>
+        Starts by itself in <span className="tabular">{remaining}</span>s
+      </p>
+    </PlateScreen>
   );
 }
 

@@ -50,6 +50,59 @@
   }
 }
 
+/* --- Device Check: full screen -------------------------------------------------
+   The one sign-in screen with nothing to type, so it takes the game screens'
+   shell (PlateScreen.module.css): exactly the visible viewport, never scrolling,
+   the plate the full width of a phone held upright and fitted whole elsewhere.
+
+   The card is in normal flow, so rather than a fixed keep band the column is
+   laid out from the bottom: the stage is centred while it fits, and once the
+   card makes it taller than the screen the excess is cut off the top — sky and
+   wordmark — never off the card. The plate's own crop needs no settings: the
+   stage is at least as tall as the plate, so a plate taller than the screen
+   loses its sky first too.
+
+   A phone on its side is too short for the card at any scale, so there the
+   screen stays the ordinary page that scrolls.
+   ------------------------------------------------------------------------------ */
+
+@media not all and (orientation: landscape) and (max-height: 500px) {
+  .page[data-fullscreen] {
+    --stage-w: min(100vw, calc(var(--app-height, 100dvh) * var(--plate-ratio)));
+    --spare: calc(var(--app-height, 100dvh) - var(--u) * 1672);
+
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: var(--app-height, 100dvh);
+    min-height: 0;
+    padding: 0;
+    flex-direction: column-reverse;
+    justify-content: flex-start;
+    align-items: center;
+  }
+
+  @media (max-width: 767px) and (orientation: portrait) {
+    .page[data-fullscreen] {
+      --stage-w: 100vw;
+    }
+  }
+
+  /* Auto margins centre the stage while it fits and collapse once it does not,
+     which leaves it packed against the bottom. */
+  .page[data-fullscreen] .stage {
+    margin-block: auto;
+  }
+
+  /* Edges fade into the blurred copy behind, as on the game screens. */
+  .page[data-fullscreen] .plate {
+    --fade: clamp(0px, calc(var(--spare) * 64), calc(var(--u) * 1672 * 0.025));
+
+    -webkit-mask-image: linear-gradient(transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
+    mask-image: linear-gradient(transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
+  }
+}
+
 .stage {
   position: relative;
   flex: none;

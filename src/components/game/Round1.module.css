@@ -1,77 +1,29 @@
 /* ==========================================================================
    Round 1 — Spot the Fake. Scoped to this screen.
 
-   Same stage model as How It Works: the 941 × 1672 plate fitted whole inside
-   the viewport, `--u` = one artwork pixel, every overlay placed in u against
-   the painted chrome:
+   The 941 × 1672 plate on the shared full-screen stage (PlateScreen.module.css),
+   `--u` = one artwork pixel, every overlay placed in u against the painted
+   chrome:
      round pill     52–320u × 129–199u
      timer ring     centre 804.5u, 166u; ring band radius 72.5u
      image opening  34–906u × 382–1314u
      REAL           49–451u × 1366–1589u
      AI GENERATED   489–894u × 1365–1589u
+
+   Crop: the wordmark (34u) down to the answer buttons (1592u) always stays on
+   screen, timer and image count included; the shortest phones lose only empty
+   plate, mostly from under the buttons.
    ========================================================================== */
 
 .page {
-  --stage-w: min(100vw, calc(100svh * 941 / 1672));
-  --u: calc(var(--stage-w) / 941);
+  --keep-top: 34;
+  --keep-bottom: 1592;
+  --stage-y: 0.2;
   --condensed: 'Avenir Next Condensed', 'Bahnschrift SemiCondensed', 'Roboto Condensed',
     sans-serif-condensed, 'Arial Narrow', var(--font-sans);
 
-  position: relative;
-  display: grid;
-  /* The composition lives inside one svh-tall row pinned to the top of the
-     page, so it is whole inside the viewport a phone shows with its toolbars
-     out. The page box itself still runs the full dvh, so the background reaches
-     the bottom of the window when they retract. Centring in dvh instead leaves
-     whatever sits low in the composition under a restored toolbar. */
-  grid-template-rows: 100svh;
-  align-content: start;
-  place-items: center;
-  min-height: 100dvh;
-  overflow: hidden;
-  overflow: clip;
   background: #020610;
   color: #f2f6ff;
-}
-
-.stage {
-  position: relative;
-  width: var(--stage-w);
-  height: calc(var(--u) * 1672);
-}
-
-.plate {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  user-select: none;
-  pointer-events: none;
-}
-
-/* Letterbox bands on tall phones: see HowItWorks.module.css. */
-.backdrop {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: blur(20px) brightness(0.62) saturate(1.1);
-  transform: scale(1.15);
-  user-select: none;
-  pointer-events: none;
-}
-
-@media (max-aspect-ratio: 941 / 1672) {
-  .plate {
-    mask-image: linear-gradient(transparent, #000 2.5%, #000 97.5%, transparent);
-  }
-}
-
-@media (min-width: 768px) {
-  .backdrop {
-    display: none;
-  }
 }
 
 /* --- HUD -------------------------------------------------------------------- */

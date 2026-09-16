@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import { PlateScreen } from '@/components/ui/PlateScreen';
 import styles from './StatusScreen.module.css';
 
 /**
@@ -14,35 +14,18 @@ export const PAUSED_PLATE_SRC = '/design/paused/plate.webp';
 
 export function ChallengePaused({ homeHref }: { homeHref: string }) {
   return (
-    <main className={styles.page}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={PAUSED_PLATE_SRC} alt="" aria-hidden="true" className={styles.backdrop} />
-      <div className={styles.stage}>
-        <Image
-          src={PAUSED_PLATE_SRC}
-          alt=""
-          aria-hidden="true"
-          width={853}
-          height={1844}
-          unoptimized
-          loading="eager"
-          fetchPriority="high"
-          draggable={false}
-          className={styles.plate}
-        />
+    <PlateScreen plateSrc={PAUSED_PLATE_SRC} plateWidth={853} plateHeight={1844} className={styles.page}>
+      {/* Title and explanation painted into the plate. */}
+      <h1 className="sr-only">Challenge paused</h1>
+      <p className="sr-only" role="status">
+        New games are temporarily paused by the AIDA team. Please try again shortly.
+      </p>
 
-        {/* Title and explanation painted into the plate. */}
-        <h1 className="sr-only">Challenge paused</h1>
-        <p className="sr-only" role="status">
-          New games are temporarily paused by the AIDA team. Please try again shortly.
-        </p>
-
-        <a href={homeHref} className={styles.pausedHome}>
-          <HomeIcon className={styles.homeIcon} />
-          <span className={styles.ctaLabel}>Back to Home</span>
-        </a>
-      </div>
-    </main>
+      <a href={homeHref} className={styles.pausedHome}>
+        <HomeIcon className={styles.homeIcon} />
+        <span className={styles.ctaLabel}>Back to Home</span>
+      </a>
+    </PlateScreen>
   );
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import Image from 'next/image';
+import { PlateScreen } from '@/components/ui/PlateScreen';
 import styles from './StatusScreen.module.css';
 
 /**
@@ -36,57 +36,40 @@ export function SomethingWentWrong({
   homeHref,
 }: SomethingWentWrongProps) {
   return (
-    <main className={styles.page}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={ERROR_PLATE_SRC} alt="" aria-hidden="true" className={styles.backdrop} />
-      <div className={styles.stage}>
-        <Image
-          src={ERROR_PLATE_SRC}
-          alt=""
-          aria-hidden="true"
-          width={853}
-          height={1844}
-          unoptimized
-          loading="eager"
-          fetchPriority="high"
-          draggable={false}
-          className={styles.plate}
-        />
+    <PlateScreen plateSrc={ERROR_PLATE_SRC} plateWidth={853} plateHeight={1844} className={styles.page}>
+      {/* Title painted into the plate. */}
+      <h1 className="sr-only">Something went wrong</h1>
 
-        {/* Title painted into the plate. */}
-        <h1 className="sr-only">Something went wrong</h1>
-
-        <div role="alert">
-          <p className={styles.errorLead}>{lead}</p>
-          <div className={styles.errorCard}>
-            {icon === 'offline' ? (
-              <OfflineIcon className={styles.errorIcon} />
-            ) : (
-              <AlertIcon className={styles.errorIcon} />
-            )}
-            <div className={styles.errorCopy}>
-              <p className={styles.errorTitle}>{cardTitle}</p>
-              <p className={styles.errorBody}>{cardBody}</p>
-            </div>
+      <div role="alert">
+        <p className={styles.errorLead}>{lead}</p>
+        <div className={styles.errorCard}>
+          {icon === 'offline' ? (
+            <OfflineIcon className={styles.errorIcon} />
+          ) : (
+            <AlertIcon className={styles.errorIcon} />
+          )}
+          <div className={styles.errorCopy}>
+            <p className={styles.errorTitle}>{cardTitle}</p>
+            <p className={styles.errorBody}>{cardBody}</p>
           </div>
         </div>
-        {reference && (
-          <p className={styles.errorRef}>
-            Reference <span className="tabular">{reference}</span>
-          </p>
-        )}
-
-        <button type="button" className={styles.retry} onClick={onRetry}>
-          <RetryIcon className={styles.retryIcon} />
-          <span className={styles.ctaLabel}>Try again</span>
-        </button>
-
-        <a href={homeHref} className={styles.errorHome}>
-          <ChevronIcon className={styles.chevron} />
-          <span>Back to Home</span>
-        </a>
       </div>
-    </main>
+      {reference && (
+        <p className={styles.errorRef}>
+          Reference <span className="tabular">{reference}</span>
+        </p>
+      )}
+
+      <button type="button" className={styles.retry} onClick={onRetry}>
+        <RetryIcon className={styles.retryIcon} />
+        <span className={styles.ctaLabel}>Try again</span>
+      </button>
+
+      <a href={homeHref} className={styles.errorHome}>
+        <ChevronIcon className={styles.chevron} />
+        <span>Back to Home</span>
+      </a>
+    </PlateScreen>
   );
 }
 

@@ -1,0 +1,106 @@
+/* ==========================================================================
+   The full-screen shell every plate screen shares (PlateScreen.tsx).
+
+   `--u` is one artwork pixel in CSS pixels, and every overlay on every screen
+   is placed in u, so a screen is one composition that scales and never
+   reflows.
+
+   Geometry:
+
+     shell  exactly the visible viewport: 100vw × --app-height, fixed, clipped.
+            Nothing in the document is taller than the screen, so it never
+            scrolls.
+     stage  the plate. On a phone held upright it is ALWAYS the full width of
+            the screen (u = viewport width / plate width). A plate taller than
+            the screen is cropped top and bottom, never narrowed; one shorter
+            than it is centred, with the same artwork blurred into the bands.
+            Tablets, desktop and a phone on its side get the whole plate fitted
+            and centred instead.
+
+   Each screen's stylesheet decides only where a crop falls, never the width:
+
+     --plate-w/-h   the plate's size, set inline from PlateScreen's props
+     --keep-top     the band of the plate, in u, that must stay on screen: the
+     --keep-bottom  screen's title, live values and controls. When the screen
+                    cannot show the whole band, the bottom (the controls) wins.
+     --stage-y      within what the band allows, where the crop falls: 0 takes
+                    it all off the bottom, 1 all off the top.
+   ========================================================================== */
+
+.shell {
+  --stage-w: min(100vw, calc(var(--app-height, 100dvh) * var(--plate-w) / var(--plate-h)));
+  --u: calc(var(--stage-w) / var(--plate-w));
+  --stage-h: calc(var(--u) * var(--plate-h));
+  /* Height the screen has beyond the plate: a band when positive, a crop when
+     negative. */
+  --spare: calc(var(--app-height, 100dvh) - var(--stage-h));
+
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: var(--app-height, 100dvh);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  overflow: clip;
+}
+
+@media (max-width: 767px) and (orientation: portrait) {
+  .shell {
+    --stage-w: 100vw;
+  }
+}
+
+.stage {
+  position: absolute;
+  left: calc((100vw - var(--stage-w)) / 2);
+  /* Preferred: centred in a band, or cropped at --stage-y. Then held so the
+     keep band is on screen, bottom first. */
+  top: min(
+    calc(var(--app-height, 100dvh) - var(--u) * var(--keep-bottom, var(--plate-h))),
+    max(
+      calc(var(--u) * var(--keep-top, 0) * -1),
+      calc(max(var(--spare), 0px) / 2 + min(var(--spare), 0px) * var(--stage-y, 0.5))
+    )
+  );
+  width: var(--stage-w);
+  height: var(--stage-h);
+}
+
+.plate {
+  /* Where the screen is taller than the plate, its top and bottom edges fade
+     into the blurred copy behind it, so the screen reads as one scene rather
+     than an image between bars. Zero wherever the plate fills the height. */
+  --fade: clamp(0px, calc(var(--spare) * 64), calc(var(--stage-h) * 0.025));
+
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-mask-image: linear-gradient(transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
+  mask-image: linear-gradient(transparent, #000 var(--fade), #000 calc(100% - var(--fade)), transparent);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* The same plate, covering the whole screen behind the stage, softly blurred
+   and dimmed just enough that the sharp plate stays in front. It only shows in
+   the bands; the scale keeps the blur's soft edge off-screen. Tablets and
+   desktop keep a plain dark surround. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(20px) brightness(0.62) saturate(1.1);
+  transform: scale(1.15);
+  user-select: none;
+  pointer-events: none;
+}
+
+@media (min-width: 768px) {
+  .backdrop {
+    display: none;
+  }
+}

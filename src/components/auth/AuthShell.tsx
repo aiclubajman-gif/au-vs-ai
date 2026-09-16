@@ -1,6 +1,10 @@
-import type { ReactNode } from 'react';
+'use client';
+
+import { useRef, type ReactNode } from 'react';
 import Image from 'next/image';
 import { AuthStepper, type AuthStepKey } from '@/components/auth/AuthStepper';
+import { useAppHeight } from '@/lib/client/use-app-height';
+import plateScreen from '@/components/ui/PlateScreen.module.css';
 import styles from './AuthShell.module.css';
 
 /**
@@ -19,15 +23,33 @@ export const AUTH_PLATE_SRC = '/design/auth/auth-plate-941w.webp';
 export function AuthShell({
   step,
   labelledBy,
+  fullscreen = false,
   children,
 }: {
   step: AuthStepKey;
   /** id of the card's heading. */
   labelledBy: string;
+  /**
+   * Device Check: the game screens' full-screen shell, exactly the visible
+   * viewport and never scrolling. OTP and Profile have fields to type in, so
+   * they keep a page that can scroll above the keyboard.
+   */
+  fullscreen?: boolean;
   children: ReactNode;
 }) {
+  const ref = useRef<HTMLElement>(null);
+  useAppHeight(ref);
+
   return (
-    <main className={styles.page}>
+    <main
+      ref={fullscreen ? ref : undefined}
+      className={styles.page}
+      data-fullscreen={fullscreen || undefined}
+    >
+      {fullscreen && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={AUTH_PLATE_SRC} alt="" aria-hidden="true" className={plateScreen.backdrop} />
+      )}
       <div className={styles.stage}>
         <Image
           src={AUTH_PLATE_SRC}

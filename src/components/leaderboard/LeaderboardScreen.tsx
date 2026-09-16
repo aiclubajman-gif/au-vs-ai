@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import { PlateScreen } from '@/components/ui/PlateScreen';
 import { YourRankButton } from '@/components/leaderboard/YourRankButton';
 import styles from './LeaderboardScreen.module.css';
 
@@ -31,53 +31,36 @@ export function LeaderboardScreen({
   const shown = rows.slice(0, LEADERBOARD_SLOTS);
 
   return (
-    <main className={styles.page}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={LEADERBOARD_PLATE_SRC} alt="" aria-hidden="true" className={styles.backdrop} />
-      <div className={styles.stage}>
-        <Image
-          src={LEADERBOARD_PLATE_SRC}
-          alt=""
-          aria-hidden="true"
-          width={853}
-          height={1844}
-          unoptimized
-          loading="eager"
-          fetchPriority="high"
-          draggable={false}
-          className={styles.plate}
-        />
+    <PlateScreen plateSrc={LEADERBOARD_PLATE_SRC} plateWidth={853} plateHeight={1844} className={styles.page}>
+      {/* Title and column headings painted into the plate. */}
+      <h1 className="sr-only">Leaderboard</h1>
 
-        {/* Title and column headings painted into the plate. */}
-        <h1 className="sr-only">Leaderboard</h1>
+      {shown.length > 0 ? (
+        <ol className={styles.rows}>
+          {shown.map((row, i) => (
+            <li
+              key={`${row.rank}-${i}`}
+              className={styles.row}
+              data-slot={i + 1}
+              data-podium={i < 3 ? i + 1 : undefined}
+            >
+              <span className={`${styles.rank} tabular`}>
+                <span className="sr-only">Rank </span>
+                {row.rank}
+              </span>
+              <span className={styles.name}>{row.name}</span>
+              <span className={`${styles.score} tabular`}>
+                <span className="sr-only">Score </span>
+                {row.score}
+              </span>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className={styles.empty}>{emptyMessage}</p>
+      )}
 
-        {shown.length > 0 ? (
-          <ol className={styles.rows}>
-            {shown.map((row, i) => (
-              <li
-                key={`${row.rank}-${i}`}
-                className={styles.row}
-                data-slot={i + 1}
-                data-podium={i < 3 ? i + 1 : undefined}
-              >
-                <span className={`${styles.rank} tabular`}>
-                  <span className="sr-only">Rank </span>
-                  {row.rank}
-                </span>
-                <span className={styles.name}>{row.name}</span>
-                <span className={`${styles.score} tabular`}>
-                  <span className="sr-only">Score </span>
-                  {row.score}
-                </span>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p className={styles.empty}>{emptyMessage}</p>
-        )}
-
-        <YourRankButton className={styles.yourRank} labelClassName={styles.yourRankLabel} statusClassName={styles.yourRankStatus} />
-      </div>
-    </main>
+      <YourRankButton className={styles.yourRank} labelClassName={styles.yourRankLabel} statusClassName={styles.yourRankStatus} />
+    </PlateScreen>
   );
 }

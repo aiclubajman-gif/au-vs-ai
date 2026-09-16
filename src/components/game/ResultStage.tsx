@@ -1,11 +1,10 @@
 import type { ReactNode } from 'react';
-import Image from 'next/image';
+import { PlateScreen } from '@/components/ui/PlateScreen';
 import styles from './Result.module.css';
 
 /**
- * The frame both result screens share: the plate fitted whole inside the
- * viewport, the blurred copy behind it on tall phones, and a stage that
- * overlays are placed on in artwork pixels (see Result.module.css).
+ * The frame both result screens share: the full-screen plate stage, with the
+ * crop band for each variant set in Result.module.css.
  */
 export function ResultStage({
   plateSrc,
@@ -15,32 +14,22 @@ export function ResultStage({
   children,
 }: {
   plateSrc: string;
-  /** The plate's size in artwork pixels; the stylesheet sets the same per variant. */
+  /** The plate's size in artwork pixels. */
   plateWidth: number;
   plateHeight: number;
   variant: 'human' | 'ai';
   children: ReactNode;
 }) {
   return (
-    <main className={styles.page} data-variant={variant}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={plateSrc} alt="" aria-hidden="true" className={styles.backdrop} />
-      <div className={styles.stage}>
-        <Image
-          src={plateSrc}
-          alt=""
-          aria-hidden="true"
-          width={plateWidth}
-          height={plateHeight}
-          unoptimized
-          loading="eager"
-          fetchPriority="high"
-          draggable={false}
-          className={styles.plate}
-        />
-        {children}
-      </div>
-    </main>
+    <PlateScreen
+      plateSrc={plateSrc}
+      plateWidth={plateWidth}
+      plateHeight={plateHeight}
+      className={styles.page}
+      data-variant={variant}
+    >
+      {children}
+    </PlateScreen>
   );
 }
 

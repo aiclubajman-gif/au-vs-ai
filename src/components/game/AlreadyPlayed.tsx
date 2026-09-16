@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import { PlateScreen } from '@/components/ui/PlateScreen';
 import styles from './AlreadyPlayed.module.css';
 
 /**
@@ -37,76 +37,59 @@ export function AlreadyPlayed({
   homeHref,
 }: AlreadyPlayedProps) {
   return (
-    <main className={styles.page}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={ALREADY_PLAYED_PLATE_SRC} alt="" aria-hidden="true" className={styles.backdrop} />
-      <div className={styles.stage}>
-        <Image
-          src={ALREADY_PLAYED_PLATE_SRC}
-          alt=""
-          aria-hidden="true"
-          width={853}
-          height={1844}
-          unoptimized
-          loading="eager"
-          fetchPriority="high"
-          draggable={false}
-          className={styles.plate}
-        />
+    <PlateScreen plateSrc={ALREADY_PLAYED_PLATE_SRC} plateWidth={853} plateHeight={1844} className={styles.page}>
+      {/* Headline, explanation and panel labels are painted into the plate. */}
+      <h1 className="sr-only">You&apos;ve already played</h1>
+      <p className="sr-only">
+        Your official attempt is complete. Thank you for being part of AU vs AI. You can only
+        play once, but your impact goes far beyond a score.
+      </p>
 
-        {/* Headline, explanation and panel labels are painted into the plate. */}
-        <h1 className="sr-only">You&apos;ve already played</h1>
-        <p className="sr-only">
-          Your official attempt is complete. Thank you for being part of AU vs AI. You can only
-          play once, but your impact goes far beyond a score.
-        </p>
+      <p className={styles.value} data-col="score">
+        <span className="sr-only">Score: </span>
+        <span className="tabular">{scoreText}</span>
+      </p>
+      <p className={styles.value} data-col="rank">
+        <span className="sr-only">Rank: </span>
+        <span className="tabular">{rankText}</span>
+      </p>
+      <p className={styles.count}>
+        <span className="sr-only">out of </span>
+        <span className="tabular">{playerCountText}</span>
+        <span className="sr-only"> players</span>
+      </p>
+      <p className={styles.value} data-col="top">
+        <span className="sr-only">You&apos;re in the top </span>
+        <span className="tabular">{topShareText}</span>
+        <span className="sr-only"> of all players</span>
+      </p>
 
-        <p className={styles.value} data-col="score">
-          <span className="sr-only">Score: </span>
-          <span className="tabular">{scoreText}</span>
-        </p>
-        <p className={styles.value} data-col="rank">
-          <span className="sr-only">Rank: </span>
-          <span className="tabular">{rankText}</span>
-        </p>
-        <p className={styles.count}>
-          <span className="sr-only">out of </span>
-          <span className="tabular">{playerCountText}</span>
-          <span className="sr-only"> players</span>
-        </p>
-        <p className={styles.value} data-col="top">
-          <span className="sr-only">You&apos;re in the top </span>
-          <span className="tabular">{topShareText}</span>
-          <span className="sr-only"> of all players</span>
-        </p>
+      <a href={leaderboardHref} className={styles.button} data-button="leaderboard">
+        <span className={styles.buttonRow}>
+          <BarsIcon className={styles.icon} />
+          <span className={styles.buttonLabel}>View leaderboard</span>
+          <ArrowIcon className={styles.arrow} />
+        </span>
+      </a>
 
-        <a href={leaderboardHref} className={styles.button} data-button="leaderboard">
-          <span className={styles.buttonRow}>
-            <BarsIcon className={styles.icon} />
-            <span className={styles.buttonLabel}>View leaderboard</span>
-            <ArrowIcon className={styles.arrow} />
-          </span>
-        </a>
+      <a href={joinHref} className={styles.button} data-button="join">
+        <span className={styles.buttonRow}>
+          <GiftIcon className={styles.icon} />
+          <span className={styles.buttonLabel}>Join AIDA</span>
+          <ArrowIcon className={styles.arrow} />
+        </span>
+        <span className={styles.buttonCaption}>
+          Get updates, future challenges,
+          <br />
+          exclusive content and more.
+        </span>
+      </a>
 
-        <a href={joinHref} className={styles.button} data-button="join">
-          <span className={styles.buttonRow}>
-            <GiftIcon className={styles.icon} />
-            <span className={styles.buttonLabel}>Join AIDA</span>
-            <ArrowIcon className={styles.arrow} />
-          </span>
-          <span className={styles.buttonCaption}>
-            Get updates, future challenges,
-            <br />
-            exclusive content and more.
-          </span>
-        </a>
-
-        {/* The chevron is painted; the link covers it and the label. */}
-        <a href={homeHref} className={styles.home}>
-          <span className={styles.homeLabel}>Back to Home</span>
-        </a>
-      </div>
-    </main>
+      {/* The chevron is painted; the link covers it and the label. */}
+      <a href={homeHref} className={styles.home}>
+        <span className={styles.homeLabel}>Back to Home</span>
+      </a>
+    </PlateScreen>
   );
 }
 

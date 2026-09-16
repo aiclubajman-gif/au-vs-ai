@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import NextImage from 'next/image';
 import { RetryNotice } from '@/components/ui';
+import { PlateScreen } from '@/components/ui/PlateScreen';
 import {
   submitWithRetry,
   isRetryable,
@@ -145,121 +145,104 @@ export function Round3({
   const fill = span > 0 ? (guess - assignment.minValue) / span : 0;
 
   return (
-    <main className={styles.page}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={ROUND3_PLATE_SRC} alt="" aria-hidden="true" className={styles.backdrop} />
-      <div className={styles.stage}>
-        <NextImage
-          src={ROUND3_PLATE_SRC}
-          alt=""
-          aria-hidden="true"
-          width={941}
-          height={1672}
-          unoptimized
-          loading="eager"
-          fetchPriority="high"
-          draggable={false}
-          className={styles.plate}
-        />
+    <PlateScreen plateSrc={ROUND3_PLATE_SRC} plateWidth={941} plateHeight={1672} className={styles.page}>
+      {/* Round 3 is always the last round, so the plate paints "Round 3 / 3"
+          into the tab itself. Only the spoken version is needed here. */}
+      <p className="sr-only">Round 3 of 3</p>
 
-        {/* Round 3 is always the last round, so the plate paints "Round 3 / 3"
-            into the tab itself. Only the spoken version is needed here. */}
-        <p className="sr-only">Round 3 of 3</p>
-
-        <div className={styles.timer} role="timer" aria-label={`${seconds} seconds left`}>
-          {/* Redraws the plate's ring band with the real time left. */}
-          <svg viewBox="0 0 200 200" className={styles.ring} aria-hidden="true">
-            <circle cx="100" cy="100" r={RING_R} className={styles.track} />
-            <circle
-              cx="100"
-              cy="100"
-              r={RING_R}
-              className={styles.arc}
-              data-empty={progress <= 0 || undefined}
-              strokeDasharray={RING_C}
-              strokeDashoffset={RING_C * (1 - progress)}
-              transform="rotate(-90 100 100)"
-            />
-          </svg>
-          <span className={`${styles.seconds} tabular`} aria-hidden="true">
-            {seconds}
-            <span className={styles.unit}>s</span>
-          </span>
-        </div>
-
-        <h1 className={styles.heading}>
-          <span className={styles.you}>You</span>
-          <span className={styles.vsWord}>vs</span>
-          <span className={styles.aida}>AIDA</span>
-        </h1>
-
-        {/* The painted panel is empty; this is the inner question frame. */}
-        <div className={styles.card} aria-hidden="true" />
-
-        <p className={styles.question}>{assignment.prompt}</p>
-
-        <div className={styles.valueBox} aria-hidden="true">
-          <span className={`${styles.value} tabular`}>{guess.toFixed(decimals)}</span>
-        </div>
-
-        {assignment.unit && (
-          <p className={styles.unitLabel} aria-hidden="true">
-            {assignment.unit}
-          </p>
-        )}
-
-        <input
-          type="range"
-          min={assignment.minValue}
-          max={assignment.maxValue}
-          step={assignment.step}
-          value={guess}
-          disabled={locked}
-          onChange={(e) => setGuess(Number(e.target.value))}
-          aria-label={
-            assignment.unit ? `Your guess, in ${assignment.unit}` : 'Your guess'
-          }
-          aria-valuetext={
-            assignment.unit
-              ? `${guess.toFixed(decimals)} ${assignment.unit}`
-              : guess.toFixed(decimals)
-          }
-          className={styles.slider}
-          style={{ '--fill': fill } as React.CSSProperties}
-        />
-
-        <p className={styles.bounds} aria-hidden="true">
-          <span className="tabular">{assignment.minValue}</span>
-          <span className="tabular">{assignment.maxValue}</span>
-        </p>
-
-        {failure && (
-          <div className={styles.notice}>
-            <RetryNotice
-              message={describeSaveFailure(failure, 'answer')}
-              refCode={failure.ref}
-              retryable={isRetryable(failure)}
-              busy={saving}
-              onRetry={() => {
-                if (submission.current) save(submission.current);
-              }}
-            />
-          </div>
-        )}
-
-        {/* The plate paints the button; this is the real, transparent control. */}
-        <button type="button" onClick={submit} disabled={locked} className={styles.lock}>
-          <LockIcon className={styles.lockIcon} />
-          <span>{locked ? 'Answer locked' : 'Lock my answer'}</span>
-        </button>
-
-        {reconnecting && (
-          <p className={styles.status} role="status">
-            Saving… reconnecting
-          </p>
-        )}
+      <div className={styles.timer} role="timer" aria-label={`${seconds} seconds left`}>
+        {/* Redraws the plate's ring band with the real time left. */}
+        <svg viewBox="0 0 200 200" className={styles.ring} aria-hidden="true">
+          <circle cx="100" cy="100" r={RING_R} className={styles.track} />
+          <circle
+            cx="100"
+            cy="100"
+            r={RING_R}
+            className={styles.arc}
+            data-empty={progress <= 0 || undefined}
+            strokeDasharray={RING_C}
+            strokeDashoffset={RING_C * (1 - progress)}
+            transform="rotate(-90 100 100)"
+          />
+        </svg>
+        <span className={`${styles.seconds} tabular`} aria-hidden="true">
+          {seconds}
+          <span className={styles.unit}>s</span>
+        </span>
       </div>
-    </main>
+
+      <h1 className={styles.heading}>
+        <span className={styles.you}>You</span>
+        <span className={styles.vsWord}>vs</span>
+        <span className={styles.aida}>AIDA</span>
+      </h1>
+
+      {/* The painted panel is empty; this is the inner question frame. */}
+      <div className={styles.card} aria-hidden="true" />
+
+      <p className={styles.question}>{assignment.prompt}</p>
+
+      <div className={styles.valueBox} aria-hidden="true">
+        <span className={`${styles.value} tabular`}>{guess.toFixed(decimals)}</span>
+      </div>
+
+      {assignment.unit && (
+        <p className={styles.unitLabel} aria-hidden="true">
+          {assignment.unit}
+        </p>
+      )}
+
+      <input
+        type="range"
+        min={assignment.minValue}
+        max={assignment.maxValue}
+        step={assignment.step}
+        value={guess}
+        disabled={locked}
+        onChange={(e) => setGuess(Number(e.target.value))}
+        aria-label={
+          assignment.unit ? `Your guess, in ${assignment.unit}` : 'Your guess'
+        }
+        aria-valuetext={
+          assignment.unit
+            ? `${guess.toFixed(decimals)} ${assignment.unit}`
+            : guess.toFixed(decimals)
+        }
+        className={styles.slider}
+        style={{ '--fill': fill } as React.CSSProperties}
+      />
+
+      <p className={styles.bounds} aria-hidden="true">
+        <span className="tabular">{assignment.minValue}</span>
+        <span className="tabular">{assignment.maxValue}</span>
+      </p>
+
+      {failure && (
+        <div className={styles.notice}>
+          <RetryNotice
+            message={describeSaveFailure(failure, 'answer')}
+            refCode={failure.ref}
+            retryable={isRetryable(failure)}
+            busy={saving}
+            onRetry={() => {
+              if (submission.current) save(submission.current);
+            }}
+          />
+        </div>
+      )}
+
+      {/* The plate paints the button; this is the real, transparent control. */}
+      <button type="button" onClick={submit} disabled={locked} className={styles.lock}>
+        <LockIcon className={styles.lockIcon} />
+        <span>{locked ? 'Answer locked' : 'Lock my answer'}</span>
+      </button>
+
+      {reconnecting && (
+        <p className={styles.status} role="status">
+          Saving… reconnecting
+        </p>
+      )}
+    </PlateScreen>
   );
 }
 

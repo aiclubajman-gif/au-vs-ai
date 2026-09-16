@@ -1,7 +1,7 @@
 'use client';
 
-import Image from 'next/image';
 import { useAutoAdvance } from '@/components/game/auto-advance';
+import { PlateScreen } from '@/components/ui/PlateScreen';
 import styles from './FunFact.module.css';
 
 /**
@@ -25,129 +25,118 @@ export function FunFact({ round = 1, onDone }: { round?: 1 | 2; onDone: () => vo
   const plateSrc = round === 2 ? ROUND2_FUN_FACT_PLATE_SRC : FUN_FACT_PLATE_SRC;
 
   return (
-    <main className={styles.page} data-round={round}>
+    <PlateScreen
+      plateSrc={plateSrc}
+      plateWidth={941}
+      plateHeight={1672}
+      className={styles.page}
+      data-round={round}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={plateSrc} alt="" aria-hidden="true" className={styles.backdrop} />
-      <div className={styles.stage}>
-        <Image
-          src={plateSrc}
-          alt=""
-          aria-hidden="true"
-          width={941}
-          height={1672}
-          unoptimized
-          loading="eager"
-          fetchPriority="high"
-          draggable={false}
-          className={styles.plate}
-        />
+      <img
+        src="/design/fun-fact/au-vs-ai-logo.webp"
+        alt="AU vs AI"
+        width={840}
+        height={294}
+        className={styles.logo}
+        draggable={false}
+      />
 
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/design/fun-fact/au-vs-ai-logo.webp"
-          alt="AU vs AI"
-          width={840}
-          height={294}
-          className={styles.logo}
-          draggable={false}
-        />
+      <h1 className={styles.heading}>Fun fact</h1>
 
-        <h1 className={styles.heading}>Fun fact</h1>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/design/fun-fact/brain.png"
+        alt=""
+        aria-hidden="true"
+        className={styles.brain}
+        draggable={false}
+      />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/design/fun-fact/mascot.webp"
+        alt=""
+        aria-hidden="true"
+        width={567}
+        height={691}
+        className={styles.mascot}
+        draggable={false}
+      />
 
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/design/fun-fact/brain.png"
-          alt=""
-          aria-hidden="true"
-          className={styles.brain}
-          draggable={false}
-        />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/design/fun-fact/mascot.webp"
-          alt=""
-          aria-hidden="true"
-          width={567}
-          height={691}
-          className={styles.mascot}
-          draggable={false}
-        />
+      {round === 2 ? (
+        <div className={styles.fact}>
+          <p className={styles.modelFact}>
+            Our model was
+            <br />
+            trained with
+            <br />
+            approximately
+            <br />
+            <strong className={styles.figure} data-tone="cyan">
+              300,000
+            </strong>{' '}
+            <strong className={styles.strong}>human</strong>
+            <br />
+            <strong className={styles.strong}>doodles</strong> across
+            <br />
+            <strong className={styles.figure} data-tone="orange">
+              15 drawing categories.
+            </strong>
+          </p>
+          <p className={styles.courses}>
+            You will learn how to do so
+            <br />
+            in your PDAII and ML courses.
+          </p>
+        </div>
+      ) : (
+        <div className={styles.fact}>
+          <p className={styles.lead}>
+            AI mistakes are no
+            <br />
+            longer limited to
+            <br />
+            extra fingers&hellip;
+          </p>
+          <p className={styles.clues}>
+            <span className={styles.small}>the hardest clues can be</span>
+            <br />
+            <strong className={styles.strong}>inconsistent</strong>
+            <br />
+            <strong className={styles.mark} data-tone="cyan">
+              reflections
+            </strong>
+            <strong className={styles.strong}>,</strong>{' '}
+            <strong className={styles.mark} data-tone="orange">
+              lighting
+            </strong>
+            <br />
+            <span className={styles.or}>or</span>{' '}
+            <strong className={styles.mark} data-tone="yellow">
+              text.
+            </strong>
+          </p>
+        </div>
+      )}
 
-        {round === 2 ? (
-          <div className={styles.fact}>
-            <p className={styles.modelFact}>
-              Our model was
-              <br />
-              trained with
-              <br />
-              approximately
-              <br />
-              <strong className={styles.figure} data-tone="cyan">
-                300,000
-              </strong>{' '}
-              <strong className={styles.strong}>human</strong>
-              <br />
-              <strong className={styles.strong}>doodles</strong> across
-              <br />
-              <strong className={styles.figure} data-tone="orange">
-                15 drawing categories.
-              </strong>
-            </p>
-            <p className={styles.courses}>
-              You will learn how to do so
-              <br />
-              in your PDAII and ML courses.
-            </p>
-          </div>
-        ) : (
-          <div className={styles.fact}>
-            <p className={styles.lead}>
-              AI mistakes are no
-              <br />
-              longer limited to
-              <br />
-              extra fingers&hellip;
-            </p>
-            <p className={styles.clues}>
-              <span className={styles.small}>the hardest clues can be</span>
-              <br />
-              <strong className={styles.strong}>inconsistent</strong>
-              <br />
-              <strong className={styles.mark} data-tone="cyan">
-                reflections
-              </strong>
-              <strong className={styles.strong}>,</strong>{' '}
-              <strong className={styles.mark} data-tone="orange">
-                lighting
-              </strong>
-              <br />
-              <span className={styles.or}>or</span>{' '}
-              <strong className={styles.mark} data-tone="yellow">
-                text.
-              </strong>
-            </p>
-          </div>
-        )}
+      {/* The plate paints the button; this is the real, transparent control over it. */}
+      <button type="button" className={styles.cta} onClick={advance}>
+        <span className={styles.ctaLabel}>Next round</span>
+        <ArrowIcon className={styles.ctaArrow} />
+      </button>
+      <p className={styles.auto}>
+        Continues by itself in <span className="tabular">{remaining}</span>s
+      </p>
 
-        {/* The plate paints the button; this is the real, transparent control over it. */}
-        <button type="button" className={styles.cta} onClick={advance}>
-          <span className={styles.ctaLabel}>Next round</span>
-          <ArrowIcon className={styles.ctaArrow} />
-        </button>
-        <p className={styles.auto}>
-          Continues by itself in <span className="tabular">{remaining}</span>s
-        </p>
-
-        <p className={styles.footer}>
-          <span className={styles.rule} aria-hidden="true" />
-          <span className={styles.footerText}>
-            Same minds. Different possibilities.
-            <br />A brighter tomorrow.
-          </span>
-          <span className={styles.rule} aria-hidden="true" />
-        </p>
-      </div>
-    </main>
+      <p className={styles.footer}>
+        <span className={styles.rule} aria-hidden="true" />
+        <span className={styles.footerText}>
+          Same minds. Different possibilities.
+          <br />A brighter tomorrow.
+        </span>
+        <span className={styles.rule} aria-hidden="true" />
+      </p>
+    </PlateScreen>
   );
 }
 

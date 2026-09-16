@@ -3,14 +3,17 @@
  * hunting through components.
  */
 
-/** A run of step text; `em` marks the ORS field values students must match. */
+/**
+ * A run of step text; `em` marks what a student has to find or match in ORS.
+ * A newline is a line break, placed where the approved design breaks the line.
+ */
 export type OrsPart = string | { em: string };
 
 export interface OrsStep {
-  /** The line that sits beside the numbered circle painted on the plate. */
+  /** The text that starts beside the numbered circle painted on the plate. */
   parts: OrsPart[];
-  /** Bulleted choices under that line, for the male/female request types. */
-  choices?: { value: string; who: string }[];
+  /** Bulleted lines under it, for the male/female request types. */
+  choices?: OrsPart[][];
 }
 
 export const CLUB = {
@@ -35,9 +38,9 @@ export const CLUB = {
   /**
    * The WhatsApp community invite behind the Join AIDA page's second button.
    *
-   * Set this to null to take the button out of service: it then renders its
-   * label but is inert and marked unavailable, rather than being a live link
-   * to nowhere.
+   * Set this to null to take the button out of service: it then stays on the
+   * page, inert and marked unavailable, rather than being a live link to
+   * nowhere.
    */
   whatsappUrl: 'https://chat.whatsapp.com/FQ3AfxNQHkrGDstO8R0a06' as string | null,
 
@@ -51,23 +54,23 @@ export const CLUB = {
     url: 'https://ors.ajman.ac.ae/',
     steps: [
       { parts: ['Click the ', { em: 'OPEN ORS' }, ' button.'] },
-      { parts: ['Go to ', { em: 'eRequests → New Request' }, '.'] },
-      { parts: ['Request Category: ', { em: 'Student Life' }] },
+      { parts: ['Go to ', { em: 'eRequests → New Request.' }] },
+      { parts: ['Request Category: ', { em: 'Student Life.' }] },
       {
         parts: ['Request Type:'],
         choices: [
-          { value: '“Male student club membership”', who: 'for males' },
-          { value: '“Female student club membership”', who: 'for females' },
+          ['If you are a male pick ', { em: '“Male student\nclub membership”' }],
+          ['If you are a female pick ', { em: '“Female student\nclub membership”' }],
         ],
       },
       {
-        parts: ['Student Clubs (Male/Female):'],
-        choices: [
-          { value: '“Male AI and Data Science Club”', who: 'for males' },
-          { value: '“Female AI and Data Science Club”', who: 'for females' },
+        parts: [
+          'Select ',
+          { em: '“Male/Female AI and Data\nScience Club”' },
+          ' for the Student Clubs\n(Male/Female).',
         ],
       },
-      { parts: ['Fill out the rest of the information and submit your request.'] },
+      { parts: ['Fill out the rest of the info.'] },
     ] satisfies OrsStep[],
   },
 } as const;
