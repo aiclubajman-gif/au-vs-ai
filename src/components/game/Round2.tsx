@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, useEffect, useCallback } from 'react';
+import NextImage from 'next/image';
 import { RetryNotice } from '@/components/ui';
 import { resolveClassifier, type Prediction } from '@/lib/ml/classifier';
 import {
@@ -10,6 +11,7 @@ import {
   type SubmitFailure,
 } from '@/lib/client/submit';
 import type { Round2Assignment } from '@/types';
+import styles from './Round2.module.css';
 
 /**
  * Round 2 — Draw vs AI.
@@ -20,6 +22,10 @@ import type { Round2Assignment } from '@/types';
  *
  * Strokes are kept as point arrays rather than pixels so undo is exact and the
  * 28x28 export can be re-rasterised cleanly at any size.
+ *
+ * Two plates: the drawing screen, then the analysis screen, which shows the
+ * submitted strokes and the classifier's real top predictions. The plates paint
+ * the frames and button bodies; everything that carries state is HTML.
  */
 
 type Stroke = { x: number; y: number }[];
@@ -34,14 +40,34 @@ interface Round2SubmitBody {
   idempotencyKey: string;
 }
 
-const CANVAS_SIZE = 320;
+export const ROUND2_DRAW_PLATE_SRC = '/design/round2/draw-plate.webp';
+export const ROUND2_RESULTS_PLATE_SRC = '/design/round2/results-plate.webp';
+
+/**
+ * Stroke coordinate space. The height is the original square canvas's, so the
+ * stroke width relative to a drawing, and with it the 28x28 export, is
+ * unchanged; the width follows the plate's drawing opening (873u × 733u).
+ */
+const CANVAS_W = 381;
+const CANVAS_H = 320;
+/** Backing-store pixels per coordinate unit, so strokes stay sharp on phones. */
+const RENDER_SCALE = 2;
 const STROKE_WIDTH = 12;
 /** Minimum suspense so the reveal reads as a moment, not a flicker. */
 const ANALYSE_MS = 900;
-/** How long the predictions stay on screen before moving on. */
-const REVEAL_MS = 2600;
+/**
+ * How long the predictions stay on screen before moving on.
+ *
+ * Long enough to actually read five prediction rows. This is readout time, not
+ * gameplay: the drawing clock stopped at submit and drawTimeMs was frozen
+ * there, so nothing here reaches the Round 2 score, the timer or the speed
+ * bonus.
+ */
+const REVEAL_MS = 7000;
 /** Ceiling in round2SubmitSchema. A backgrounded tab can otherwise exceed it. */
 const MAX_DRAW_MS = 120_000;
+/** Prediction rows painted on the analysis plate. */
+const RESULT_ROWS = 5;
 
 export function Round2({
   attemptId,
@@ -55,13 +81,18 @@ export function Round2({
   onComplete: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const previewRef = useRef<HTMLCanvasElement>(null);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [phase, setPhase] = useState<Phase>('drawing');
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [remaining, setRemaining] = useState(drawMs);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [reconnecting, setReconnecting] = useState(false);
   const [failure, setFailure] = useState<SubmitFailure | null>(null);
+  /** When the reveal auto-advances, once saved. Null while there is no timer. */
+  const [advanceAt, setAdvanceAt] = useState<number | null>(null);
+  const [autoSeconds, setAutoSeconds] = useState(0);
   const drawing = useRef(false);
   const startedAt = useRef(0);
   const submitted = useRef(false);
@@ -72,6 +103,8 @@ export function Round2({
   const analysing = useRef(false);
   const inFlight = useRef(false);
   const revealedAt = useRef(0);
+  /** Continue and the reveal timeout share this, so the round ends once. */
+  const completed = useRef(false);
   const unmounted = useRef(false);
 
   // The drawing clock starts when the canvas is first on screen.
@@ -84,35 +117,12 @@ export function Round2({
   }, []);
 
   // ---- rendering -------------------------------------------------------
-  const redraw = useCallback(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    if (!canvas || !ctx) return;
-
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = '#f8fafc';
-    ctx.lineWidth = STROKE_WIDTH;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    for (const stroke of strokes) {
-      if (stroke.length < 2) {
-        if (stroke.length === 1) {
-          ctx.beginPath();
-          ctx.arc(stroke[0].x, stroke[0].y, STROKE_WIDTH / 2, 0, Math.PI * 2);
-          ctx.fillStyle = '#f8fafc';
-          ctx.fill();
-        }
-        continue;
-      }
-      ctx.beginPath();
-      ctx.moveTo(stroke[0].x, stroke[0].y);
-      for (let i = 1; i < stroke.length; i++) ctx.lineTo(stroke[i].x, stroke[i].y);
-      ctx.stroke();
-    }
-  }, [strokes]);
-
-  useEffect(redraw, [redraw]);
+  // The drawing canvas and the analysis preview share one coordinate space and
+  // differ only in CSS size, so the preview is the submitted drawing exactly.
+  useEffect(() => {
+    paintStrokes(canvasRef.current, strokes);
+    paintStrokes(previewRef.current, strokes);
+  }, [strokes, phase]);
 
   /**
    * Converts the drawing into the 28x28 the model expects.
@@ -171,6 +181,12 @@ export function Round2({
     return out;
   }, [strokes]);
 
+  const finish = useCallback(() => {
+    if (completed.current || unmounted.current) return;
+    completed.current = true;
+    onComplete();
+  }, [onComplete]);
+
   /** Sends the scored drawing and moves on only once the server has it. */
   const save = useCallback(
     async (body: Round2SubmitBody) => {
@@ -194,12 +210,14 @@ export function Round2({
         return;
       }
 
+      setSaved(true);
       const wait = Math.max(0, REVEAL_MS - (Date.now() - revealedAt.current));
-      setTimeout(() => {
-        if (!unmounted.current) onComplete();
-      }, wait);
+      // finish() is guarded by completed.current, so this and the Continue
+      // button together still advance the round exactly once.
+      setAdvanceAt(Date.now() + wait);
+      setTimeout(finish, wait);
     },
-    [onComplete],
+    [finish],
   );
 
   /**
@@ -246,7 +264,7 @@ export function Round2({
     submission.current = body;
 
     revealedAt.current = Date.now();
-    setPredictions(preds.slice(0, 3));
+    setPredictions(preds.slice(0, RESULT_ROWS));
     setPhase('revealed');
     save(body);
   }, [assignment.classKey, attemptId, save]);
@@ -262,6 +280,16 @@ export function Round2({
     };
     analyse();
   }, [analyse, toBitmap28]);
+
+  // Display only: counts the reveal down so the wait is not a dead pause. The
+  // advance itself is the timeout above, not this.
+  useEffect(() => {
+    if (advanceAt === null) return;
+    const tick = () => setAutoSeconds(Math.max(0, Math.ceil((advanceAt - Date.now()) / 1000)));
+    tick();
+    const id = setInterval(tick, 200);
+    return () => clearInterval(id);
+  }, [advanceAt]);
 
   useEffect(() => {
     if (phase !== 'drawing') return;
@@ -287,8 +315,8 @@ export function Round2({
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
     return {
-      x: ((clientX - rect.left) / rect.width) * CANVAS_SIZE,
-      y: ((clientY - rect.top) / rect.height) * CANVAS_SIZE,
+      x: ((clientX - rect.left) / rect.width) * CANVAS_W,
+      y: ((clientY - rect.top) / rect.height) * CANVAS_H,
     };
   }
 
@@ -318,148 +346,341 @@ export function Round2({
 
   const seconds = Math.max(0, Math.ceil(remaining / 1000));
   const progress = Math.max(0, Math.min(1, remaining / drawMs));
+  const isDrawing = phase === 'drawing';
+  const plateSrc = isDrawing ? ROUND2_DRAW_PLATE_SRC : ROUND2_RESULTS_PLATE_SRC;
+  const name = assignment.displayName;
+  const article = /^[aeiou]/i.test(name) ? 'an' : 'a';
 
   return (
-    <main className="flex min-h-dvh flex-col px-5 py-6">
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-[var(--color-muted)]">Draw vs AI</span>
-          {phase === 'drawing' && (
-            <span className="tabular font-bold text-[var(--color-cyan)]">{seconds}s</span>
-          )}
-        </div>
+    <main className={styles.page}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={plateSrc} alt="" aria-hidden="true" className={styles.backdrop} />
+      <div className={styles.stage}>
+        <NextImage
+          key={plateSrc}
+          src={plateSrc}
+          alt=""
+          aria-hidden="true"
+          width={941}
+          height={1672}
+          unoptimized
+          loading="eager"
+          fetchPriority="high"
+          draggable={false}
+          className={styles.plate}
+        />
 
-        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[var(--color-edge)]">
-          <div
-            className="h-full bg-[var(--color-cyan)] transition-[width] duration-100 ease-linear"
-            style={{ width: `${phase === 'drawing' ? progress * 100 : 0}%` }}
-          />
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/design/fun-fact/au-vs-ai-logo.webp"
+          alt="AU vs AI"
+          width={840}
+          height={294}
+          className={styles.logo}
+          draggable={false}
+        />
 
-        <h1 className="mt-6 text-center text-3xl font-bold">
-          Draw a <span className="text-[var(--color-cyan)]">{assignment.displayName}</span>
-        </h1>
+        <p className={styles.round}>
+          <span aria-hidden="true">Round 2 / 3</span>
+          <span className="sr-only">Round 2 of 3</span>
+        </p>
 
-        <div className="relative mt-5 aspect-square w-full overflow-hidden rounded-2xl border border-[var(--color-edge)] bg-[var(--color-navy)]">
-          <canvas
-            ref={canvasRef}
-            width={CANVAS_SIZE}
-            height={CANVAS_SIZE}
-            onPointerDown={start}
-            onPointerMove={move}
-            onPointerUp={end}
-            onPointerCancel={end}
-            className="canvas-surface h-full w-full"
-            aria-label={`Drawing canvas. Draw a ${assignment.displayName}.`}
-          />
-
-          {phase === 'analysing' && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--color-void)]/90">
-              <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--color-edge)] border-t-[var(--color-cyan)]" />
-              <p className="mt-4 text-sm text-[var(--color-muted)]">
-                AI is analysing your drawing…
-              </p>
+        {isDrawing ? (
+          <>
+            <div className={styles.timer} role="timer" aria-label={`${seconds} seconds left`}>
+              {/* Redraws the plate's ring band with the real time left. */}
+              <svg viewBox="0 0 200 200" className={styles.ring} aria-hidden="true">
+                <circle cx="100" cy="100" r={RING_R} className={styles.track} />
+                <circle
+                  cx="100"
+                  cy="100"
+                  r={RING_R}
+                  className={styles.arc}
+                  data-empty={progress <= 0 || undefined}
+                  strokeDasharray={RING_C}
+                  strokeDashoffset={RING_C * (1 - progress)}
+                  transform="rotate(-90 100 100)"
+                />
+              </svg>
+              <span className={`${styles.seconds} tabular`} aria-hidden="true">
+                {seconds}
+                <span className={styles.unit}>s</span>
+              </span>
             </div>
-          )}
 
-          {phase === 'revealed' && (
-            <div className="absolute inset-0 flex flex-col justify-center gap-3 bg-[var(--color-void)]/93 px-6">
-              {predictions.map((p) => {
-                const isTarget = p.label === assignment.classKey;
-                return (
-                  <div key={p.label}>
-                    <div className="flex justify-between text-sm">
-                      <span
-                        className={
-                          isTarget
-                            ? 'font-bold text-[var(--color-win)]'
-                            : 'text-[var(--color-muted)]'
-                        }
-                      >
-                        {p.label.toUpperCase()}
-                        {isTarget && ' ✓'}
-                      </span>
-                      <span className="tabular text-sm">
-                        {Math.round(p.confidence * 100)}%
-                      </span>
-                    </div>
-                    <div className="mt-1 h-2 overflow-hidden rounded-full bg-[var(--color-edge)]">
-                      <div
-                        className="h-full rounded-full transition-[width] duration-700"
-                        style={{
-                          width: `${p.confidence * 100}%`,
-                          background: isTarget
-                            ? 'var(--color-win)'
-                            : 'var(--color-cyan-dim)',
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-              {reconnecting && (
-                <p className="text-center text-sm text-[var(--color-muted)]">
-                  Saving… reconnecting
-                </p>
-              )}
-            </div>
-          )}
+            <h1 className={styles.drawTitle}>
+              <span className={styles.drawWord}>Draw</span>
+              <span className={styles.vs}>vs</span>
+              <span className={styles.aiWord}>AI</span>
+            </h1>
+            <p className={styles.instruction}>
+              Draw the object below in {Math.round(drawMs / 1000)} seconds.
+            </p>
 
-          {phase === 'analysisFailed' && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--color-void)]/90 px-6 text-center">
-              <p className="text-base font-semibold">The AI couldn&apos;t analyse your drawing.</p>
-              <p className="mt-2 text-sm text-[var(--color-muted)]">
-                Your drawing is still here. Try again, or show this screen to an AIDA team
-                member.
-              </p>
-              <button
-                onClick={analyse}
-                className="mt-4 rounded-lg border border-[var(--color-edge)] px-4 py-2 text-sm"
-              >
-                Try again
-              </button>
-            </div>
-          )}
-        </div>
+            <p className={styles.prompt}>
+              <span className={styles.promptLead}>Draw {article}:</span>
+              <strong className={styles.promptName}>{name}</strong>
+            </p>
 
-        {failure && (
-          <RetryNotice
-            message={describeSaveFailure(failure, 'drawing')}
-            refCode={failure.ref}
-            retryable={isRetryable(failure)}
-            busy={saving}
-            onRetry={() => {
-              if (submission.current) save(submission.current);
-            }}
-          />
-        )}
+            <canvas
+              ref={canvasRef}
+              width={CANVAS_W * RENDER_SCALE}
+              height={CANVAS_H * RENDER_SCALE}
+              onPointerDown={start}
+              onPointerMove={move}
+              onPointerUp={end}
+              onPointerCancel={end}
+              className={`canvas-surface ${styles.canvas}`}
+              aria-label={`Drawing canvas. Draw ${article} ${name}.`}
+            />
 
-        {phase === 'drawing' && (
-          <div className="mt-5 grid grid-cols-3 gap-3">
+            {/* The plate paints the three buttons; these are the real, transparent controls over them. */}
             <button
+              type="button"
               onClick={() => setStrokes((s) => s.slice(0, -1))}
               disabled={strokes.length === 0}
-              className="min-h-[52px] rounded-xl border border-[var(--color-edge)] text-sm disabled:opacity-30"
+              className={styles.tool}
+              data-tool="undo"
             >
-              Undo
+              <UndoIcon className={styles.toolIcon} />
+              <span className={styles.toolLabel}>Undo</span>
             </button>
             <button
+              type="button"
               onClick={() => setStrokes([])}
               disabled={strokes.length === 0}
-              className="min-h-[52px] rounded-xl border border-[var(--color-edge)] text-sm disabled:opacity-30"
+              className={styles.tool}
+              data-tool="clear"
             >
-              Clear
+              <TrashIcon className={styles.toolIcon} />
+              <span className={styles.toolLabel}>Clear</span>
             </button>
             <button
+              type="button"
               onClick={submit}
               disabled={strokes.length === 0}
-              className="min-h-[52px] rounded-xl bg-[var(--color-cyan)] text-sm font-semibold text-[var(--color-void)] disabled:opacity-30"
+              className={styles.submit}
             >
-              Submit
+              <SendIcon className={styles.submitIcon} />
+              <span className={styles.submitLabel}>Submit drawing</span>
+              <ArrowIcon className={styles.submitArrow} />
             </button>
-          </div>
+          </>
+        ) : (
+          <>
+            {/* Decorative: the drawing clock stopped when the drawing was submitted. */}
+            <p className={styles.frozen}>
+              <span className={`${styles.frozenValue} tabular`} aria-hidden="true">
+                {seconds}
+              </span>
+              <span className={styles.frozenUnit} aria-hidden="true">
+                Seconds
+              </span>
+              <span className="sr-only">Submitted with {seconds} seconds left</span>
+            </p>
+
+            <h1 className={styles.analysisTitle}>
+              <span className={styles.analysisLine}>AI analysing</span>
+              <span className={styles.analysisLine}>
+                Your <span className={styles.analysisAccent}>drawing…</span>
+              </span>
+            </h1>
+            <p className={styles.tagline}>Turning creativity into possibilities</p>
+
+            <div className={styles.scan} data-phase={phase}>
+              <canvas
+                ref={previewRef}
+                width={CANVAS_W * RENDER_SCALE}
+                height={CANVAS_H * RENDER_SCALE}
+                className={styles.preview}
+                role="img"
+                aria-label="Your submitted drawing"
+              />
+              {phase === 'analysing' && <span className={styles.sweep} aria-hidden="true" />}
+              <p className={styles.scanStatus} role="status">
+                {phase === 'analysing'
+                  ? 'Scanning…'
+                  : phase === 'revealed'
+                    ? 'Scan complete'
+                    : 'Scan failed'}
+              </p>
+            </div>
+
+            <p className={styles.thinks}>AI thinks:</p>
+
+            <ol className={styles.rows} aria-label="AI predictions">
+              {Array.from({ length: RESULT_ROWS }, (_, i) => {
+                const p = phase === 'revealed' ? predictions[i] : undefined;
+                const isTarget = p?.label === assignment.classKey;
+                const percent = p ? Math.round(p.confidence * 100) : null;
+                return (
+                  <li
+                    key={i}
+                    className={styles.row}
+                    style={{ '--row': i } as React.CSSProperties}
+                    data-target={isTarget || undefined}
+                    aria-hidden={!p || undefined}
+                  >
+                    <span className={`${styles.rank} tabular`} aria-hidden="true">
+                      {p ? (isTarget ? '✓' : i + 1) : ''}
+                    </span>
+                    {p && (
+                      <span
+                        className={styles.label}
+                        style={{ '--len': p.label.length } as React.CSSProperties}
+                      >
+                        {capitalise(p.label)}
+                        {isTarget && <span className="sr-only"> (your drawing prompt)</span>}
+                      </span>
+                    )}
+                    {/* Hides the plate's example fill; the live bar is drawn over it. */}
+                    <span className={styles.barCover} aria-hidden="true" />
+                    <span className={styles.bar} aria-hidden="true">
+                      {p && percent ? (
+                        <span
+                          className={styles.barFill}
+                          style={{ '--confidence': Math.min(1, p.confidence) } as React.CSSProperties}
+                        />
+                      ) : null}
+                    </span>
+                    {p && <span className={`${styles.percent} tabular`}>{percent}%</span>}
+                  </li>
+                );
+              })}
+            </ol>
+
+            {phase === 'analysisFailed' && (
+              <div className={styles.failed} role="alert">
+                <p className={styles.failedTitle}>The AI couldn&apos;t analyse your drawing.</p>
+                <p className={styles.failedText}>
+                  Your drawing is still here. Try again, or show this screen to an AIDA team
+                  member.
+                </p>
+                <button type="button" onClick={analyse} className={styles.failedButton}>
+                  Try again
+                </button>
+              </div>
+            )}
+
+            {failure && (
+              <div className={styles.notice}>
+                <RetryNotice
+                  message={describeSaveFailure(failure, 'drawing')}
+                  refCode={failure.ref}
+                  retryable={isRetryable(failure)}
+                  busy={saving}
+                  onRetry={() => {
+                    if (submission.current) save(submission.current);
+                  }}
+                />
+              </div>
+            )}
+
+            {/* The plate paints the button; this is the real, transparent control over it. */}
+            <button type="button" onClick={finish} disabled={!saved} className={styles.continue}>
+              <span className={styles.continueLabel}>
+                {reconnecting ? 'Saving… reconnecting' : 'Continue'}
+              </span>
+              {!reconnecting && <ArrowIcon className={styles.continueArrow} />}
+            </button>
+            {advanceAt !== null && (
+              <p className={styles.auto}>
+                Continues by itself in <span className="tabular">{autoSeconds}</span>s
+              </p>
+            )}
+          </>
         )}
       </div>
     </main>
+  );
+}
+
+/** Draws strokes in the shared coordinate space, whatever the canvas's CSS size. */
+function paintStrokes(canvas: HTMLCanvasElement | null, strokes: Stroke[]) {
+  const ctx = canvas?.getContext('2d');
+  if (!canvas || !ctx) return;
+
+  ctx.setTransform(RENDER_SCALE, 0, 0, RENDER_SCALE, 0, 0);
+  ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+  ctx.strokeStyle = '#f4fbff';
+  ctx.lineWidth = STROKE_WIDTH;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.shadowColor = 'rgba(40, 190, 255, 0.95)';
+  ctx.shadowBlur = 6 * RENDER_SCALE;
+
+  // One path, one stroke: the glow is drawn once, however many strokes there are.
+  ctx.beginPath();
+  for (const stroke of strokes) {
+    if (stroke.length === 0) continue;
+    ctx.moveTo(stroke[0].x, stroke[0].y);
+    // A single tap is a dot: a zero-length segment still gets round caps.
+    if (stroke.length === 1) ctx.lineTo(stroke[0].x + 0.01, stroke[0].y);
+    for (let i = 1; i < stroke.length; i++) ctx.lineTo(stroke[i].x, stroke[i].y);
+  }
+  ctx.stroke();
+}
+
+function capitalise(label: string) {
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+/** Radius of the ring band painted on the plate, in the timer's 200-unit box. */
+const RING_R = 72.5;
+const RING_C = 2 * Math.PI * RING_R;
+
+function UndoIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 48 48" fill="none" aria-hidden="true">
+      <path
+        d="M17 9 7 19l10 10M8 19h20a13 13 0 0 1 0 26h-6"
+        stroke="currentColor"
+        strokeWidth="3.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 48 52" fill="none" aria-hidden="true">
+      <path
+        d="M4 11h40M17 11V5h14v6M9 11l2.5 36h25L39 11M19.5 20v19M28.5 20v19"
+        stroke="currentColor"
+        strokeWidth="3.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SendIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 52 52" fill="none" aria-hidden="true">
+      <path
+        d="M48 4 4 22l18 7 7 19L48 4ZM48 4 22 29"
+        stroke="currentColor"
+        strokeWidth="3.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ArrowIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 48 32" fill="none" aria-hidden="true">
+      <path
+        d="M3 16h40M30 3l13 13-13 13"
+        stroke="currentColor"
+        strokeWidth="3.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

@@ -5,7 +5,7 @@ import { useAutoAdvance } from '@/components/game/Interstitial';
 import styles from './FunFact.module.css';
 
 /**
- * Fun Fact — the outro after Round 1 (the `outro1` step).
+ * Fun Fact — the outro after Round 1 (`outro1`) and after Round 2 (`outro2`).
  *
  * The plate paints the space scene, the glass panel and the button body. The
  * AU vs AI logo, the brain and the mascot are the supplied production assets,
@@ -16,19 +16,21 @@ import styles from './FunFact.module.css';
  * on exactly once.
  */
 export const FUN_FACT_PLATE_SRC = '/design/fun-fact/plate.webp';
+export const ROUND2_FUN_FACT_PLATE_SRC = '/design/round2/fun-fact-plate.webp';
 
 const AUTO_ADVANCE_SECONDS = 7;
 
-export function FunFact({ onDone }: { onDone: () => void }) {
+export function FunFact({ round = 1, onDone }: { round?: 1 | 2; onDone: () => void }) {
   const { remaining, advance } = useAutoAdvance(AUTO_ADVANCE_SECONDS, onDone);
+  const plateSrc = round === 2 ? ROUND2_FUN_FACT_PLATE_SRC : FUN_FACT_PLATE_SRC;
 
   return (
-    <main className={styles.page}>
+    <main className={styles.page} data-round={round}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={FUN_FACT_PLATE_SRC} alt="" aria-hidden="true" className={styles.backdrop} />
+      <img src={plateSrc} alt="" aria-hidden="true" className={styles.backdrop} />
       <div className={styles.stage}>
         <Image
-          src={FUN_FACT_PLATE_SRC}
+          src={plateSrc}
           alt=""
           aria-hidden="true"
           width={941}
@@ -71,33 +73,61 @@ export function FunFact({ onDone }: { onDone: () => void }) {
           draggable={false}
         />
 
-        <div className={styles.fact}>
-          <p className={styles.lead}>
-            AI mistakes are no
-            <br />
-            longer limited to
-            <br />
-            extra fingers&hellip;
-          </p>
-          <p className={styles.clues}>
-            <span className={styles.small}>the hardest clues can be</span>
-            <br />
-            <strong className={styles.strong}>inconsistent</strong>
-            <br />
-            <strong className={styles.mark} data-tone="cyan">
-              reflections
-            </strong>
-            <strong className={styles.strong}>,</strong>{' '}
-            <strong className={styles.mark} data-tone="orange">
-              lighting
-            </strong>
-            <br />
-            <span className={styles.or}>or</span>{' '}
-            <strong className={styles.mark} data-tone="yellow">
-              text.
-            </strong>
-          </p>
-        </div>
+        {round === 2 ? (
+          <div className={styles.fact}>
+            <p className={styles.modelFact}>
+              Our model was
+              <br />
+              trained with
+              <br />
+              approximately
+              <br />
+              <strong className={styles.figure} data-tone="cyan">
+                300,000
+              </strong>{' '}
+              <strong className={styles.strong}>human</strong>
+              <br />
+              <strong className={styles.strong}>doodles</strong> across
+              <br />
+              <strong className={styles.figure} data-tone="orange">
+                15 drawing categories.
+              </strong>
+            </p>
+            <p className={styles.courses}>
+              You will learn how to do so
+              <br />
+              in your PDAII and ML courses.
+            </p>
+          </div>
+        ) : (
+          <div className={styles.fact}>
+            <p className={styles.lead}>
+              AI mistakes are no
+              <br />
+              longer limited to
+              <br />
+              extra fingers&hellip;
+            </p>
+            <p className={styles.clues}>
+              <span className={styles.small}>the hardest clues can be</span>
+              <br />
+              <strong className={styles.strong}>inconsistent</strong>
+              <br />
+              <strong className={styles.mark} data-tone="cyan">
+                reflections
+              </strong>
+              <strong className={styles.strong}>,</strong>{' '}
+              <strong className={styles.mark} data-tone="orange">
+                lighting
+              </strong>
+              <br />
+              <span className={styles.or}>or</span>{' '}
+              <strong className={styles.mark} data-tone="yellow">
+                text.
+              </strong>
+            </p>
+          </div>
+        )}
 
         {/* The plate paints the button; this is the real, transparent control over it. */}
         <button type="button" className={styles.cta} onClick={advance}>

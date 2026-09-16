@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Fun Fact (after Round 1). Scoped to this screen.
+   Fun Fact (after Rounds 1 and 2). Scoped to this screen.
 
    Same stage model as How It Works: the 941 × 1672 plate fitted whole inside
    the viewport, `--u` = one artwork pixel, every overlay placed in u. The
@@ -276,4 +276,67 @@
   text-transform: uppercase;
   white-space: nowrap;
   color: #c4d1ef;
+}
+
+/* --- Round 2 (outro2): its own plate and fact ---------------------------------
+   Panel 52–890u × 388–1526u, painted button 139–800u × 1303–1401u, footer
+   rules at 1466u. The fact's first cap line starts at 859u in column 517u. */
+
+.page[data-round='2'] .mascot {
+  top: calc(var(--u) * 742);
+  left: calc(var(--u) * 46);
+  width: calc(var(--u) * 440);
+}
+
+.page[data-round='2'] .fact {
+  top: calc(var(--u) * 859);
+  left: calc(var(--u) * 517);
+  width: calc(var(--u) * 370);
+}
+
+.modelFact,
+.courses {
+  margin: 0;
+  white-space: nowrap;
+  text-box: trim-both cap alphabetic;
+}
+
+.modelFact {
+  font-size: calc(var(--u) * 34);
+  line-height: calc(var(--u) * 42.5);
+  color: #f1f5ff;
+}
+
+.courses {
+  margin-top: calc(var(--u) * 44.5);
+  font-size: calc(var(--u) * 26);
+  line-height: calc(var(--u) * 33);
+  color: #d9e3fa;
+}
+
+.figure {
+  font-weight: 700;
+}
+.figure[data-tone='cyan'] {
+  color: #3ccaff;
+}
+/* The longest line; kept inside the panel even with wide fonts (Segoe UI). */
+.figure[data-tone='orange'] {
+  font-size: 0.94em;
+  color: #ffac2e;
+}
+
+.page[data-round='2'] .cta {
+  top: calc(var(--u) * 1302);
+  left: calc(var(--u) * 138);
+  width: calc(var(--u) * 664);
+  height: calc(var(--u) * 101);
+}
+
+.page[data-round='2'] .auto {
+  top: calc(var(--u) * 1422);
+}
+
+.page[data-round='2'] .footer {
+  top: calc(var(--u) * 1468);
 }

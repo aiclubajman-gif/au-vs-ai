@@ -1,0 +1,727 @@
+/* ==========================================================================
+   Round 2 — Draw vs AI, then AI analysis. Scoped to this round.
+
+   Same stage model as Round 1: the 941 × 1672 plate fitted whole inside the
+   viewport, `--u` = one artwork pixel, every overlay placed in u against the
+   painted chrome.
+
+   Drawing plate:
+     round pill       52–320u × 129–199u      timer ring  centre 804.5u, 166u
+     title panel      140–800u × 267–406u     prompt panel 183–758u × 420–526u
+     drawing opening  34–907u × 564–1297u
+     UNDO             45–464u × 1331–1434u    CLEAR       477–896u × 1331–1434u
+     SUBMIT           45–896u × 1463–1579u
+   Analysis plate:
+     title panel      140–800u × 247–358u     tagline panel 149–791u × 375–425u
+     scan panel       34–907u × 454–914u      "AI thinks" rules at 964u
+     rows             43–899u, centres 1035u + 87.75u per row
+       rank box 65–127u · bar track 268–689u × 25u · percent box 764–884u
+     CONTINUE         45–896u × 1463–1582u
+   ========================================================================== */
+
+.page {
+  --stage-w: min(100vw, calc(100svh * 941 / 1672));
+  --u: calc(var(--stage-w) / 941);
+  --condensed: 'Avenir Next Condensed', 'Bahnschrift SemiCondensed', 'Roboto Condensed',
+    sans-serif-condensed, 'Arial Narrow', var(--font-sans);
+
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  overflow: hidden;
+  overflow: clip;
+  background: #020610;
+  color: #f2f6ff;
+}
+
+.stage {
+  position: relative;
+  width: var(--stage-w);
+  height: calc(var(--u) * 1672);
+}
+
+.plate {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Letterbox bands on tall phones: see HowItWorks.module.css. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(20px) brightness(0.62) saturate(1.1);
+  transform: scale(1.15);
+  user-select: none;
+  pointer-events: none;
+}
+
+@media (max-aspect-ratio: 941 / 1672) {
+  .plate {
+    mask-image: linear-gradient(transparent, #000 2.5%, #000 97.5%, transparent);
+  }
+}
+
+@media (min-width: 768px) {
+  .backdrop {
+    display: none;
+  }
+}
+
+/* --- HUD (both screens) ------------------------------------------------------ */
+
+.logo {
+  position: absolute;
+  top: calc(var(--u) * 24);
+  left: calc(var(--u) * 363);
+  width: calc(var(--u) * 215);
+  height: auto;
+  user-select: none;
+  pointer-events: none;
+}
+
+.round {
+  position: absolute;
+  top: calc(var(--u) * 166);
+  left: calc(var(--u) * 82);
+  translate: 0 -50%;
+  margin: 0;
+  font-size: calc(var(--u) * 40);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.timer {
+  position: absolute;
+  top: calc(var(--u) * 66);
+  left: calc(var(--u) * 704.5);
+  width: calc(var(--u) * 200);
+  height: calc(var(--u) * 200);
+  display: grid;
+  place-items: center;
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.track,
+.arc {
+  fill: none;
+}
+
+/* Covers the plate's static arc with its own track colour. */
+.track {
+  stroke: #0045b4;
+  stroke-width: 12;
+}
+
+.arc {
+  stroke: #03f2fd;
+  stroke-width: 9.5;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 3px rgba(0, 220, 255, 0.7));
+  transition: stroke-dashoffset 100ms linear;
+}
+.arc[data-empty] {
+  opacity: 0;
+}
+
+.seconds {
+  position: relative;
+  font-family: var(--condensed);
+  font-size: calc(var(--u) * 70);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.unit {
+  margin-left: 0.02em;
+}
+
+/* Text registered by cap height, independent of platform font metrics. */
+.drawTitle,
+.instruction,
+.promptLead,
+.promptName,
+.frozenValue,
+.frozenUnit,
+.analysisLine,
+.tagline,
+.thinks,
+.label,
+.percent,
+.rank {
+  padding-block: 0.12em;
+  line-height: 1;
+  white-space: nowrap;
+  text-box: trim-both cap alphabetic;
+}
+
+/* --- Drawing screen ------------------------------------------------------------ */
+
+.drawTitle {
+  position: absolute;
+  top: calc(var(--u) * 314);
+  left: 0;
+  right: 0;
+  translate: 0 -50%;
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: calc(var(--u) * 20);
+  font-size: calc(var(--u) * 80);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.drawWord,
+.aiWord {
+  padding-block: 0.12em;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.drawWord {
+  letter-spacing: 0.01em;
+  background-image: linear-gradient(180deg, #ffffff 0%, #eaf7ff 45%, #7fd6ff 100%);
+  filter: drop-shadow(0 0 calc(var(--u) * 12) rgba(40, 170, 255, 0.75));
+}
+
+.vs {
+  font-size: 0.5em;
+  font-style: italic;
+  text-transform: lowercase;
+  color: #f4f8ff;
+  text-shadow: 0 0 calc(var(--u) * 10) rgba(120, 180, 255, 0.6);
+}
+
+.aiWord {
+  font-style: italic;
+  padding-inline-end: 0.08em;
+  background-image: linear-gradient(180deg, #ffe45c 0%, #ffae1f 45%, #ff6a00 100%);
+  filter: drop-shadow(0 0 calc(var(--u) * 12) rgba(255, 120, 20, 0.7));
+}
+
+.instruction {
+  position: absolute;
+  top: calc(var(--u) * 377);
+  left: 0;
+  right: 0;
+  translate: 0 -50%;
+  margin: 0;
+  font-size: calc(var(--u) * 30);
+  text-align: center;
+  color: #e3edff;
+}
+
+.prompt {
+  position: absolute;
+  top: calc(var(--u) * 420);
+  left: calc(var(--u) * 183);
+  width: calc(var(--u) * 575);
+  height: calc(var(--u) * 106);
+  margin: 0;
+}
+
+.promptLead,
+.promptName {
+  position: absolute;
+  left: 0;
+  right: 0;
+  translate: 0 -50%;
+  text-align: center;
+}
+
+.promptLead {
+  top: calc(var(--u) * 26);
+  font-size: calc(var(--u) * 29);
+  color: #d5e2fb;
+}
+
+.promptName {
+  top: calc(var(--u) * 73);
+  font-size: calc(var(--u) * 56);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #ffffff;
+  text-shadow: 0 0 calc(var(--u) * 14) rgba(80, 180, 255, 0.55);
+}
+
+/* The real drawing surface, transparent over the painted grid. */
+.canvas {
+  position: absolute;
+  top: calc(var(--u) * 564);
+  left: calc(var(--u) * 34);
+  width: calc(var(--u) * 873);
+  height: calc(var(--u) * 733);
+  border-radius: calc(var(--u) * 34);
+  cursor: crosshair;
+}
+
+.tool,
+.submit,
+.continue {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    opacity 120ms ease;
+}
+
+.tool:hover:not(:disabled),
+.submit:hover:not(:disabled),
+.continue:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+}
+.tool:active:not(:disabled),
+.submit:active:not(:disabled),
+.continue:active:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+.tool:focus-visible,
+.submit:focus-visible,
+.continue:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: calc(var(--u) * 6);
+}
+/* Dims the painted button as well as the label while it cannot be pressed. */
+.tool:disabled,
+.submit:disabled,
+.continue:disabled {
+  background: rgba(2, 6, 16, 0.38);
+  cursor: default;
+}
+.tool:disabled > *,
+.submit:disabled > *,
+.continue:disabled > * {
+  opacity: 0.5;
+}
+
+.tool {
+  top: calc(var(--u) * 1331);
+  width: calc(var(--u) * 419);
+  height: calc(var(--u) * 103);
+  gap: calc(var(--u) * 46);
+  border-radius: calc(var(--u) * 30);
+}
+.tool[data-tool='undo'] {
+  left: calc(var(--u) * 45);
+}
+.tool[data-tool='clear'] {
+  left: calc(var(--u) * 477);
+}
+
+.toolIcon {
+  flex: none;
+  width: calc(var(--u) * 48);
+}
+
+.toolLabel {
+  font-size: calc(var(--u) * 34);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.submit {
+  top: calc(var(--u) * 1463);
+  left: calc(var(--u) * 45);
+  width: calc(var(--u) * 851);
+  height: calc(var(--u) * 116);
+  gap: calc(var(--u) * 34);
+  border-radius: calc(var(--u) * 34);
+}
+
+.submitIcon {
+  flex: none;
+  width: calc(var(--u) * 52);
+}
+
+.submitLabel {
+  font-size: calc(var(--u) * 42);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-shadow: 0 0 calc(var(--u) * 12) rgba(255, 255, 255, 0.35);
+}
+
+.submitArrow,
+.continueArrow {
+  flex: none;
+  width: calc(var(--u) * 46);
+}
+
+/* --- Analysis screen ------------------------------------------------------------ */
+
+/* Centred in the decorative ring: the drawing clock as it stopped. */
+.frozen {
+  position: absolute;
+  top: calc(var(--u) * 74);
+  left: calc(var(--u) * 712);
+  width: calc(var(--u) * 180);
+  height: calc(var(--u) * 180);
+  margin: 0;
+}
+
+.frozenValue,
+.frozenUnit {
+  position: absolute;
+  left: 50%;
+  translate: -50% -50%;
+}
+
+.frozenValue {
+  top: calc(var(--u) * 69);
+  font-family: var(--condensed);
+  font-size: calc(var(--u) * 80);
+  font-weight: 700;
+}
+
+.frozenUnit {
+  top: calc(var(--u) * 128);
+  font-size: calc(var(--u) * 22);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #e4ecff;
+}
+
+.analysisTitle {
+  position: absolute;
+  top: calc(var(--u) * 247);
+  left: 0;
+  right: 0;
+  height: calc(var(--u) * 111);
+  margin: 0;
+  font-size: calc(var(--u) * 52);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.analysisLine {
+  position: absolute;
+  left: 0;
+  right: 0;
+  translate: 0 -50%;
+  text-align: center;
+  letter-spacing: 0.02em;
+  color: #f5f9ff;
+  text-shadow: 0 0 calc(var(--u) * 14) rgba(50, 160, 255, 0.7);
+}
+.analysisLine:first-child {
+  top: calc(var(--u) * 30);
+}
+.analysisLine:last-child {
+  top: calc(var(--u) * 83);
+}
+
+.analysisAccent {
+  background-image: linear-gradient(180deg, #ffe066 0%, #ffab2e 50%, #ff7a12 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  filter: drop-shadow(0 0 calc(var(--u) * 10) rgba(255, 130, 30, 0.55));
+}
+
+.tagline {
+  position: absolute;
+  top: calc(var(--u) * 400);
+  left: 0;
+  right: 0;
+  translate: 0 -50%;
+  margin: 0;
+  /* Tracking adds space after the last letter too; pad the front to match. */
+  padding-left: 0.28em;
+  font-size: calc(var(--u) * 17);
+  letter-spacing: 0.28em;
+  text-align: center;
+  text-transform: uppercase;
+  color: #d6e4ff;
+}
+
+.scan {
+  position: absolute;
+  top: calc(var(--u) * 454);
+  left: calc(var(--u) * 34);
+  width: calc(var(--u) * 873);
+  height: calc(var(--u) * 460);
+  overflow: hidden;
+  border-radius: calc(var(--u) * 30);
+}
+
+/* The submitted drawing, its whole canvas scaled to the panel's height. */
+.preview {
+  position: absolute;
+  top: calc(var(--u) * 30);
+  left: 50%;
+  translate: -50% 0;
+  width: calc(var(--u) * 476);
+  height: calc(var(--u) * 400);
+}
+
+.sweep {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--u) * 4);
+  background: linear-gradient(90deg, transparent, #8ff4ff 20%, #ffffff 50%, #8ff4ff 80%, transparent);
+  box-shadow: 0 0 calc(var(--u) * 18) calc(var(--u) * 4) rgba(0, 200, 255, 0.55);
+  animation: sweep 1100ms ease-in-out infinite alternate;
+}
+
+@keyframes sweep {
+  from {
+    translate: 0 calc(var(--u) * 10);
+  }
+  to {
+    translate: 0 calc(var(--u) * 446);
+  }
+}
+
+.scanStatus {
+  position: absolute;
+  top: calc(var(--u) * 28);
+  left: calc(var(--u) * 64);
+  margin: 0;
+  padding: calc(var(--u) * 10) calc(var(--u) * 14);
+  border: max(1px, calc(var(--u) * 1.5)) solid rgba(60, 200, 255, 0.55);
+  background: rgba(0, 28, 64, 0.55);
+  font-size: calc(var(--u) * 20);
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #5fe0ff;
+}
+.scan[data-phase='analysisFailed'] .scanStatus {
+  border-color: rgba(255, 140, 90, 0.6);
+  color: #ffb08a;
+}
+
+.thinks {
+  position: absolute;
+  top: calc(var(--u) * 964);
+  left: 0;
+  right: 0;
+  translate: 0 -50%;
+  margin: 0;
+  padding-left: 0.3em;
+  font-size: calc(var(--u) * 26);
+  letter-spacing: 0.3em;
+  text-align: center;
+  text-transform: uppercase;
+  color: #d2e2ff;
+}
+
+.rows {
+  position: absolute;
+  top: calc(var(--u) * 996);
+  left: calc(var(--u) * 43);
+  width: calc(var(--u) * 856);
+  height: calc(var(--u) * 430);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  position: absolute;
+  top: calc(var(--u) * 87.75 * var(--row));
+  left: 0;
+  right: 0;
+  height: calc(var(--u) * 78);
+}
+
+.row > * {
+  position: absolute;
+  top: 50%;
+}
+
+.rank {
+  left: calc(var(--u) * 53);
+  translate: -50% -50%;
+  font-size: calc(var(--u) * 30);
+  font-weight: 600;
+  color: #9fd0ff;
+}
+.row[data-target] .rank {
+  font-size: calc(var(--u) * 34);
+  color: #34d399;
+}
+
+/* Fitted to the 116u between the rank box and the bar, whatever the label. */
+.label {
+  left: calc(var(--u) * 103);
+  translate: 0 -50%;
+  font-size: min(calc(var(--u) * 33), calc(var(--u) * 222 / var(--len)));
+  color: #e9f1ff;
+}
+.row[data-target] .label {
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.barCover {
+  left: calc(var(--u) * 211);
+  width: calc(var(--u) * 449);
+  height: calc(var(--u) * 50);
+  translate: 0 -50%;
+  border-radius: calc(var(--u) * 25);
+  background: #00132d;
+  box-shadow: 0 0 calc(var(--u) * 6) calc(var(--u) * 5) #00132d;
+}
+
+.bar {
+  --edge: max(1px, calc(var(--u) * 1.5));
+
+  left: calc(var(--u) * 225);
+  width: calc(var(--u) * 421);
+  height: calc(var(--u) * 25);
+  translate: 0 -50%;
+  box-sizing: border-box;
+  border: var(--edge) solid rgba(0, 135, 240, 0.9);
+  border-radius: calc(var(--u) * 12.5);
+  background: linear-gradient(180deg, #002b60 0%, #00275a 50%, #003070 100%);
+}
+
+/* Width is the real confidence; a non-zero one is never thinner than a dot. */
+.barFill {
+  position: absolute;
+  top: calc(-1 * var(--edge));
+  bottom: calc(-1 * var(--edge));
+  left: calc(-1 * var(--edge));
+  width: calc((100% + 2 * var(--edge)) * var(--confidence));
+  min-width: calc(var(--u) * 25);
+  border-radius: calc(var(--u) * 12.5);
+  background: linear-gradient(180deg, #a8fdff 0%, #2ad0fd 22%, #00b8fc 55%, #06c8fb 85%, #7eefff 100%);
+  box-shadow: 0 0 calc(var(--u) * 10) rgba(0, 200, 255, 0.7);
+  animation: grow 700ms ease-out both;
+}
+
+@keyframes grow {
+  from {
+    width: 0;
+    min-width: 0;
+  }
+}
+
+.percent {
+  left: calc(var(--u) * 781);
+  translate: -50% -50%;
+  font-size: calc(var(--u) * 34);
+  font-weight: 600;
+  color: #eaf6ff;
+}
+
+.failed {
+  position: absolute;
+  top: calc(var(--u) * 996);
+  left: calc(var(--u) * 43);
+  width: calc(var(--u) * 856);
+  height: calc(var(--u) * 430);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 24px;
+  box-sizing: border-box;
+  border-radius: calc(var(--u) * 26);
+  background: rgba(2, 8, 22, 0.92);
+  text-align: center;
+}
+
+.failedTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.failedText {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #b9c6e4;
+}
+
+.failedButton {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgba(95, 212, 255, 0.55);
+  border-radius: 10px;
+  background: rgba(6, 18, 44, 0.8);
+  color: #eaf4ff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.notice {
+  position: absolute;
+  top: calc(var(--u) * 996);
+  left: calc(var(--u) * 43);
+  width: calc(var(--u) * 856);
+  box-sizing: border-box;
+  padding: 0 12px 12px;
+  border-radius: calc(var(--u) * 26);
+  background: rgba(2, 8, 22, 0.94);
+}
+
+.continue {
+  top: calc(var(--u) * 1463);
+  left: calc(var(--u) * 45);
+  width: calc(var(--u) * 851);
+  height: calc(var(--u) * 119);
+  gap: calc(var(--u) * 30);
+  border-radius: calc(var(--u) * 34);
+}
+
+.continueLabel {
+  font-size: calc(var(--u) * 42);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  text-shadow: 0 0 calc(var(--u) * 12) rgba(255, 255, 255, 0.35);
+}
+
+/*
+ * Reveal countdown. Sits in the empty plate margin below the Continue button,
+ * the same subtle one-line treatment the Fun Fact screen already uses.
+ */
+.auto {
+  position: absolute;
+  top: calc(var(--u) * 1625);
+  left: 0;
+  right: 0;
+  margin: 0;
+  translate: 0 -50%;
+  font-size: max(10px, calc(var(--u) * 22));
+  line-height: 1;
+  text-align: center;
+  color: rgba(205, 220, 255, 0.7);
+}

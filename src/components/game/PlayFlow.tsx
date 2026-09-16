@@ -10,11 +10,15 @@ import { DeviceStep, type DeviceStage } from '@/components/auth/DeviceStep';
 import { Screen } from '@/components/ui';
 import { resolveClassifier } from '@/lib/ml/classifier';
 import { composeAuEmail } from '@/lib/client/email';
-import { Interstitial, ROUND_INTROS, ROUND_OUTROS } from '@/components/game/Interstitial';
+import { Interstitial, ROUND_INTROS } from '@/components/game/Interstitial';
 import { HowItWorks } from '@/components/game/HowItWorks';
-import { FunFact } from '@/components/game/FunFact';
+import { FunFact, ROUND2_FUN_FACT_PLATE_SRC } from '@/components/game/FunFact';
 import { Round1 } from '@/components/game/Round1';
-import { Round2 } from '@/components/game/Round2';
+import {
+  Round2,
+  ROUND2_DRAW_PLATE_SRC,
+  ROUND2_RESULTS_PLATE_SRC,
+} from '@/components/game/Round2';
 import { Round3 } from '@/components/game/Round3';
 import { Result } from '@/components/game/Result';
 import { HUMAN_WIN_PLATE_SRC } from '@/components/game/HumanWinResult';
@@ -141,6 +145,15 @@ export function PlayFlow({ colleges }: { colleges: College[] }) {
   preload(EMAIL_PLATE_SRC, { as: 'image', fetchPriority: 'high' });
   // OTP, Profile and Ready share one plate; have it cached before the code arrives.
   preload(AUTH_PLATE_SRC, { as: 'image', fetchPriority: 'low' });
+  // Round 2 swaps plates mid-round (drawing → analysis), so each is fetched
+  // before it is needed and the analysis never appears on a bare page.
+  if (step === 'outro1' || step === 'intro2') {
+    preload(ROUND2_DRAW_PLATE_SRC, { as: 'image', fetchPriority: 'low' });
+  }
+  if (step === 'round2') {
+    preload(ROUND2_RESULTS_PLATE_SRC, { as: 'image', fetchPriority: 'low' });
+    preload(ROUND2_FUN_FACT_PLATE_SRC, { as: 'image', fetchPriority: 'low' });
+  }
   // Which result plate is needed is only known once scoring returns, so fetch
   // both during the last round and the score is never revealed on a bare page.
   if (step === 'round3' || step === 'submitting') {
@@ -468,7 +481,7 @@ export function PlayFlow({ colleges }: { colleges: College[] }) {
   }
 
   if (step === 'outro2') {
-    return <Interstitial key="outro2" outro={ROUND_OUTROS[2]} onDone={() => setStep('intro3')} />;
+    return <FunFact key="outro2" round={2} onDone={() => setStep('intro3')} />;
   }
 
   if (step === 'intro3' && timing) {

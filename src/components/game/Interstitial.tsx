@@ -50,13 +50,8 @@ export const ROUND_INTROS: Record<2 | 3, RoundIntro> = {
   },
 };
 
-/** Round 1's outro is the Fun Fact screen (FunFact.tsx). */
-export const ROUND_OUTROS: Record<2 | 3, RoundOutro> = {
-  2: {
-    eyebrow: 'ROUND 2 COMPLETE',
-    fact:
-      'That model ran entirely on your phone. No server, no internet needed — it was trained on millions of human doodles and shrunk to about half a megabyte.',
-  },
+/** Rounds 1 and 2 end on the Fun Fact screen (FunFact.tsx). */
+export const ROUND_OUTROS: Record<3, RoundOutro> = {
   3: {
     eyebrow: 'ALL ROUNDS COMPLETE',
     fact: 'Scoring your game…',
