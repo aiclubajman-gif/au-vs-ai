@@ -170,7 +170,9 @@ export async function resolveClassifier({
           await real.load();
           instance = real;
           lastError = null;
-          resolutionNote = probe.reason;
+          // Naming the backend makes a slow or failed booth device
+          // diagnosable: 'cpu' here means WebGL was refused or broken.
+          resolutionNote = `${probe.reason} — ${real.backend} backend`;
           return real;
         } catch (err) {
           // The model exists but will not load on this device — a corrupt

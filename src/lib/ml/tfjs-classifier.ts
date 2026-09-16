@@ -27,6 +27,7 @@ export class TfjsClassifier implements Classifier {
   private labels: string[] = [];
   private loading: Promise<void> | null = null;
   private _ready = false;
+  private _backend = 'none';
 
   get ready() {
     return this._ready;
@@ -34,6 +35,11 @@ export class TfjsClassifier implements Classifier {
 
   get classLabels(): string[] {
     return this.labels;
+  }
+
+  /** The backend that actually ran the warm-up. Surfaced on /debug/draw. */
+  get backend(): string {
+    return this._backend;
   }
 
   async load(): Promise<void> {
@@ -45,36 +51,25 @@ export class TfjsClassifier implements Classifier {
       const tf = await import('@tensorflow/tfjs');
       this.tf = tf;
 
-      // WebGL is far faster, but some older Android browsers expose a broken
-      // context. Falling back to CPU keeps those devices playable instead of
-      // sending them to a booth tablet unnecessarily.
+      // WebGL is far faster, but plenty of older Android browsers expose a
+      // context that initialises and then fails on the first real GPU work:
+      // a shader that will not link, a context lost on a backgrounded tab, an
+      // out-of-memory. That failure surfaces in the warm-up below, not in
+      // setBackend, so the whole load — backend, weights and warm-up — is
+      // retried on CPU. Without this a perfectly usable phone is told it
+      // cannot run the drawing round and sent to a booth tablet.
       try {
-        await tf.setBackend('webgl');
-        await tf.ready();
-      } catch {
-        await tf.setBackend('cpu');
-        await tf.ready();
+        await this.initOn(tf, 'webgl');
+      } catch (err) {
+        this.releaseModel();
+        try {
+          await this.initOn(tf, 'cpu');
+        } catch (cpuErr) {
+          const first = err instanceof Error ? err.message : 'unknown';
+          const second = cpuErr instanceof Error ? cpuErr.message : 'unknown';
+          throw new Error(`webgl failed (${first}); cpu also failed (${second})`);
+        }
       }
-
-      const [model, labelsRes] = await Promise.all([
-        tf.loadLayersModel(MODEL_URL),
-        fetch(LABELS_URL),
-      ]);
-
-      this.model = model;
-      this.labels = await labelsRes.json();
-
-      if (!Array.isArray(this.labels) || this.labels.length === 0) {
-        throw new Error('labels.json is missing or empty');
-      }
-
-      // One warm-up pass. The first inference compiles shaders and can take
-      // hundreds of milliseconds; doing it here means the student's actual
-      // submission is fast.
-      const warm = tf.zeros([1, 28, 28, 1]);
-      const out = model.predict(warm) as { dispose: () => void };
-      out.dispose();
-      warm.dispose();
 
       this._ready = true;
     })();
@@ -84,6 +79,58 @@ export class TfjsClassifier implements Classifier {
     } finally {
       this.loading = null;
     }
+  }
+
+  /**
+   * Selects a backend and loads the model on it, warm-up included.
+   *
+   * tf.setBackend RESOLVES FALSE when a backend fails to initialise — it only
+   * throws for a name that was never registered — so the boolean has to be
+   * checked. Treating it as throw-on-failure is why the old CPU fallback never
+   * ran on the devices it was written for.
+   */
+  private async initOn(tf: TfModule, backend: 'webgl' | 'cpu'): Promise<void> {
+    const selected = await tf.setBackend(backend).catch(() => false);
+    if (!selected) throw new Error(`${backend} backend is not available`);
+    await tf.ready();
+
+    if (tf.getBackend() !== backend) {
+      throw new Error(`asked for ${backend} but got ${tf.getBackend()}`);
+    }
+
+    const [model, labelsRes] = await Promise.all([
+      tf.loadLayersModel(MODEL_URL),
+      fetch(LABELS_URL),
+    ]);
+
+    this.model = model;
+    this.labels = await labelsRes.json();
+
+    if (!Array.isArray(this.labels) || this.labels.length === 0) {
+      throw new Error('labels.json is missing or empty');
+    }
+
+    // One warm-up pass. The first inference compiles shaders and can take
+    // hundreds of milliseconds; doing it here means the student's actual
+    // submission is fast — and it is where a broken WebGL context finally
+    // admits it, while there is still time to fall back.
+    const warm = tf.zeros([1, 28, 28, 1]);
+    const out = model.predict(warm) as { dispose: () => void };
+    out.dispose();
+    warm.dispose();
+
+    this._backend = backend;
+  }
+
+  /** Drops a model from a failed attempt so the retry does not leak it. */
+  private releaseModel(): void {
+    try {
+      this.model?.dispose();
+    } catch {
+      // A model that failed mid-load may not dispose cleanly. Nothing to do.
+    }
+    this.model = null;
+    this.labels = [];
   }
 
   async selfTest(): Promise<boolean> {
