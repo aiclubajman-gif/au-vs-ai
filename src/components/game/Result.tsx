@@ -34,24 +34,39 @@ export function Result({
 }) {
   const [shown, setShown] = useState(returning ? result.totalScore : 0);
 
-  // Count-up. Respects reduced motion by finishing on the first frame.
+  // Count-up. Human-win statistics enter at 1.5s; AI-win keeps its existing
+  // immediate 1.4s count. Reduced motion and returning players finish at once.
   useEffect(() => {
     // A returning student has seen this number before; counting it up again
     // would pretend they just earned it.
     if (returning) return;
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const duration = reduce ? 0 : 1400;
-    const start = performance.now();
     let frame = 0;
-    const step = (now: number) => {
-      const t = duration === 0 ? 1 : Math.min(1, (now - start) / duration);
-      const eased = 1 - Math.pow(1 - t, 3);
-      setShown(Math.round(result.totalScore * eased));
-      if (t < 1) frame = requestAnimationFrame(step);
+    if (reduce) {
+      frame = requestAnimationFrame(() => setShown(result.totalScore));
+      return () => cancelAnimationFrame(frame);
+    }
+
+    const delay = result.humanWin ? 1500 : 0;
+    const duration = result.humanWin ? 900 : 1400;
+    let timer = 0;
+    const startCount = () => {
+      const start = performance.now();
+      const step = (now: number) => {
+        const t = Math.min(1, (now - start) / duration);
+        const eased = 1 - Math.pow(1 - t, 3);
+        setShown(Math.round(result.totalScore * eased));
+        if (t < 1) frame = requestAnimationFrame(step);
+      };
+      frame = requestAnimationFrame(step);
     };
-    frame = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(frame);
-  }, [result.totalScore, returning]);
+    if (delay > 0) timer = window.setTimeout(startCount, delay);
+    else startCount();
+    return () => {
+      window.clearTimeout(timer);
+      cancelAnimationFrame(frame);
+    };
+  }, [result.humanWin, result.totalScore, returning]);
 
   const shared = {
     scoreText: String(shown),
@@ -71,6 +86,7 @@ export function Result({
         {...shared}
         percentileText={standing.text}
         percentileCaption={standing.caption}
+        instant={returning}
       />
     );
   }
