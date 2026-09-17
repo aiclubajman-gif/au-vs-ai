@@ -9,23 +9,52 @@
    805.5u; lower rows centred between their lines at 897–1462u. Laurel and rank
    column centre 129u, avatar ring 227–292u, name from 318u, scores right-
    aligned to 765u. Your Rank shell 64–789u × 1524–1627u, painted icon ends
-   310u, arrow starts 578u.
+   310u, arrow starts 578u. Panel frame lines at 23–25u and 827–830u.
 
-   Crop: this plate is taller than a phone. The LEADERBOARD heading (300u) to
-   the Your Rank status line under the panel (1705u) always stays on screen;
-   the crop takes the painted footer first, then the top of the wordmark.
+   Crop: this plate is taller than a phone. The top of the plate always stays
+   and the stage never moves up. A screen that shows the plate down to the
+   Your Rank status line (1712u) gets the board as painted, cropped only in the
+   footer under it.
+
+   A phone held upright that is shorter than that (height under 1712 / 853 of
+   its width: 781px at 390 wide) cannot show header, rows and Your Rank at once.
+   There the plate is taken apart at two seams in empty panel, and the page
+   still never scrolls:
+
+     header  0–550u      wordmark, mascot, title, subtitle, the panel's top
+                         and column headings: where they are painted, whole
+     rows    550–1500u   podium and lower rows: the only part that scrolls,
+                         in whatever height the other two leave
+     footer  1500–1712u  Your Rank and its status line: pinned to the bottom
+                         of the screen
    ========================================================================== */
 
 .page {
-  --keep-top: 300;
-  --keep-bottom: 1705;
+  /* The stage never moves up; see Crop above. */
+  --keep-top: 0;
+  --keep-bottom: 0;
   --stage-y: 0;
 
+  container: leaderboard / size;
   background: #02040b;
   color: #f4f7ff;
 }
 
 /* --- Rows ---------------------------------------------------------------------- */
+
+/* The rows band. Where the screen shows the whole board it makes no box of
+   its own, so rows sit on the stage exactly where they are painted; only the
+   short layout (end of this file) makes it a band of its own, from 550u. Rows
+   are placed by their painted centres from the top of whichever they sit on. */
+.board {
+  --rows-top: 0;
+  display: contents;
+}
+
+/* The panel behind the rows in the short layout. */
+.boardPlate {
+  display: none;
+}
 
 .rows {
   margin: 0;
@@ -35,7 +64,7 @@
 
 .row {
   position: absolute;
-  top: calc(var(--u) * var(--y));
+  top: calc(var(--u) * (var(--y) - var(--rows-top)));
   left: calc(var(--u) * 53);
   width: calc(var(--u) * 747);
   height: 0;
@@ -139,7 +168,7 @@
    never crosses the painted avatars or row lines. */
 .empty {
   position: absolute;
-  top: calc(var(--u) * 609);
+  top: calc(var(--u) * (609 - var(--rows-top)));
   left: calc(var(--u) * 318);
   width: calc(var(--u) * 460);
   translate: 0 -50%;
@@ -152,9 +181,16 @@
 
 /* --- Your Rank -------------------------------------------------------------------- */
 
+/* Like the rows band: no box of its own, except in the short layout, where it
+   is the band 1500–1712u pinned to the bottom of the screen. */
+.footer {
+  --footer-top: 0;
+  display: contents;
+}
+
 .yourRank {
   position: absolute;
-  top: calc(var(--u) * 1524);
+  top: calc(var(--u) * (1524 - var(--footer-top)));
   left: calc(var(--u) * 64);
   width: calc(var(--u) * 725);
   height: calc(var(--u) * 103);
@@ -205,7 +241,7 @@
 /* Under the panel, above the painted footer. */
 .yourRankStatus {
   position: absolute;
-  top: calc(var(--u) * 1690);
+  top: calc(var(--u) * (1690 - var(--footer-top)));
   left: 0;
   right: 0;
   translate: 0 -50%;
@@ -214,4 +250,151 @@
   line-height: 1.2;
   text-align: center;
   color: #cfe0ff;
+}
+
+/* --- A phone too short for the whole board --------------------------------------- */
+
+.fades {
+  display: none;
+}
+
+@container leaderboard (width < 768px) and (orientation: portrait) and (aspect-ratio >= 853 / 1712) {
+  /* The header stays painted on the stage. The rows band takes the height
+     between it and the footer, and scrolls on its own; the document never
+     does. */
+  .board {
+    --rows-top: 550;
+    display: block;
+    position: absolute;
+    top: calc(var(--u) * 550);
+    left: 0;
+    width: 100%;
+    height: calc(var(--view-bottom) - var(--u) * (550 + 212));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+  .board::-webkit-scrollbar {
+    display: none;
+  }
+  .board:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: -3px;
+  }
+
+  /* The panel behind the rows, between the frame lines, carried with them. */
+  .boardPlate {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: calc(var(--u) * 26);
+    width: calc(var(--u) * 801);
+    height: calc(var(--u) * 950);
+    background: var(--plate-image) calc(var(--u) * -26) calc(var(--u) * -550) / calc(var(--u) * 853)
+      calc(var(--u) * 1844) no-repeat;
+  }
+
+  /* Pinned to the screen's bottom edge, carrying its own slice of the plate:
+     the empty panel above the button, the button, the panel's foot. Outside
+     the panel its top edge blends into the artwork above it, which is painted
+     for a different height. */
+  .footer {
+    --footer-top: 1500;
+    display: block;
+    position: absolute;
+    top: calc(var(--view-bottom) - var(--u) * 212);
+    left: 0;
+    width: 100%;
+    height: calc(var(--u) * 212);
+    background: var(--plate-image) 0 calc(var(--u) * -1500) / calc(var(--u) * 853) calc(var(--u) * 1844)
+      no-repeat;
+    -webkit-mask:
+      linear-gradient(transparent, #000 calc(var(--u) * 32)),
+      linear-gradient(#000, #000) calc(var(--u) * 26) 0 / calc(var(--u) * 801) 100% no-repeat;
+    mask:
+      linear-gradient(transparent, #000 calc(var(--u) * 32)),
+      linear-gradient(#000, #000) calc(var(--u) * 26) 0 / calc(var(--u) * 801) 100% no-repeat;
+  }
+
+  /* Over the rows band, inside the frame: rows scrolled up fade under the
+     column headings, and rows still below fade into the panel above Your
+     Rank. Each edge takes the panel's own colour there, frame glow included. */
+  .fades {
+    display: block;
+    position: absolute;
+    top: calc(var(--u) * 550);
+    left: calc(var(--u) * 26);
+    width: calc(var(--u) * 801);
+    height: calc(var(--view-bottom) - var(--u) * (550 + 212));
+    pointer-events: none;
+  }
+  .fades::before,
+  .fades::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    opacity: 0;
+    transition: opacity 160ms ease;
+  }
+  .fades::before {
+    top: 0;
+    height: calc(var(--u) * 28);
+    background: linear-gradient(
+      90deg,
+      rgb(0 44 153) 0.1%,
+      rgb(0 34 99) 0.5%,
+      rgb(1 26 78) 1%,
+      rgb(1 24 62) 1.5%,
+      rgb(0 23 49) 2.5%,
+      rgb(0 19 42) 4.2%,
+      rgb(1 18 37) 6.7%,
+      rgb(4 21 41) 11.7%,
+      rgb(3 20 46) 34.2%,
+      rgb(3 18 36) 49.9%,
+      rgb(2 20 42) 65.4%,
+      rgb(4 19 37) 77.9%,
+      rgb(4 21 43) 87.9%,
+      rgb(4 21 48) 92.9%,
+      rgb(1 22 58) 95.4%,
+      rgb(2 27 70) 97.4%,
+      rgb(1 35 93) 98.6%,
+      rgb(0 38 111) 99.1%,
+      rgb(4 52 173) 99.6%,
+      rgb(13 87 220) 99.9%
+    );
+    -webkit-mask-image: linear-gradient(#000, transparent);
+    mask-image: linear-gradient(#000, transparent);
+  }
+  .fades::after {
+    bottom: 0;
+    height: calc(var(--u) * 64);
+    background: linear-gradient(
+      90deg,
+      rgb(3 59 203) 0.1%,
+      rgb(0 43 137) 0.5%,
+      rgb(0 34 105) 1%,
+      rgb(1 29 84) 1.5%,
+      rgb(0 25 64) 2.5%,
+      rgb(0 21 48) 4.2%,
+      rgb(1 17 41) 6.7%,
+      rgb(0 22 50) 21.7%,
+      rgb(1 25 60) 49.9%,
+      rgb(2 28 66) 77.9%,
+      rgb(0 24 52) 92.9%,
+      rgb(0 20 48) 95.4%,
+      rgb(2 23 57) 97.4%,
+      rgb(0 30 81) 98.6%,
+      rgb(0 37 103) 99.1%,
+      rgb(3 49 155) 99.6%,
+      rgb(10 80 204) 99.9%
+    );
+    -webkit-mask-image: linear-gradient(transparent, rgba(0, 0, 0, 0.55) 55%, #000);
+    mask-image: linear-gradient(transparent, rgba(0, 0, 0, 0.55) 55%, #000);
+  }
+  .board[data-scrolled] + .fades::before,
+  .board[data-more] + .fades::after {
+    opacity: 1;
+  }
 }

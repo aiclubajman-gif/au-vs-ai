@@ -288,12 +288,12 @@
    ========================================================================== */
 
 .page[data-variant='ai'] {
-  /* Crop: this plate is taller than a phone. The wordmark (93u) to the bottom
-     of the join button's tap area (1510u) always stays on screen, headline and
-     card included; the crop takes the city and footer under the card first. */
-  --keep-top: 93;
-  --keep-bottom: 1510;
-  --stage-y: 0.2;
+  /* Crop: this plate is taller than a phone. The top stays (wordmark from 85u);
+     the crop takes the city and footer under the card. The stage moves up only
+     as far as the painted join button needs (to 1496u). */
+  --keep-top: 0;
+  --keep-bottom: 1496;
+  --stage-y: 0;
 
   /* Centred in the score frame: digits caps 891–939u, "/ 1000" on the same
      baseline. The anchor puts three digits and "/ 1000" in the middle. */

@@ -19,15 +19,19 @@
      CONTINUE         45–896u × 1463–1582u
 
    Crop: both screens keep the same band so the HUD does not jump when the
-   plates swap: the wordmark (34u) to the bottom of the analysis countdown
-   under Continue (1637u). Where a phone cannot show all of it, the countdown
-   wins and the top of the wordmark is what goes.
+   plates swap. The top of the plate stays (wordmark from 25u); a crop comes
+   off the bottom, and the stage moves up only as far as the Submit and
+   Continue buttons need (to 1588u). The analysis countdown moves into the
+   Continue button where the screen has no room for it underneath (see .auto).
    ========================================================================== */
 
 .page {
-  --keep-top: 34;
-  --keep-bottom: 1637;
+  --keep-top: 0;
+  --keep-bottom: 1588;
   --stage-y: 0;
+  /* Negative where the screen ends above 1619u: no room for the analysis
+     countdown under Continue. */
+  --countdown-room: calc(var(--view-bottom) - var(--u) * 1619);
   --condensed: 'Avenir Next Condensed', 'Bahnschrift SemiCondensed', 'Roboto Condensed',
     sans-serif-condensed, 'Arial Narrow', var(--font-sans);
 
@@ -657,6 +661,8 @@
   left: calc(var(--u) * 45);
   width: calc(var(--u) * 851);
   height: calc(var(--u) * 119);
+  /* Lifts the label and arrow 10u while the countdown sits in the button. */
+  padding-bottom: clamp(0px, calc(var(--countdown-room) * -1000), calc(var(--u) * 20));
   gap: calc(var(--u) * 30);
   border-radius: calc(var(--u) * 34);
 }
@@ -670,18 +676,29 @@
 }
 
 /*
- * Reveal countdown. Sits in the empty plate margin below the Continue button,
- * the same subtle one-line treatment the Fun Fact screen already uses.
+ * Reveal countdown. Sits in the empty plate margin below the Continue button
+ * (rim to 1582u) at 1625u, the same subtle one-line treatment the Fun Fact
+ * screen already uses, riding up with the screen's bottom edge to no higher
+ * than 1599u. A screen that ends above 1619u has no room for it there, so it
+ * sits inside the button under the lifted label instead, at 1556u.
  */
 .auto {
   position: absolute;
-  top: calc(var(--u) * 1625);
+  top: clamp(
+    calc(var(--u) * 1556),
+    calc(var(--u) * 1556 + var(--countdown-room) * 1000),
+    clamp(calc(var(--u) * 1599), calc(var(--view-bottom) - 10px), calc(var(--u) * 1625))
+  );
   left: 0;
   right: 0;
   margin: 0;
   translate: 0 -50%;
+  padding-block: 0.12em;
   font-size: max(10px, calc(var(--u) * 22));
   line-height: 1;
   text-align: center;
-  color: rgba(205, 220, 255, 0.7);
+  text-box: trim-both cap alphabetic;
+  color: rgba(220, 232, 255, 0.84);
+  text-shadow: 0 0 calc(var(--u) * 8) rgba(0, 28, 90, 0.6);
+  pointer-events: none;
 }

@@ -7,8 +7,9 @@ import styles from './AlreadyPlayed.module.css';
  *
  * The plate is the finished artwork: logo, mascot sticker, headline, the
  * explanation, the YOUR RESULT panel with its icons, labels, captions and
- * dividers, both button shells and the Back chevron. The values, button
- * contents and the Back to Home label are HTML.
+ * dividers and both button shells. The values and button contents are HTML.
+ *
+ * There is no Back to Home: the player is already on /, the player flow.
  *
  * Every value is the server's public result; a dash stands in when it could
  * not be loaded.
@@ -24,7 +25,6 @@ export interface AlreadyPlayedProps {
   topShareText: string;
   leaderboardHref: string;
   joinHref: string;
-  homeHref: string;
 }
 
 export function AlreadyPlayed({
@@ -34,7 +34,6 @@ export function AlreadyPlayed({
   topShareText,
   leaderboardHref,
   joinHref,
-  homeHref,
 }: AlreadyPlayedProps) {
   return (
     <PlateScreen plateSrc={ALREADY_PLAYED_PLATE_SRC} plateWidth={853} plateHeight={1844} className={styles.page}>
@@ -83,11 +82,6 @@ export function AlreadyPlayed({
           <br />
           exclusive content and more.
         </span>
-      </a>
-
-      {/* The chevron is painted; the link covers it and the label. */}
-      <a href={homeHref} className={styles.home}>
-        <span className={styles.homeLabel}>Back to Home</span>
       </a>
     </PlateScreen>
   );

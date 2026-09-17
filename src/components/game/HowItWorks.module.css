@@ -6,14 +6,16 @@
    in u against the frames painted into the plate, so the page is one
    composition that scales, never reflows.
 
-   Crop: the band from the HOW IT WORKS title (390u) to the bottom of the
-   auto-advance line (1666u) always stays on screen. On the shortest phones the
-   rest comes off the top, through the AIDA logo, never off the bottom.
+   Crop: the top of the plate stays; a crop comes off the bottom. The stage
+   moves up only as far as the LET'S PLAY button needs (to 1610u), so
+   even on a short phone the AIDA logo (from 44u) keeps its margin. Where the
+   screen ends above the room the auto-advance line needs under the button,
+   that line moves up into the button instead (see .auto).
    ========================================================================== */
 
 .page {
-  --keep-top: 390;
-  --keep-bottom: 1666;
+  --keep-top: 0;
+  --keep-bottom: 1610;
   --stage-y: 0;
   --condensed: 'Avenir Next Condensed', 'Bahnschrift SemiCondensed', 'Roboto Condensed',
     sans-serif-condensed, 'Arial Narrow', var(--font-sans);
@@ -334,15 +336,28 @@
   width: calc(var(--u) * 50);
 }
 
+/* Under the button (rim to 1599u) at 1652u, riding up with the screen's bottom
+   edge to no higher than 1616u. A screen that ends above 1636u has no room for
+   it there, so it sits inside the button under the label instead, at 1577u. */
 .auto {
+  --room: calc(var(--view-bottom) - var(--u) * 1636);
+
   position: absolute;
-  top: calc(var(--u) * 1652);
+  top: clamp(
+    calc(var(--u) * 1577),
+    calc(var(--u) * 1577 + var(--room) * 1000),
+    clamp(calc(var(--u) * 1616), calc(var(--view-bottom) - 10px), calc(var(--u) * 1652))
+  );
   left: 0;
   right: 0;
   translate: 0 -50%;
   margin: 0;
+  padding-block: 0.12em;
   font-size: max(10px, calc(var(--u) * 23));
   line-height: 1;
   text-align: center;
-  color: rgba(214, 226, 255, 0.72);
+  text-box: trim-both cap alphabetic;
+  color: rgba(226, 236, 255, 0.84);
+  text-shadow: 0 0 calc(var(--u) * 8) rgba(0, 28, 90, 0.6);
+  pointer-events: none;
 }

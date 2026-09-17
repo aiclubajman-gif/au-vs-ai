@@ -19,14 +19,15 @@
    registered by cap height (`text-box`), so each step's first line is centred
    on its circle whatever the platform font's ascent.
 
-   Crop: the logo (39u) to the panel's bottom edge (1636u) is the whole
-   composition. On the shortest phones the panel wins, so both buttons and all
-   six steps stay on screen and only the top of the logo can go.
+   Crop: the top of the plate stays (logo from 38u); a crop comes off the
+   bottom, the empty foot of the panel under step 6 first. The stage moves up
+   only as far as step 6 needs (to 1590u), so both buttons and all six steps
+   stay on screen.
    ========================================================================== */
 
 .page {
-  --keep-top: 39;
-  --keep-bottom: 1636;
+  --keep-top: 0;
+  --keep-bottom: 1590;
   --stage-y: 0;
   --cyan: #1fe4f7;
 

@@ -577,7 +577,6 @@ function AlreadyPlayedScreen({ result }: { result: PublicAttemptResult | null })
       topShareText={result ? formatTopShare(result.percentileBeaten, result.totalPlayers) : '—'}
       leaderboardHref="/leaderboard"
       joinHref="/club"
-      homeHref="/"
     />
   );
 }

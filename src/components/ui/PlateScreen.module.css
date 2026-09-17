@@ -25,6 +25,17 @@
                     cannot show the whole band, the bottom (the controls) wins.
      --stage-y      within what the band allows, where the crop falls: 0 takes
                     it all off the bottom, 1 all off the top.
+     --keep-give    unset or 0 on most screens. A number of u instead lets the
+                    top of the band win where it cannot all show: the bottom
+                    gives up to that much. A screen too short even then scrolls
+                    vertically rather than lose the top (PlateScreen.tsx marks
+                    it data-scroll): still full width, the plate from its top.
+
+   Overlays can read where the stage landed:
+
+     --view-bottom  the bottom edge of the screen, measured down the stage. An
+                    overlay held above it stays on screen however the plate
+                    is cropped.
    ========================================================================== */
 
 .shell {
@@ -34,6 +45,21 @@
   /* Height the screen has beyond the plate: a band when positive, a crop when
      negative. */
   --spare: calc(var(--app-height, 100dvh) - var(--stage-h));
+  /* Preferred: centred in a band, or cropped at --stage-y. Then held so the
+     keep band is on screen, bottom first. */
+  --stage-top: max(
+    min(
+      calc(var(--app-height, 100dvh) - var(--u) * var(--keep-bottom, var(--plate-h))),
+      max(
+        calc(var(--u) * var(--keep-top, 0) * -1),
+        calc(max(var(--spare), 0px) / 2 + min(var(--spare), 0px) * var(--stage-y, 0.5))
+      )
+    ),
+    /* Top first instead, with --keep-give. Without it this is a stage-height
+       further up than the stage can ever be held, so it never applies. */
+    calc(var(--u) * var(--keep-top, 0) * -1 - var(--stage-h) * (1 - min(1, var(--keep-give, 0))))
+  );
+  --view-bottom: calc(var(--app-height, 100dvh) - var(--stage-top));
 
   position: fixed;
   inset: 0;
@@ -51,18 +77,20 @@
   }
 }
 
+/* Too short for the band even after --keep-give: the shell itself scrolls, so
+   the visible viewport, and with it the layout, stays put while it does. */
+.shell[data-scroll] {
+  --stage-top: 0px;
+
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .stage {
   position: absolute;
   left: calc((100vw - var(--stage-w)) / 2);
-  /* Preferred: centred in a band, or cropped at --stage-y. Then held so the
-     keep band is on screen, bottom first. */
-  top: min(
-    calc(var(--app-height, 100dvh) - var(--u) * var(--keep-bottom, var(--plate-h))),
-    max(
-      calc(var(--u) * var(--keep-top, 0) * -1),
-      calc(max(var(--spare), 0px) / 2 + min(var(--spare), 0px) * var(--stage-y, 0.5))
-    )
-  );
+  top: var(--stage-top);
   width: var(--stage-w);
   height: var(--stage-h);
 }

@@ -4,17 +4,25 @@
    The 853 × 1844 plate on the shared full-screen stage (PlateScreen.module.css),
    `--u` = one artwork pixel, overlays placed in u.
    Panel 43–810u × 776–1495u; columns 43–304u, 304–547u, 547–810u. Buttons
-   88–765u: leaderboard 1213–1309u, join 1330–1460u. Painted Back chevron at
-   348–362u × 1537–1559u.
+   88–765u: leaderboard 1213–1309u, join 1330–1460u (rim to 1461u).
 
-   Crop: this plate is taller than a phone. The headline (530u) to the bottom of
-   Back to Home's tap area (1600u) always stays on screen; the crop comes off the
-   empty plate below it first, then off the top of the logo and mascot.
+   Crop: this plate is taller than a phone. The top always wins: the logo (glow
+   from 20u) and the mascot (from 112u) are never cut. The crop comes off the
+   bottom: the empty plate, then the panel's foot under the join button. The
+   stage moves up only as far as the join button's rim needs (1461u), and never
+   past the logo's glow; where both cannot show, the rim gives way, up to 13u,
+   to the foot of the join caption's text (1448u). So 390 × 660 loses 17u of
+   empty plate above the logo, and 393 × 659 loses 20u there and 11u of the rim.
+
+   A phone shorter than logo to caption (1428u: 653px tall at 390 wide, 628px
+   at 375) scrolls instead, from the top of the plate (see --keep-give in
+   PlateScreen.module.css).
    ========================================================================== */
 
 .page {
-  --keep-top: 530;
-  --keep-bottom: 1600;
+  --keep-top: 20;
+  --keep-bottom: 1461;
+  --keep-give: 13;
   --stage-y: 0;
 
   background: #02040b;
@@ -24,8 +32,7 @@
 /* Text registered by cap height (see Result.module.css). */
 .value,
 .count,
-.buttonLabel,
-.homeLabel {
+.buttonLabel {
   margin: 0;
   padding-block: 0.12em;
   line-height: 1;
@@ -161,39 +168,4 @@
   line-height: 1.2;
   text-align: center;
   color: #d4dcf2;
-}
-
-/* --- Back to Home, beside the painted chevron ---------------------------------- */
-
-.home {
-  position: absolute;
-  top: calc(var(--u) * 1518);
-  left: calc(var(--u) * 330);
-  width: calc(var(--u) * 290);
-  height: calc(var(--u) * 60);
-  border-radius: calc(var(--u) * 14);
-  color: #a9c4ff;
-  text-decoration: none;
-}
-.home::before {
-  content: '';
-  position: absolute;
-  inset: calc(var(--u) * -22) 0;
-}
-.home:hover .homeLabel {
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-}
-.home:focus-visible {
-  outline: 3px solid #fff;
-  outline-offset: calc(var(--u) * 4);
-}
-
-.homeLabel {
-  position: absolute;
-  top: 50%;
-  left: calc(var(--u) * 58);
-  translate: 0 -50%;
-  font-size: calc(var(--u) * 28);
-  font-weight: 500;
 }
