@@ -8,6 +8,7 @@ import styles from './Result.module.css';
 /** Human-win artwork is deliberately split so the characters can perform. */
 export const HUMAN_WIN_PLATE_SRC = '/design/results/human-win-clean.webp';
 export const HUMAN_WIN_LOGO_SRC = '/design/results/human-win-logo.webp';
+export const HUMAN_WIN_FOREGROUND_SRC = '/design/results/human-win-foreground.webp';
 export const HUMAN_WIN_MASCOT_VIDEO_SRC = '/design/results/human-win-mascot.webm';
 export const HUMAN_WIN_AI_VIDEO_SRC = '/design/results/human-win-ai.webm';
 
@@ -115,6 +116,18 @@ export function HumanWinResult({
           aria-hidden="true"
           tabIndex={-1}
           onEnded={(event) => event.currentTarget.pause()}
+        />
+
+        <Image
+          className={styles.humanForeground}
+          src={HUMAN_WIN_FOREGROUND_SRC}
+          alt=""
+          aria-hidden="true"
+          width={941}
+          height={1672}
+          unoptimized
+          priority
+          draggable={false}
         />
 
         <h1 className={styles.humanityHeadline}>Humanity +1</h1>

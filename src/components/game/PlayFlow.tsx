@@ -31,6 +31,7 @@ import { Result } from '@/components/game/Result';
 import {
   HUMAN_WIN_AI_POSTER_SRC,
   HUMAN_WIN_AI_VIDEO_SRC,
+  HUMAN_WIN_FOREGROUND_SRC,
   HUMAN_WIN_LOGO_SRC,
   HUMAN_WIN_MASCOT_POSTER_SRC,
   HUMAN_WIN_MASCOT_VIDEO_SRC,
@@ -197,6 +198,7 @@ export function PlayFlow({
   if (step === 'round3' || step === 'submitting') {
     preload(HUMAN_WIN_PLATE_SRC, { as: 'image', fetchPriority: 'low' });
     preload(HUMAN_WIN_LOGO_SRC, { as: 'image', fetchPriority: 'low' });
+    preload(HUMAN_WIN_FOREGROUND_SRC, { as: 'image', fetchPriority: 'low' });
     preload(HUMAN_WIN_MASCOT_POSTER_SRC, { as: 'image', fetchPriority: 'low' });
     preload(HUMAN_WIN_AI_POSTER_SRC, { as: 'image', fetchPriority: 'low' });
     preload(HUMAN_WIN_MASCOT_VIDEO_SRC, { as: 'video', fetchPriority: 'low' });

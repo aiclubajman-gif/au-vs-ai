@@ -282,21 +282,31 @@
   pointer-events: none;
 }
 
+.humanForeground {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  pointer-events: none;
+}
+
 .mascotVideo {
-  top: calc(var(--u) * 105);
-  left: calc(var(--u) * -373);
+  top: calc(var(--u) * 77);
+  left: calc(var(--u) * -348);
   width: calc(var(--u) * 1056);
   height: calc(var(--u) * 594);
-  scale: 1.1;
+  scale: 1.28 1.03;
   transform-origin: 50% 92%;
 }
 
 .defeatedAiVideo {
   top: calc(var(--u) * 163);
-  left: calc(var(--u) * 449);
+  left: calc(var(--u) * 391);
   width: calc(var(--u) * 864);
   height: calc(var(--u) * 486);
-  scale: 0.92;
+  scale: 1.09 0.87;
   transform-origin: 50% 92%;
 }
 
