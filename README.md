@@ -171,6 +171,10 @@ screen never shows it by accident: simulated games have to be asked for by name.
   them once (`battleShare` in `src/lib/arena/types.ts`) and that one pair feeds the bar's fill,
   both percentages and the arena lighting — so nothing on screen can disagree with the totals.
   No games yet reads 50 / 50.
+- The mascot is a transparent video, `public/arena-tv/mascot.webm` — the same artwork as
+  `mascot.webp`, with the character moving. The still cut-out is its poster, what the screen
+  opens on, what a display asking for reduced motion gets, and what comes back if the video
+  will not play. All of the mascot's movement is in the file; nothing animates it in CSS.
 - Code: `src/components/arena-tv/` (screen), `src/lib/arena/` (data model, mock feed, DB mapping,
   which feed a request gets), `src/app/api/arena/stats/route.ts` (live endpoint).
 - The LED ring cycles the institutional marks only (AIDA, Ajman University); the AU vs AI lockup

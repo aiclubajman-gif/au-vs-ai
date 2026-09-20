@@ -11,7 +11,9 @@
  * the height comes from the artwork's own proportions, so a longer cut-out
  * grows upward from the same line instead of being squashed into a fixed box.
  * Dropping in a new mascot file is only that — no numbers here change, beyond
- * --fade-start/--fade-end if its bottom edge falls somewhere new.
+ * --fade-start/--fade-end if its bottom edge falls somewhere new. A new
+ * mascot.webm has to be cut from the same frame as mascot.webp (same top and
+ * bottom, centred) for the two to land on top of each other; see .video.
  */
 .mascot {
   left: -78px;
@@ -31,6 +33,90 @@
   --fade-start: 74%;
   --fade-end: 97%;
   animation: enter-right 1.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s both;
+}
+
+/*
+ * The mascot, moving: mascot.webm is the same artwork as mascot.webp, its
+ * whole height, cropped in around the character. So letting it fall into the
+ * mascot's own box with object-fit: contain — never cover — puts it at exactly
+ * the still one's scale, on exactly its ground line, with nothing stretched
+ * and nothing cropped further. It needs no numbers of its own: the box above
+ * places the character, as it does for the still art.
+ *
+ * All of the movement is in the file. Nothing here may add any.
+ */
+.video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  /* Arena artwork, not a control. */
+  pointer-events: none;
+  /*
+   * Held back until the first frame is really on screen (see Characters.tsx),
+   * so the still mascot is never swapped for an empty box. This crossfade
+   * happens once, on load.
+   */
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  /*
+   * The hem fade the still art gets, and the same thing sideways. The WebM's
+   * frame is cut in through the mascot's shoulders, and a straight cut across
+   * a lit shoulder reads as a clipped rectangle; fading the last few pixels
+   * lets each side go into the dark the way the hem does.
+   *
+   * --side-edge is where object-fit: contain leaves that cut: half of what the
+   * video does not fill, as a share of the box. mascot.webm paints 415 of the
+   * box's 614px, so it is just inside (614 − 415) / 2 / 614 = 16.2%.
+   */
+  --side-edge: 16.1%;
+  --side-fade: 30px;
+  -webkit-mask-image:
+    linear-gradient(180deg, #000 var(--fade-start), transparent var(--fade-end)),
+    linear-gradient(
+      90deg,
+      transparent var(--side-edge),
+      #000 calc(var(--side-edge) + var(--side-fade)),
+      #000 calc(100% - var(--side-edge) - var(--side-fade)),
+      transparent calc(100% - var(--side-edge))
+    );
+  mask-image:
+    linear-gradient(180deg, #000 var(--fade-start), transparent var(--fade-end)),
+    linear-gradient(
+      90deg,
+      transparent var(--side-edge),
+      #000 calc(var(--side-edge) + var(--side-fade)),
+      #000 calc(100% - var(--side-edge) - var(--side-fade)),
+      transparent calc(100% - var(--side-edge))
+    );
+  /* Both fades at once: keep only what is inside each. */
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+
+.mascot[data-mascot='video'] .video {
+  opacity: 1;
+}
+
+/*
+ * Once the video has the character, the still layers step aside for good. The
+ * body moves inside the video's frame and the neon and the sheen are painted
+ * for one fixed pose, so leaving them up would drag a pose-shaped ghost along
+ * behind it. The aura is not one of them: it is blurred, lead-coloured light
+ * on the haze behind the mascot, and it stays on both paths.
+ */
+.mascot[data-mascot='video'] .float {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+/* Nothing to see, so nothing to run: this screen is left on for hours. */
+.mascot[data-mascot='video'] .float,
+.mascot[data-mascot='video'] .sway,
+.mascot[data-mascot='video'] .neon,
+.mascot[data-mascot='video'] .sheen::before {
+  animation-play-state: paused;
 }
 
 /* Plain blocks: the art inside them is what sets the height. */
