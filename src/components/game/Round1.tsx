@@ -82,6 +82,16 @@ export function Round1({
       setSaving(true);
       setFailure(null);
 
+      if (attemptId.startsWith('local-')) {
+        inFlight.current = false;
+        setSaving(false);
+        const wait = Math.max(0, LOCK_MS - (Date.now() - lockedAt.current));
+        setTimeout(() => {
+          if (!unmounted.current) advance();
+        }, wait);
+        return;
+      }
+
       const result = await submitWithRetry('/api/round1/answer', body, {
         isCancelled: () => unmounted.current,
         onRetry: () => setReconnecting(true),

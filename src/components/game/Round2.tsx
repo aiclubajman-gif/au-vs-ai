@@ -164,6 +164,16 @@ export function Round2({
       setSaving(true);
       setFailure(null);
 
+      if (attemptId.startsWith('local-')) {
+        inFlight.current = false;
+        setSaving(false);
+        const wait = Math.max(0, REVEAL_MS - (Date.now() - revealedAt.current));
+        setTimeout(() => {
+          if (!unmounted.current) onComplete();
+        }, wait);
+        return;
+      }
+
       const result = await submitWithRetry('/api/round2/submit', body, {
         isCancelled: () => unmounted.current,
         onRetry: () => setReconnecting(true),

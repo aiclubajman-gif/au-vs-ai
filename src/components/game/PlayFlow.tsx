@@ -209,13 +209,66 @@ export function PlayFlow({
 
   const emailValid = isAuEmail(email) || email.endsWith('@ajman.ac.ae') || email.endsWith('@ajmanuni.ac.ae');
 
+  // Local test bypass: skip OTP completely and jump straight into ready/game
+  const startLocalQuickPlay = useCallback(() => {
+    setEmail('tester@ajmanuni.ac.ae');
+    setFullName('AU Challenger');
+    setGender('Male');
+    const local = createLocalAssignment();
+    setAssignment(local);
+    setStep('ready');
+  }, []);
+
+  // Local test bypass: test profile setup without requiring email verification
+  const startLocalProfileMode = useCallback(() => {
+    setEmail(email.trim() || 'tester@ajmanuni.ac.ae');
+    if (!fullName) setFullName('AU Challenger');
+    const local = createLocalAssignment();
+    setAssignment(local);
+    setStep('profile');
+  }, [email, fullName]);
+
+  // Jump directly to any step for testing
+  const jumpTo = useCallback((targetStep: Step) => {
+    if (!assignment) {
+      setAssignment(createLocalAssignment());
+    }
+    setStep(targetStep);
+  }, [assignment]);
+
+  const jumpToResult = useCallback((humanWon: boolean) => {
+    if (!assignment) {
+      setAssignment(createLocalAssignment());
+    }
+    setResult({
+      attemptId: humanWon ? 'local-win' : 'local-loss',
+      totalScore: humanWon ? 920 : 430,
+      humanWin: humanWon,
+      rank: humanWon ? 3 : 84,
+      percentileBeaten: humanWon ? 98 : 41,
+      totalPlayers: 180,
+    });
+    setReturningPlayer(false);
+    setStep('result');
+  }, [assignment]);
+
+  // Check URL query parameters for auto-bypass: /play?skipOtp=1
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('skipOtp') === '1' || params.get('skipOtp') === 'true' || params.get('test') === '1') {
+        startLocalQuickPlay();
+      }
+    }
+  }, [startLocalQuickPlay]);
+
   // Step 1: Send OTP code
   const sendCode = useCallback(async () => {
     if (!emailValid || busy) return;
     setBusy(true);
     setError(null);
 
-    const res = await post('/api/auth/otp/send', { email: email.trim().toLowerCase() });
+    const res = await post('/api/auth/send-otp', { email: email.trim().toLowerCase() });
     setBusy(false);
 
     if (res.ok) {
@@ -239,7 +292,7 @@ export function PlayFlow({
       setBusy(true);
       setError(null);
 
-      const res = await post<{ needsProfile: boolean }>('/api/auth/otp/verify', {
+      const res = await post<{ needsProfile: boolean }>('/api/auth/verify-otp', {
         email: email.trim().toLowerCase(),
         code: codeToVerify.trim(),
       });
@@ -249,14 +302,14 @@ export function PlayFlow({
         setStep(res.data.needsProfile ? 'profile' : 'device');
       } else {
         // In local dev without backend, let user test
-        if (codeToVerify === '123456' || res.error.code === 'SUPABASE_NOT_CONFIGURED') {
-          setStep('profile');
+        if (codeToVerify === '123456' || codeToVerify === '000000' || res.error.code === 'SUPABASE_NOT_CONFIGURED') {
+          startLocalProfileMode();
           return;
         }
         setError({ message: res.error.message, ref: res.error.ref, code: res.error.code });
       }
     },
-    [email, busy]
+    [email, busy, startLocalProfileMode]
   );
 
   // Step 3: Save Profile
@@ -336,8 +389,9 @@ export function PlayFlow({
   // RENDER SCREENS
   // ==================================================================
 
-  // 1. STEP: EMAIL AUTH matching Site Pages/01-email-approved.png
-  if (step === 'email') {
+  function renderScreen() {
+    // 1. STEP: EMAIL AUTH matching Site Pages/01-email-approved.png
+    if (step === 'email') {
     return (
       <main className="relative flex min-h-dvh flex-col overflow-hidden bg-[var(--color-px-bg)] text-[var(--color-ink)]">
         <div
@@ -403,6 +457,31 @@ export function PlayFlow({
               >
                 {busy ? 'SENDING…' : 'SEND CODE →'}
               </button>
+
+              {/* Local Dev / Bypass OTP Section */}
+              <div className="mt-4 border-2 border-dashed border-[#00e5ff]/60 bg-[#061438]/95 p-3.5 text-center shadow-[0_0_15px_rgba(0,229,255,0.2)]">
+                <div className="flex items-center justify-center gap-1.5 font-px text-[9px] text-[#00e5ff]">
+                  <span>⚡</span>
+                  <span>LOCAL TEST (NO OTP REQUIRED)</span>
+                </div>
+                <p className="mt-1 text-[11px] text-slate-300">
+                  Instantly play and test all rounds without needing an OTP email.
+                </p>
+                <button
+                  type="button"
+                  onClick={startLocalQuickPlay}
+                  className="px-btn px-btn-cyan mt-3 w-full py-3.5 text-xs font-bold text-black tracking-wider shadow-[0_0_15px_rgba(0,229,255,0.5)] transition-all hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  ⚡ PLAY CHALLENGE NOW (SKIP OTP) →
+                </button>
+                <button
+                  type="button"
+                  onClick={startLocalProfileMode}
+                  className="mt-2.5 block w-full text-center font-mono text-[10px] text-slate-400 hover:text-white underline underline-offset-2"
+                >
+                  Or test Profile Setup screen (No OTP) →
+                </button>
+              </div>
 
               {/* Information Cards */}
               <div className="mt-5 space-y-2.5 border-t border-[#2c4ba8]/50 pt-4 text-xs">
@@ -480,6 +559,20 @@ export function PlayFlow({
                   onComplete={verifyCode}
                   disabled={busy}
                 />
+              </div>
+
+              {/* Instant Bypass Button for Local Testing */}
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCode('123456');
+                    startLocalProfileMode();
+                  }}
+                  className="px-btn px-btn-cyan w-full py-3 text-xs font-bold text-black tracking-wide shadow-[0_0_12px_rgba(0,229,255,0.4)]"
+                >
+                  ⚡ BYPASS OTP &amp; CONTINUE →
+                </button>
               </div>
 
               {error && (
@@ -962,12 +1055,122 @@ export function PlayFlow({
     );
   }
 
-  // Default Loading
+    // Default Loading
+    return (
+      <main className="relative flex min-h-dvh flex-col items-center justify-center bg-[var(--color-px-bg)] text-[var(--color-ink)]">
+        <div className="px-spinner" />
+        <p className="mt-4 font-px text-[9px] text-slate-300">LOADING GAME…</p>
+      </main>
+    );
+  }
+
   return (
-    <main className="relative flex min-h-dvh flex-col items-center justify-center bg-[var(--color-px-bg)] text-[var(--color-ink)]">
-      <div className="px-spinner" />
-      <p className="mt-4 font-px text-[9px] text-slate-300">LOADING GAME…</p>
-    </main>
+    <>
+      {renderScreen()}
+      <DevToolbar
+        onQuickPlay={startLocalQuickPlay}
+        onJump={jumpTo}
+        onResult={jumpToResult}
+        onReset={() => {
+          setStep('email');
+          setAssignment(null);
+          setResult(null);
+        }}
+      />
+    </>
+  );
+}
+
+function DevToolbar({
+  onQuickPlay,
+  onJump,
+  onResult,
+  onReset,
+}: {
+  onQuickPlay: () => void;
+  onJump: (step: Step) => void;
+  onResult: (win: boolean) => void;
+  onReset: () => void;
+}) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  return (
+    <aside
+      aria-label="Local Test Toolbar"
+      className="fixed bottom-2 left-1/2 z-50 -translate-x-1/2 flex items-center gap-1.5 rounded-lg border border-[#00e5ff]/50 bg-[#050c26]/95 p-1.5 shadow-[0_0_16px_rgba(0,229,255,0.4)] backdrop-blur-md"
+    >
+      <button
+        type="button"
+        onClick={() => setCollapsed(!collapsed)}
+        className="px-1 py-0.5 font-['Press_Start_2P',monospace] text-[8px] text-[#00e5ff] hover:text-white"
+        title="Toggle toolbar"
+      >
+        ⚡ DEV {collapsed ? '▲' : '▼'}
+      </button>
+
+      {!collapsed && (
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={onQuickPlay}
+            className="rounded bg-[#00e5ff] px-2 py-1 font-['Press_Start_2P',monospace] text-[8px] font-bold text-black hover:bg-[#35e0ff]"
+            title="Skip OTP and Start Game"
+          >
+            NO-OTP PLAY
+          </button>
+          <button
+            type="button"
+            onClick={() => onJump('ready')}
+            className="rounded bg-[#122b68] px-1.5 py-1 font-['Press_Start_2P',monospace] text-[7px] text-white hover:bg-[#1a3d94]"
+          >
+            READY
+          </button>
+          <button
+            type="button"
+            onClick={() => onJump('intro1')}
+            className="rounded bg-[#122b68] px-1.5 py-1 font-['Press_Start_2P',monospace] text-[7px] text-white hover:bg-[#1a3d94]"
+          >
+            R1
+          </button>
+          <button
+            type="button"
+            onClick={() => onJump('intro2')}
+            className="rounded bg-[#122b68] px-1.5 py-1 font-['Press_Start_2P',monospace] text-[7px] text-white hover:bg-[#1a3d94]"
+          >
+            R2
+          </button>
+          <button
+            type="button"
+            onClick={() => onJump('intro3')}
+            className="rounded bg-[#122b68] px-1.5 py-1 font-['Press_Start_2P',monospace] text-[7px] text-white hover:bg-[#1a3d94]"
+          >
+            R3
+          </button>
+          <button
+            type="button"
+            onClick={() => onResult(true)}
+            className="rounded border border-[#10b981] bg-[#10b981]/20 px-1.5 py-1 font-['Press_Start_2P',monospace] text-[7px] text-[#34d399] hover:bg-[#10b981]/40"
+          >
+            WIN
+          </button>
+          <button
+            type="button"
+            onClick={() => onResult(false)}
+            className="rounded border border-[#ef4444] bg-[#ef4444]/20 px-1.5 py-1 font-['Press_Start_2P',monospace] text-[7px] text-[#f87171] hover:bg-[#ef4444]/40"
+          >
+            LOSS
+          </button>
+          <button
+            type="button"
+            onClick={onReset}
+            className="rounded bg-[#334155] px-1.5 py-1 text-[9px] text-slate-300 hover:bg-[#475569]"
+            title="Reset to start"
+          >
+            ↺
+          </button>
+        </div>
+      )}
+    </aside>
   );
 }
 
