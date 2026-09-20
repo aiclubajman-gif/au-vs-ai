@@ -1,13 +1,14 @@
 'use client';
 
 import { useRef, useState, type CSSProperties } from 'react';
+import { leadingLight, trailingLight } from '@/lib/arena/atmosphere';
 import type { ArenaSource } from '@/lib/arena/source';
 import { leadOf, shareOf, type ArenaLead, type ArenaStats } from '@/lib/arena/types';
 import { BattleBar } from './BattleBar';
 import { AiFighter, Mascot } from './Characters';
 import { arenaBadge, createLiveFeed, createMockFeed, FEED_BADGE, useArenaFeed, type FeedStatus } from './feeds';
 import { HangingScreen } from './HangingScreen';
-import { useDemoKeys, useKioskMode, useSelfReload, useStageScale } from './hooks';
+import { useDemoKeys, useKioskMode, useLeadChanges, useSelfReload, useStageScale } from './hooks';
 import { Leaderboard } from './Leaderboard';
 import { LedRing } from './LedRing';
 import { SideColumn } from './SideColumn';
@@ -23,7 +24,10 @@ const TAGLINE = 'Can you beat AI in 60 seconds?';
  *
  * Layers, back to front: the arena photo and its lighting (outside the stage,
  * so they fill any screen shape), then on the 1920 x 1080 stage the LED ring,
- * the hanging screen, the two fighters, the crowds, and the live UI.
+ * the hanging screen, the two fighters, the crowds, and the live UI. Every
+ * lighting layer lives in the environment, which is painted before the stage
+ * and blends only with itself, so no amount of arena light can wash out a
+ * number standing on it.
  *
  * `source` picks the data: 'live' polls /api/arena/stats, 'mock' simulates
  * games. See feeds.ts to plug in anything else.
@@ -31,7 +35,11 @@ const TAGLINE = 'Can you beat AI in 60 seconds?';
  * The win counts are the screen's only source of truth. The battle share is
  * worked out from them once, here, and that one pair of numbers is what the
  * bar fills to, what the percentages read, and what decides the lighting — so
- * no two parts of the screen can ever disagree.
+ * no two parts of the screen can ever disagree. The arena takes four things
+ * from that one share: who to light for (leadOf), how hard its rig burns and
+ * how far the other side's is taken down (leadingLight / trailingLight, both
+ * from the size of the lead), and whether the lead has just changed hands,
+ * which is the only thing that makes the arena flare.
  */
 export function ArenaLeaderboardTV({ source, className }: { source: ArenaSource; className?: string }) {
   const [feed] = useState(() => (source === 'live' ? createLiveFeed() : createMockFeed()));
@@ -39,6 +47,11 @@ export function ArenaLeaderboardTV({ source, className }: { source: ArenaSource;
   const shown = stats ?? WAITING;
   const share = shareOf(shown);
   const lead = leadOf(share);
+  const mood = leadingLight(share);
+  const fade = trailingLight(share);
+  // stats === null is the waiting board, not a reading: the arena settles into
+  // the first real numbers rather than flaring at them.
+  const sting = useLeadChanges(lead, stats !== null);
 
   const rootRef = useRef<HTMLElement>(null);
   useStageScale(rootRef);
@@ -49,7 +62,10 @@ export function ArenaLeaderboardTV({ source, className }: { source: ArenaSource;
   return (
     // data-motion: animate even under "reduce motion" (see globals.css).
     <main ref={rootRef} className={`${styles.tv} ${className ?? ''}`} data-lead={lead} data-motion="always">
-      <div className={styles.environment} aria-hidden="true">
+      {/* --mood is the winning side's house lights, --fade what is left of the
+          other side's; both come from the size of the lead. The arena photo
+          itself never moves or changes: only the light on it does. */}
+      <div className={styles.environment} aria-hidden="true" style={{ '--mood': mood, '--fade': fade } as CSSProperties}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           className={styles.arena}
@@ -60,13 +76,58 @@ export function ArenaLeaderboardTV({ source, className }: { source: ArenaSource;
           fetchPriority="high"
           draggable={false}
         />
-        <div className={`${styles.light} ${styles.lightBlue}`} />
-        <div className={`${styles.light} ${styles.lightOrange}`} />
-        <div className={`${styles.light} ${styles.lightSplit}`} />
-        <div className={`${styles.wash} ${styles.washHuman}`} />
-        <div className={`${styles.wash} ${styles.washAi}`} />
+        {/* Fixed: the colour and a little of the brightness out of the room,
+            so amber has a chance of beating a photo shot under blue light. */}
+        <div className={styles.neutral} />
+        <div className={styles.dim} />
+        {/* Then the lamps, brightness first and colour after -- a gel sits on
+            the lamp, so the light has to arrive already coloured. Rig, wall and
+            haze / seating and practicals / floor. The wrapper crossfades with
+            the lead, each child breathes on its own clock, and the two
+            opacities multiply. */}
+        <div className={`${styles.house} ${styles.houseHuman}`}>
+          <i />
+          <i />
+          <i />
+        </div>
+        <div className={`${styles.house} ${styles.houseAi}`}>
+          <i />
+          <i />
+          <i />
+        </div>
+        {/* The same lamps again over the other half, for whoever is ahead: a
+            house rig that has taken the room has taken all of it. */}
+        <div className={`${styles.far} ${styles.farHuman}`}>
+          <i />
+          <i />
+          <i />
+        </div>
+        <div className={`${styles.far} ${styles.farAi}`}>
+          <i />
+          <i />
+          <i />
+        </div>
         <div className={`${styles.beam} ${styles.beamLeft}`} />
         <div className={`${styles.beam} ${styles.beamRight}`} />
+        {/* Over every lamp above: the leader's colour across the whole room,
+            then each side's own half. */}
+        <div className={`${styles.flood} ${styles.floodHuman}`} />
+        <div className={`${styles.flood} ${styles.floodAi}`} />
+        <div className={`${styles.gel} ${styles.gelHuman}`} />
+        <div className={`${styles.gel} ${styles.gelAi}`} />
+        {sting > 0 && (
+          // Keyed by the count, so each change of lead plays the flare exactly
+          // once. Nothing else on the screen is keyed: the ring, the fighters
+          // and the board keep running straight through it. It sits above the
+          // gels because it has to arrive before them: the room takes 1.6s to
+          // crossfade, and for that moment the surge IS the new leader's
+          // colour, in a room still lit in the old one.
+          <div key={sting} className={styles.sting} data-side={lead}>
+            <i />
+            <i />
+            <i />
+          </div>
+        )}
         <div className={styles.vignette} />
       </div>
 

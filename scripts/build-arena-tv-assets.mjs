@@ -10,7 +10,6 @@
  *
  * Masters (copy from design/Design/pages/final/TV and design/Design/assets/logos):
  *   arena_base_neutral.png          arena-base-neutral.png
- *   arena_{blue,orange,split}_overlay.png
  *   crowd_flags_{left,right}.png
  *   led_ring_blank.png              led-ring-blank.png
  *   main_hanging_screen_blank.png   main-hanging-screen-blank.png
@@ -316,15 +315,6 @@ function emissive(img, weight, core, { minAlpha = 0.04 } = {}) {
   const base = await load('arena_base_neutral.png');
   await write(base, 'arena-base-3840.webp');
   await write(base, 'arena-base-1920.webp', { width: 1920 });
-}
-
-// Lighting overlays are plain gradients: small PNGs stretch without banding.
-for (const [from, to] of [
-  ['arena_blue_overlay.png', 'light-blue.png'],
-  ['arena_orange_overlay.png', 'light-orange.png'],
-  ['arena_split_overlay.png', 'light-split.png'],
-]) {
-  await write(await load(from), to, { width: 480, format: 'png' });
 }
 
 {

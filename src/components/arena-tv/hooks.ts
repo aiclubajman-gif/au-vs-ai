@@ -1,4 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { NEW_WATCH, watchLead, type LeadWatch } from '@/lib/arena/atmosphere';
+import type { ArenaLead } from '@/lib/arena/types';
 import type { ArenaFeed } from './feeds';
 import { ARENA_TIMING } from './config';
 import { STAGE_H, STAGE_W } from './geometry';
@@ -121,6 +123,28 @@ export function useDemoKeys(feed: ArenaFeed) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [feed]);
+}
+
+/**
+ * Counts the times the lead has changed hands, for the arena's flare when it
+ * does. The count is the flare's React key: a new one plays the flare once,
+ * and the same one leaves the element alone, so scores that move without
+ * changing who is ahead pass by without an arena response.
+ *
+ * `settled` is false until real numbers have arrived (see watchLead). Nothing
+ * here runs on a timer or listens to anything: it only reacts to a lead the
+ * screen has already derived, and watchLead hands back the very same object
+ * when nothing has changed, so an unchanged lead does not even re-render.
+ */
+export function useLeadChanges(lead: ArenaLead, settled: boolean): number {
+  const [watch, setWatch] = useState<LeadWatch>(NEW_WATCH);
+  const next = watchLead(watch, lead, settled);
+  // Adjusted while rendering rather than in an effect, so the flare mounts in
+  // the same commit as the lighting it belongs to: React drops this render and
+  // redoes it with the new count before anything reaches the screen. An
+  // unchanged lead gives back the same object, so this is the quiet path.
+  if (next !== watch) setWatch(next);
+  return next.sting;
 }
 
 const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
