@@ -2,27 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { RetryNotice } from '@/components/ui';
-import {
-  submitWithRetry,
-  isRetryable,
-  describeSaveFailure,
-  type SubmitFailure,
-} from '@/lib/client/submit';
+import { submitWithRetry, isRetryable, describeSaveFailure, type SubmitFailure } from '@/lib/client/submit';
 import { answerTimeRemaining } from '@/lib/client/answer-window';
 import type { Round1Slot } from '@/types';
-
-/**
- * Round 1 — Real or AI?
- *
- * Four images, one at a time. §11 forbids telling the student whether they
- * were right, so the only feedback is a neutral "Answer locked". That is a
- * deliberate product choice: without it, the first group through the booth
- * would leak the answer key to everyone behind them.
- *
- * Each image's timer starts only once that image is decoded and visible, so a
- * slow download on venue wifi never eats into the answering time. The round
- * only moves on once the server has acknowledged the answer.
- */
 
 type ImageState = 'loading' | 'ready' | 'error';
 
@@ -34,12 +16,9 @@ interface Round1AnswerBody {
   idempotencyKey: string;
 }
 
-/** Shortest time the neutral "Answer locked" overlay is shown. */
 const LOCK_MS = 700;
-/** After this long without the image, offer a manual retry. */
-const SLOW_LOAD_MS = 10_000;
-/** Ceiling in round1SubmitSchema. A backgrounded tab can otherwise exceed it. */
-const MAX_RESPONSE_MS = 120_000;
+const SLOW_LOAD_MS = 10000;
+const MAX_RESPONSE_MS = 120000;
 
 export function Round1({
   attemptId,
@@ -63,13 +42,9 @@ export function Round1({
   const [failure, setFailure] = useState<SubmitFailure | null>(null);
   const [remaining, setRemaining] = useState(msPerImage);
 
-  /** When the current image became visible. null while it is loading. */
   const readyAt = useRef<number | null>(null);
-  /** Synchronous guard: a double tap in the same frame cannot answer twice. */
   const answered = useRef(false);
-  /** One save request chain at a time, including manual retries. */
   const inFlight = useRef(false);
-  /** The answer being saved. Retries resend exactly this, same key included. */
   const submission = useRef<Round1AnswerBody | null>(null);
   const lockedAt = useRef(0);
   const unmounted = useRef(false);
@@ -122,13 +97,12 @@ export function Round1({
         return;
       }
 
-      // The response says nothing about correctness, and nothing is shown.
       const wait = Math.max(0, LOCK_MS - (Date.now() - lockedAt.current));
       setTimeout(() => {
         if (!unmounted.current) advance();
       }, wait);
     },
-    [advance],
+    [advance]
   );
 
   const answer = useCallback(
@@ -141,8 +115,6 @@ export function Round1({
       const body: Round1AnswerBody = {
         attemptId,
         slot: current.slot,
-        // A timeout is sent as null: no selection, so it can never score as
-        // either answer.
         selectedAnswer: choice,
         responseTimeMs: Math.min(Date.now() - readyAt.current, MAX_RESPONSE_MS),
         idempotencyKey: crypto.randomUUID(),
@@ -150,11 +122,9 @@ export function Round1({
       submission.current = body;
       save(body);
     },
-    [attemptId, current, save],
+    [attemptId, current, save]
   );
 
-  // Countdown. Runs only while the image is visible and unanswered, and
-  // auto-submits a timeout so a distracted student cannot stall the queue.
   useEffect(() => {
     if (locked || imageState !== 'ready') return;
     const tick = setInterval(() => {
@@ -172,18 +142,15 @@ export function Round1({
   }, [imageState, index, loadTry]);
 
   function handleImageLoad(img: HTMLImageElement) {
-    const decoded =
-      typeof img.decode === 'function' ? img.decode().catch(() => undefined) : Promise.resolve();
-
+    const decoded = typeof img.decode === 'function' ? img.decode().catch(() => undefined) : Promise.resolve();
     decoded.then(() => {
       requestAnimationFrame(() => {
-        // A retried or already-replaced image element is detached; ignore it.
         if (unmounted.current || !img.isConnected || readyAt.current !== null) return;
         readyAt.current = Date.now();
         setRemaining(msPerImage);
         setImageState('ready');
 
-        // Warm only the NEXT image, never the whole round.
+        // Preload next image
         const next = pending[index + 1];
         if (next) {
           const preload = new Image();
@@ -211,119 +178,171 @@ export function Round1({
   const seconds = Math.max(0, Math.ceil(remaining / 1000));
 
   return (
-    <main className="flex min-h-dvh flex-col px-5 py-6">
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-[var(--color-muted)]">
-            Image {index + 1} of {pending.length}
-          </span>
-          <span className="tabular font-bold text-[var(--color-cyan)]">{seconds}s</span>
-        </div>
+    <main className="relative flex min-h-dvh flex-col overflow-hidden bg-[var(--color-px-bg)] text-[var(--color-ink)]">
+      {/* Background with circuit glow */}
+      <div
+        className="absolute inset-0 z-0 bg-cover bg-center opacity-30 pointer-events-none"
+        style={{ backgroundImage: "url('/backgrounds/circuit-9x16.png')" }}
+        aria-hidden="true"
+      />
+      <div className="arena-bg z-0 opacity-70" aria-hidden="true" />
 
-        <div
-          className="mt-2 h-1 w-full overflow-hidden rounded-full bg-[var(--color-edge)]"
-          role="progressbar"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(progress * 100)}
-        >
+      <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-between px-4 py-5 sm:px-6">
+        {/* Top Header & Timer Bar */}
+        <div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="px-chip text-[9px]">ROUND 1</span>
+            <span
+              className="tabular font-px text-xl text-[var(--color-px-yellow)]"
+              style={{ textShadow: '3px 3px 0 #070c26' }}
+            >
+              {seconds}s
+            </span>
+          </div>
+
           <div
-            className="h-full bg-[var(--color-cyan)] transition-[width] duration-100 ease-linear"
-            style={{ width: `${progress * 100}%` }}
-          />
+            className="px-timer mt-2.5"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(progress * 100)}
+          >
+            <div
+              className={`fill ${seconds <= 3 && !locked ? 'low' : ''}`}
+              style={{ width: `${progress * 100}%` }}
+            />
+          </div>
+
+          <div className="mt-4 text-center">
+            <h1 className="px-title-yellow text-2xl leading-tight sm:text-3xl">
+              REAL OR AI?
+            </h1>
+            <p className="mt-1 font-px text-[9px] tracking-wider text-slate-300">
+              IMAGE {index + 1} OF {pending.length}
+            </p>
+          </div>
         </div>
 
-        <h1 className="mt-6 text-center text-2xl font-bold">Real or AI?</h1>
+        {/* Center Frame with Image and Bottom Characters */}
+        <div className="my-auto w-full">
+          <div className="px-frame mx-auto w-full">
+            <div className="relative aspect-square w-full overflow-hidden bg-black">
+              <img
+                key={`${current.slot}-${loadTry}`}
+                src={current.storagePath}
+                alt="Is this photograph real or generated by AI?"
+                className={`h-full w-full object-cover ${imageState === 'ready' ? '' : 'invisible'}`}
+                draggable={false}
+                onLoad={(e) => handleImageLoad(e.currentTarget)}
+                onError={(e) => handleImageError(e.currentTarget)}
+              />
 
-        <div className="relative mt-5 aspect-square w-full overflow-hidden rounded-2xl border border-[var(--color-edge)] bg-[var(--color-navy)]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            key={`${current.slot}-${loadTry}`}
-            src={current.storagePath}
-            alt="Is this photograph real or generated by AI?"
-            className={`h-full w-full object-cover ${imageState === 'ready' ? '' : 'invisible'}`}
-            draggable={false}
-            onLoad={(e) => handleImageLoad(e.currentTarget)}
-            onError={(e) => handleImageError(e.currentTarget)}
-          />
+              {imageState === 'loading' && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 px-6 text-center">
+                  <div className="px-spinner" />
+                  <p className="mt-4 text-xs leading-relaxed text-slate-300 font-medium">
+                    Loading image… your time hasn&apos;t started.
+                  </p>
+                  {slowLoad && (
+                    <button
+                      onClick={retryImage}
+                      className="px-btn px-btn-gray mt-4 px-4 py-2 text-[9px]"
+                    >
+                      Try loading again
+                    </button>
+                  )}
+                </div>
+              )}
 
-          {imageState === 'loading' && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-              <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--color-edge)] border-t-[var(--color-cyan)]" />
-              <p className="mt-4 text-sm text-[var(--color-muted)]">
-                Loading image… your time hasn&apos;t started.
-              </p>
-              {slowLoad && (
-                <button
-                  onClick={retryImage}
-                  className="mt-4 rounded-lg border border-[var(--color-edge)] px-4 py-2 text-sm"
-                >
-                  Try loading again
-                </button>
+              {imageState === 'error' && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 px-6 text-center">
+                  <p className="font-px text-[11px] text-[var(--color-px-red)]">
+                    This image didn&apos;t load.
+                  </p>
+                  <p className="mt-3 text-xs leading-relaxed text-slate-300">
+                    Your time hasn&apos;t started.
+                  </p>
+                  <button
+                    onClick={retryImage}
+                    className="px-btn px-btn-gray mt-4 px-4 py-2 text-[9px]"
+                  >
+                    Try again
+                  </button>
+                </div>
+              )}
+
+              {locked && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#070c26]/85">
+                  <p
+                    className="font-px text-base uppercase tracking-wider text-[var(--color-px-cyan)]"
+                    style={{ textShadow: '2px 2px 0 #070c26' }}
+                  >
+                    Answer locked
+                  </p>
+                  {reconnecting && (
+                    <p className="mt-3 font-px text-[8px] text-slate-300">
+                      Saving… reconnecting
+                    </p>
+                  )}
+                </div>
               )}
             </div>
-          )}
+          </div>
 
-          {imageState === 'error' && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-              <p className="text-base font-semibold">This image didn&apos;t load.</p>
-              <p className="mt-2 text-sm text-[var(--color-muted)]">
-                Your time hasn&apos;t started.
-                {loadTry >= 2 && ' If it keeps failing, show this screen to an AIDA team member.'}
-              </p>
-              <button
-                onClick={retryImage}
-                className="mt-4 rounded-lg border border-[var(--color-edge)] px-4 py-2 text-sm"
-              >
-                Try again
-              </button>
+          {/* Flanking characters under frame matching Proposed mock/mround1.png */}
+          <div className="mt-2 flex items-end justify-between px-2 pointer-events-none select-none">
+            <img
+              src="/sprites/boy.png"
+              alt="Human"
+              className="pixelated h-14 sm:h-16 w-auto drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+            />
+            <img
+              src="/sprites/robot-1.png"
+              alt="Robot"
+              className="pixelated h-14 sm:h-16 w-auto drop-shadow-[0_0_12px_rgba(53,224,255,0.6)]"
+            />
+          </div>
+        </div>
+
+        {/* Action Buttons: REAL vs AI GENERATED */}
+        <div className="w-full">
+          <div className="grid grid-cols-2 gap-3.5">
+            <button
+              onClick={() => answer('real')}
+              disabled={locked || imageState !== 'ready'}
+              className="px-btn px-btn-yellow min-h-[64px] sm:min-h-[72px] py-3 text-sm tracking-wider flex items-center justify-center gap-2"
+            >
+              <span className="text-base">●</span>
+              REAL
+            </button>
+            <button
+              onClick={() => answer('ai_generated')}
+              disabled={locked || imageState !== 'ready'}
+              className="px-btn px-btn-cyan min-h-[64px] sm:min-h-[72px] py-3 text-[11px] sm:text-xs leading-tight flex items-center justify-center gap-1.5"
+            >
+              <span className="text-base">✦</span>
+              <span>AI<br/>GENERATED</span>
+            </button>
+          </div>
+
+          {failure && (
+            <div className="mt-3">
+              <RetryNotice
+                message={describeSaveFailure(failure, 'answer')}
+                refCode={failure.ref}
+                retryable={isRetryable(failure)}
+                busy={saving}
+                onRetry={() => {
+                  if (submission.current) save(submission.current);
+                }}
+              />
             </div>
           )}
 
-          {locked && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-[var(--color-void)]/85">
-              <p className="text-xl font-bold tracking-wide text-[var(--color-cyan)]">
-                Answer locked
-              </p>
-              {reconnecting && (
-                <p className="mt-2 text-sm text-[var(--color-muted)]">Saving… reconnecting</p>
-              )}
-            </div>
-          )}
+          <p className="mt-3 text-center text-[10px] text-slate-400">
+            Answers remain locked until results screen.
+          </p>
         </div>
-
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <button
-            onClick={() => answer('real')}
-            disabled={locked || imageState !== 'ready'}
-            className="min-h-[64px] rounded-xl border border-[var(--color-edge)] bg-[var(--color-surface)] text-base font-semibold transition-colors hover:border-[var(--color-cyan)] disabled:opacity-40"
-          >
-            Real
-          </button>
-          <button
-            onClick={() => answer('ai_generated')}
-            disabled={locked || imageState !== 'ready'}
-            className="min-h-[64px] rounded-xl border border-[var(--color-edge)] bg-[var(--color-surface)] text-base font-semibold transition-colors hover:border-[var(--color-cyan)] disabled:opacity-40"
-          >
-            AI generated
-          </button>
-        </div>
-
-        {failure && (
-          <RetryNotice
-            message={describeSaveFailure(failure, 'answer')}
-            refCode={failure.ref}
-            retryable={isRetryable(failure)}
-            busy={saving}
-            onRetry={() => {
-              if (submission.current) save(submission.current);
-            }}
-          />
-        )}
-
-        <p className="mt-4 text-center text-xs text-[var(--color-muted)]">
-          Your total score comes at the end.
-        </p>
       </div>
     </main>
   );

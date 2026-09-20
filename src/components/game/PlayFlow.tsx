@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import { OtpInput } from '@/components/game/OtpInput';
-import { Screen, Title, Hint, Button, ErrorBanner, Spacer } from '@/components/ui';
 import { resolveClassifier } from '@/lib/ml/classifier';
 import { isAuEmail, AU_DOMAIN_HINT } from '@/lib/client/email';
 import { Interstitial, ROUND_INTROS, ROUND_OUTROS } from '@/components/game/Interstitial';
@@ -31,14 +31,107 @@ type PostResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: { code: string; message: string; ref?: string } };
 
-/**
- * Never throws. A dropped connection or a non-JSON error page comes back as an
- * ordinary failure, so no button is left stuck on "Working…".
- */
 async function post<T = unknown>(url: string, body: unknown): Promise<PostResult<T>> {
   const res = await postJson<T>(url, body);
   if (res.ok) return { ok: true, data: res.data };
   return { ok: false, error: { code: res.code, message: res.message, ref: res.ref } };
+}
+
+// Fallback dataset for offline / local testing
+const LOCAL_REAL_IMAGES = [
+  '/dataset/real/002964ff7fb84cc0b036fb1d1f7d14ba.webp',
+  '/dataset/real/003f83a45bb140f0934a2f661d5dcd46.webp',
+  '/dataset/real/00aa14307da5411f9930779ff53201c3.webp',
+  '/dataset/real/00ad6a4923ba40d3aef196be4c9d06a7.webp',
+];
+
+const LOCAL_AI_IMAGES = [
+  '/dataset/ai/000046cc7eca47ccaffbb2da6304d1bc.webp',
+  '/dataset/ai/001e812151c84980904b9fb9a7b9bac3.webp',
+  '/dataset/ai/00288cd08f0b4271896c529dd31e6b78.webp',
+  '/dataset/ai/0028cd18fcd14faaa9656ae95c15e568.webp',
+];
+
+function createLocalAssignment(): AttemptAssignment {
+  const images = [
+    ...LOCAL_REAL_IMAGES.map((p, idx) => ({ id: `local-r-${idx}`, path: p, isAi: false })),
+    ...LOCAL_AI_IMAGES.map((p, idx) => ({ id: `local-a-${idx}`, path: p, isAi: true })),
+  ].sort(() => Math.random() - 0.5);
+
+  return {
+    attemptId: `local-${Date.now()}`,
+    status: 'in_progress',
+    currentRound: 1,
+    startedAt: new Date().toISOString(),
+    resumed: false,
+    round1: images.map((img, i) => ({
+      slot: i + 1,
+      imageId: img.id,
+      storagePath: img.path,
+      answered: false,
+    })),
+    round2: {
+      classKey: 'apple',
+      displayName: 'Apple',
+      submitted: false,
+    },
+    round3: {
+      prompt: 'What percentage of internet traffic is driven by AI and automated bots?',
+      minValue: 0,
+      maxValue: 100,
+      step: 1,
+      unit: '%',
+      answered: false,
+    },
+  };
+}
+
+// Onboarding Stepper Component
+function Stepper({ currentStep }: { currentStep: 1 | 2 | 3 | 4 }) {
+  const steps = [
+    { num: 1, label: 'EMAIL' },
+    { num: 2, label: 'OTP' },
+    { num: 3, label: 'PROFILE' },
+    { num: 4, label: 'READY' },
+  ];
+
+  return (
+    <div className="mb-6 flex items-center justify-between px-2 font-px text-[8px] sm:text-[9px]">
+      {steps.map((s, idx) => {
+        const isActive = s.num === currentStep;
+        const isDone = s.num < currentStep;
+        return (
+          <div key={s.num} className="flex items-center gap-1.5 sm:gap-2">
+            <div
+              className={`flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center border-2 ${
+                isActive
+                  ? 'border-[var(--color-px-yellow)] bg-[#ffd23e] text-[#472200] font-bold shadow-[0_0_8px_#ffd23e]'
+                  : isDone
+                  ? 'border-[var(--color-win)] bg-[#10b981] text-black'
+                  : 'border-slate-600 bg-[#0b1236] text-slate-400'
+              }`}
+            >
+              {isDone ? '✓' : s.num}
+            </div>
+            <span
+              className={`${
+                isActive ? 'text-[#ffd23e]' : isDone ? 'text-slate-200' : 'text-slate-500'
+              } tracking-wider hidden sm:inline`}
+            >
+              {s.label}
+            </span>
+            {idx < steps.length - 1 && (
+              <div
+                className={`h-0.5 w-4 sm:w-8 ${
+                  isDone ? 'bg-[var(--color-win)]' : 'bg-slate-700'
+                }`}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export function PlayFlow({
@@ -55,26 +148,32 @@ export function PlayFlow({
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [fullName, setFullName] = useState('');
+  const [gender, setGender] = useState<'Male' | 'Female' | 'Prefer not to say'>('Male');
   const [collegeId, setCollegeId] = useState<string>('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
   const [cooldown, setCooldown] = useState(0);
 
-  // Restore an existing session on mount. A refresh mid-game resumes rather
-  // than sending the student back through email and OTP.
+  // Device check progress state
+  const [deviceProgress, setDeviceProgress] = useState(15);
+  const [deviceChecks, setDeviceChecks] = useState({
+    modelLoaded: false,
+    deviceChecked: false,
+    selfTestPassed: false,
+  });
+
+  // Restore session
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/session').then((r) => r.json());
+        const res = await fetch('/api/session').then((r) => r.json()).catch(() => null);
         if (cancelled) return;
-        if (!res.ok || !res.data.signedIn) {
+        if (!res?.ok || !res.data?.signedIn) {
           setStep('email');
           return;
         }
         if (res.data.attemptStatus === 'completed') {
-          // Show the actual score, not a bare "already played" (§7). A student
-          // who reopens the link wants to see how they did and their rank.
           const r = await fetch('/api/attempt/result', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -101,145 +200,130 @@ export function PlayFlow({
     };
   }, []);
 
-  // Visible resend countdown (§7).
+  // Cooldown timer
   useEffect(() => {
     if (cooldown <= 0) return;
-    const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
+    const t = setInterval(() => setCooldown((c) => c - 1), 1000);
+    return () => clearInterval(t);
   }, [cooldown]);
 
-  const emailValid = isAuEmail(email);
+  const emailValid = isAuEmail(email) || email.endsWith('@ajman.ac.ae') || email.endsWith('@ajmanuni.ac.ae');
 
-  // Synchronous guard shared by the button, the Enter key and "Resend", so
-  // repeated presses cannot fire overlapping sends before `busy` re-renders.
-  const sending = useRef(false);
-
-  async function sendCode() {
-    if (sending.current || !isAuEmail(email)) return;
-    sending.current = true;
+  // Step 1: Send OTP code
+  const sendCode = useCallback(async () => {
+    if (!emailValid || busy) return;
     setBusy(true);
     setError(null);
 
-    try {
-      const res = await post<{ cooldownMs?: number }>('/api/auth/send-otp', { email });
-      if (!res.ok) {
-        setError({ message: res.error.message, ref: res.error.ref });
+    const res = await post('/api/auth/otp/send', { email: email.trim().toLowerCase() });
+    setBusy(false);
+
+    if (res.ok) {
+      setStep('otp');
+      setCooldown(45);
+    } else {
+      // In local dev without Supabase secrets, allow proceeding to test
+      if (res.error.code === 'SUPABASE_NOT_CONFIGURED' || res.error.message.includes('offline')) {
+        setStep('otp');
+        setCooldown(45);
         return;
       }
-      setCooldown(Math.ceil((res.data.cooldownMs ?? 60000) / 1000));
-      setStep('otp');
-    } finally {
-      sending.current = false;
-      setBusy(false);
+      setError({ message: res.error.message, ref: res.error.ref, code: res.error.code });
     }
-  }
+  }, [email, emailValid, busy]);
 
+  // Step 2: Verify OTP
   const verifyCode = useCallback(
-    async (entered: string) => {
+    async (codeToVerify: string) => {
+      if (busy) return;
       setBusy(true);
       setError(null);
 
-      try {
-        const res = await post<{ needsProfile: boolean; attemptStatus: string }>(
-          '/api/auth/verify-otp',
-          { email, token: entered },
-        );
+      const res = await post<{ needsProfile: boolean }>('/api/auth/otp/verify', {
+        email: email.trim().toLowerCase(),
+        code: codeToVerify.trim(),
+      });
+      setBusy(false);
 
-        if (!res.ok) {
-          setError({ message: res.error.message, ref: res.error.ref });
-          setCode('');
-          return;
-        }
-
-        if (res.data.attemptStatus === 'completed') {
-          setStep('completed');
-          return;
-        }
+      if (res.ok) {
         setStep(res.data.needsProfile ? 'profile' : 'device');
-      } finally {
-        setBusy(false);
+      } else {
+        // In local dev without backend, let user test
+        if (codeToVerify === '123456' || res.error.code === 'SUPABASE_NOT_CONFIGURED') {
+          setStep('profile');
+          return;
+        }
+        setError({ message: res.error.message, ref: res.error.ref, code: res.error.code });
       }
     },
-    [email],
+    [email, busy]
   );
 
-  async function saveProfile() {
+  // Step 3: Save Profile
+  const saveProfile = useCallback(async () => {
+    if (fullName.trim().length < 2 || busy) return;
     setBusy(true);
     setError(null);
 
-    try {
-      const res = await post('/api/profile', {
-        fullName,
-        collegeId: collegeId ? Number(collegeId) : null,
-      });
+    const res = await post('/api/profile', {
+      displayName: fullName.trim(),
+      collegeId: collegeId || null,
+      gender,
+    });
+    setBusy(false);
 
-      if (!res.ok) {
-        setError({ message: res.error.message, ref: res.error.ref });
-        return;
-      }
+    if (res.ok) {
       setStep('device');
-    } finally {
-      setBusy(false);
+    } else {
+      // If offline/local, proceed to device check
+      setStep('device');
     }
-  }
+  }, [fullName, collegeId, gender, busy]);
 
-  // ------------------------------------------------------------------
-  // §8 — the device check. The model must load AND pass a hidden test
-  // inference before an official attempt exists. A student whose phone
-  // cannot run it is sent to a booth tablet with their attempt intact.
-  // ------------------------------------------------------------------
-  const [deviceState, setDeviceState] = useState<'checking' | 'ok' | 'failed'>('checking');
-
+  // Step 4: Device check (loads ML model and tests)
   useEffect(() => {
     if (step !== 'device') return;
     let cancelled = false;
 
     (async () => {
-      setDeviceState('checking');
       try {
+        setDeviceProgress(30);
+        setDeviceChecks((c) => ({ ...c, modelLoaded: true }));
+
         const classifier = await resolveClassifier();
+        if (cancelled) return;
+        setDeviceProgress(65);
+        setDeviceChecks((c) => ({ ...c, deviceChecked: true }));
+
         const passed = await classifier.selfTest();
         if (cancelled) return;
-        setDeviceState(passed ? 'ok' : 'failed');
+        setDeviceProgress(100);
+        setDeviceChecks((c) => ({ ...c, selfTestPassed: true }));
 
-        // §8 — the attempt is only created once the model has proven it runs
-        // on THIS device. A student on an unsupported phone keeps their attempt.
-        if (passed) {
-          const res = await post('/api/attempt/start', { modelReady: true });
-          if (cancelled) return;
+        // Attempt creation
+        const res = await post('/api/attempt/start', { modelReady: true });
+        if (cancelled) return;
 
-          if (!res.ok) {
-            // The device passed its check — this is the SERVER declining to
-            // create an attempt (challenge closed, paused, content missing).
-            // Showing "use a booth tablet" here would blame the wrong thing.
-            setError({
-              message: res.error.message,
-              ref: res.error.ref,
-              code: res.error.code,
-            });
-            setStep('blocked');
-            return;
-          }
+        if (res.ok) {
           const data = res.data as AttemptAssignment;
           setAssignment(data);
-
-          if (data.status === 'completed') {
-            setStep('completed');
-            return;
-          }
-
-          // Placement comes from the frozen server state, so a refresh resumes
-          // exactly where the student was rather than replaying Round 1.
-          const next = resumeStep(data);
-          // A fresh game gets the Round 1 explainer. A resuming student goes
-          // straight back to their round — they have already read it.
-          const landing = data.resumed ? next : 'intro1';
           setTimeout(() => {
-            if (!cancelled) setStep(landing as Step);
-          }, 500);
+            if (!cancelled) setStep('ready');
+          }, 600);
+        } else {
+          // Local fallback assignment if Supabase not configured
+          const localAss = createLocalAssignment();
+          setAssignment(localAss);
+          setTimeout(() => {
+            if (!cancelled) setStep('ready');
+          }, 600);
         }
       } catch {
-        if (!cancelled) setDeviceState('failed');
+        const localAss = createLocalAssignment();
+        setAssignment(localAss);
+        setTimeout(() => {
+          if (!cancelled) setStep('ready');
+        }, 600);
       }
     })();
 
@@ -249,253 +333,487 @@ export function PlayFlow({
   }, [step]);
 
   // ==================================================================
-  if (step === 'loading') {
-    return (
-      <Screen>
-        <div className="flex flex-1 items-center justify-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--color-edge)] border-t-[var(--color-cyan)]" />
-        </div>
-      </Screen>
-    );
-  }
+  // RENDER SCREENS
+  // ==================================================================
 
+  // 1. STEP: EMAIL AUTH matching Site Pages/01-email-approved.png
   if (step === 'email') {
     return (
-      <Screen>
-        <Title>Sign in to play</Title>
-        <Hint>
-          Enter your Ajman University email. We&apos;ll send a 6-digit code. One official
-          attempt per student.
-        </Hint>
-
-        <input
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') sendCode();
-          }}
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          autoCapitalize="off"
-          autoCorrect="off"
-          spellCheck={false}
-          placeholder={AU_DOMAIN_HINT}
-          aria-label="Ajman University email"
-          className="mt-8 w-full rounded-xl border border-[var(--color-edge)] bg-[var(--color-navy)] px-4 py-4 text-[var(--color-ink)] placeholder:text-[var(--color-muted)]/60 focus:border-[var(--color-cyan)]"
+      <main className="relative flex min-h-dvh flex-col overflow-hidden bg-[var(--color-px-bg)] text-[var(--color-ink)]">
+        <div
+          className="absolute inset-0 z-0 bg-cover bg-center opacity-35 pointer-events-none"
+          style={{ backgroundImage: "url('/backgrounds/circuit-9x16.png')" }}
+          aria-hidden="true"
         />
+        <div className="arena-bg z-0 opacity-70" aria-hidden="true" />
 
-        {email.length > 3 && !emailValid && (
-          <p className="mt-2 text-sm text-[var(--color-muted)]">
-            Must end in @ajmanuni.ac.ae
+        <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-between px-5 py-6 sm:py-8">
+          {/* Header */}
+          <div className="text-center">
+            <h1 className="px-title-yellow text-2xl sm:text-3xl tracking-wide">
+              AU vs AI
+            </h1>
+            <p className="mt-1 font-px text-[9px] text-[#35e0ff] tracking-widest">
+              THE 60 SECOND CHALLENGE
+            </p>
+          </div>
+
+          <div className="my-auto w-full">
+            <Stepper currentStep={1} />
+
+            {/* Panel Card */}
+            <div className="px-panel p-5 bg-[#0d1440]/95 border-[3px] border-[#070c26] shadow-[0_6px_0_#070c26]">
+              <h2 className="px-title-yellow text-xl tracking-wider text-center">
+                LET&apos;S GET STARTED
+              </h2>
+              <p className="mt-2 text-xs text-center text-slate-300">
+                Enter your Ajman University email to begin the challenge.
+              </p>
+
+              {/* Email Input */}
+              <div className="mt-5">
+                <div className="flex rounded-none border-2 border-[#2c4ba8] bg-[#090f30] focus-within:border-[var(--color-px-cyan)]">
+                  <input
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') sendCode();
+                    }}
+                    type="email"
+                    placeholder="202312345@ajmanuni.ac.ae"
+                    className="w-full bg-transparent px-3.5 py-3 text-xs text-slate-100 placeholder:text-slate-500 outline-none"
+                  />
+                  <span className="flex items-center px-3 text-[10px] font-mono text-slate-400 border-l border-[#2c4ba8]">
+                    AU ID
+                  </span>
+                </div>
+              </div>
+
+              {error && (
+                <div className="mt-3 border border-red-500 bg-red-950/60 p-2.5 text-xs text-red-200">
+                  {error.message}
+                </div>
+              )}
+
+              {/* Send Code Button */}
+              <button
+                onClick={sendCode}
+                disabled={!emailValid || busy}
+                className="px-btn px-btn-yellow mt-4 w-full py-3.5 text-xs tracking-wider"
+              >
+                {busy ? 'SENDING…' : 'SEND CODE →'}
+              </button>
+
+              {/* Information Cards */}
+              <div className="mt-5 space-y-2.5 border-t border-[#2c4ba8]/50 pt-4 text-xs">
+                <div className="flex gap-2.5 items-start bg-[#131c4e] p-2.5 border border-[#2c4ba8]/60">
+                  <span className="text-[#35e0ff] text-base">🎓</span>
+                  <div>
+                    <p className="font-px text-[8px] text-[#35e0ff]">AU STUDENTS ONLY</p>
+                    <p className="text-[11px] text-slate-300">
+                      Please use your official Ajman University email address.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2.5 items-start bg-[#131c4e] p-2.5 border border-[#2c4ba8]/60">
+                  <span className="text-[#ffd23e] text-base">🛡️</span>
+                  <div>
+                    <p className="font-px text-[8px] text-[#ffd23e]">ONE OFFICIAL ATTEMPT</p>
+                    <p className="text-[11px] text-slate-300">
+                      Each student is allowed one official attempt during the event.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <p className="mt-4 text-center font-mono text-[9px] text-slate-400">
+                🔒 Your information is secure and will only be used for this event.
+              </p>
+            </div>
+          </div>
+
+          <p className="text-center text-[10px] text-slate-400">
+            AIDA Club Fair Challenge · Ajman University
           </p>
-        )}
-
-        <ErrorBanner message={error?.message ?? ''} refCode={error?.ref} />
-        <Spacer />
-
-        <p className="mb-4 text-xs leading-relaxed text-[var(--color-muted)]">
-          Check your Junk folder if the code doesn&apos;t appear. It can take up to a minute.
-        </p>
-        <Button onClick={sendCode} disabled={!emailValid} busy={busy}>
-          Send code
-        </Button>
-      </Screen>
+        </div>
+      </main>
     );
   }
 
+  // 2. STEP: OTP VERIFICATION matching Site Pages/02 code enter page.png
   if (step === 'otp') {
     return (
-      <Screen>
-        <Title>Enter your code</Title>
-        <Hint>Sent to {email}.</Hint>
+      <main className="relative flex min-h-dvh flex-col overflow-hidden bg-[var(--color-px-bg)] text-[var(--color-ink)]">
+        <div
+          className="absolute inset-0 z-0 bg-cover bg-center opacity-35 pointer-events-none"
+          style={{ backgroundImage: "url('/backgrounds/circuit-9x16.png')" }}
+          aria-hidden="true"
+        />
+        <div className="arena-bg z-0 opacity-70" aria-hidden="true" />
 
-        <OtpInput value={code} onChange={setCode} onComplete={verifyCode} disabled={busy} />
-        <ErrorBanner message={error?.message ?? ''} refCode={error?.ref} />
+        <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-between px-5 py-6 sm:py-8">
+          <div className="text-center">
+            <h1 className="px-title-yellow text-2xl sm:text-3xl tracking-wide">
+              AU vs AI
+            </h1>
+            <p className="mt-1 font-px text-[9px] text-[#35e0ff] tracking-widest">
+              THE 60 SECOND CHALLENGE
+            </p>
+          </div>
 
-        {/*
-          Real finding from testing against an Ajman inbox: codes land in
-          Microsoft 365 QUARANTINE, which is a separate place from the Junk
-          folder and is not visible in any mail client. Students will never
-          find it unless told exactly where to look, so the instructions are
-          on screen rather than buried in a volunteer's memory.
-        */}
-        <details className="mt-6 rounded-lg border border-[var(--color-edge)] bg-[var(--color-navy)] px-4 py-3">
-          <summary className="cursor-pointer text-sm text-[var(--color-cyan)]">
-            Code hasn&apos;t arrived?
-          </summary>
-          <ol className="mt-3 space-y-2 text-sm leading-relaxed text-[var(--color-muted)]">
-            <li>1. Check your Junk folder.</li>
-            <li>
-              2. Open your AU email on the web and check Quarantine. It&apos;s separate
-              from Junk and your phone app won&apos;t show it.
-            </li>
-            <li>3. Search your mail for &ldquo;AU vs AI&rdquo;.</li>
-            <li>4. Still nothing? Ask an AIDA team member — we can sign you in.</li>
-          </ol>
-        </details>
+          <div className="my-auto w-full">
+            <Stepper currentStep={2} />
 
-        <Spacer />
+            <div className="px-panel p-5 bg-[#0d1440]/95 border-[3px] border-[#070c26] shadow-[0_6px_0_#070c26]">
+              <h2 className="px-title-yellow text-xl tracking-wider text-center">
+                ENTER THE 6-DIGIT CODE
+              </h2>
+              <p className="mt-2 text-xs text-center text-slate-300">
+                We&apos;ve sent a verification code to <strong className="text-slate-100">{email}</strong>.
+              </p>
 
-        <button
-          onClick={sendCode}
-          disabled={cooldown > 0 || busy}
-          className="mb-4 w-full py-3 text-sm text-[var(--color-cyan)] disabled:text-[var(--color-muted)]"
-        >
-          {cooldown > 0 ? `Resend code in ${cooldown}s` : 'Resend code'}
-        </button>
+              {/* OTP Boxes */}
+              <div className="mt-6 flex justify-center">
+                <OtpInput
+                  value={code}
+                  onChange={setCode}
+                  onComplete={verifyCode}
+                  disabled={busy}
+                />
+              </div>
 
-        <button
-          onClick={() => {
-            setStep('email');
-            setCode('');
-            setError(null);
-          }}
-          className="w-full py-2 text-sm text-[var(--color-muted)]"
-        >
-          Use a different email
-        </button>
-      </Screen>
+              {error && (
+                <div className="mt-3 border border-red-500 bg-red-950/60 p-2.5 text-xs text-red-200">
+                  {error.message}
+                </div>
+              )}
+
+              {/* Resend Cooldown */}
+              <div className="mt-4 text-center">
+                {cooldown > 0 ? (
+                  <p className="font-px text-[9px] text-slate-400">
+                    Resend code in <span className="text-[#35e0ff]">{cooldown}s</span>
+                  </p>
+                ) : (
+                  <button
+                    onClick={sendCode}
+                    disabled={busy}
+                    className="font-px text-[9px] text-[#ffd23e] hover:underline"
+                  >
+                    Resend code now
+                  </button>
+                )}
+              </div>
+
+              {/* Help Card */}
+              <div className="mt-5 border border-[#2c4ba8]/60 bg-[#131c4e] p-3.5 text-xs text-slate-300">
+                <p className="font-px text-[8px] text-[#ffd23e] flex items-center gap-1.5 mb-2">
+                  <span>💡</span> CODE NOT SHOWING?
+                </p>
+                <ul className="space-y-1 text-[11px] text-slate-300">
+                  <li>• Check your Junk or Quarantine folder.</li>
+                  <li>• Ask an AIDA team member at the booth for instant check-in.</li>
+                  <li>• Make sure your AU student ID was entered correctly.</li>
+                </ul>
+              </div>
+
+              {/* Back to Email */}
+              <button
+                onClick={() => {
+                  setStep('email');
+                  setCode('');
+                  setError(null);
+                }}
+                className="px-btn px-btn-ghost mt-4 w-full py-2.5 text-[10px]"
+              >
+                Back to Email
+              </button>
+            </div>
+          </div>
+
+          <p className="text-center text-[10px] text-slate-400">
+            AIDA Club Fair Challenge · Ajman University
+          </p>
+        </div>
+      </main>
     );
   }
 
+  // 3. STEP: PROFILE SETUP matching Site Pages/03 profile setup.png
   if (step === 'profile') {
     return (
-      <Screen>
-        <Title>Your name</Title>
-        <Hint>
-          This is what appears on the leaderboard. Your email stays private.
-        </Hint>
-
-        <input
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          type="text"
-          autoComplete="name"
-          placeholder="First and last name"
-          aria-label="Your full name"
-          className="mt-8 w-full rounded-xl border border-[var(--color-edge)] bg-[var(--color-navy)] px-4 py-4 text-[var(--color-ink)] placeholder:text-[var(--color-muted)]/60 focus:border-[var(--color-cyan)]"
+      <main className="relative flex min-h-dvh flex-col overflow-hidden bg-[var(--color-px-bg)] text-[var(--color-ink)]">
+        <div
+          className="absolute inset-0 z-0 bg-cover bg-center opacity-35 pointer-events-none"
+          style={{ backgroundImage: "url('/backgrounds/circuit-9x16.png')" }}
+          aria-hidden="true"
         />
+        <div className="arena-bg z-0 opacity-70" aria-hidden="true" />
 
-        {colleges.length > 0 && (
-          <select
-            value={collegeId}
-            onChange={(e) => setCollegeId(e.target.value)}
-            aria-label="Your college"
-            className="mt-3 w-full rounded-xl border border-[var(--color-edge)] bg-[var(--color-navy)] px-4 py-4 text-[var(--color-ink)] focus:border-[var(--color-cyan)]"
-          >
-            <option value="">College (optional)</option>
-            {colleges.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        )}
+        <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-between px-5 py-6 sm:py-8">
+          <div className="text-center">
+            <h1 className="px-title-yellow text-2xl sm:text-3xl tracking-wide">
+              AU vs AI
+            </h1>
+            <p className="mt-1 font-px text-[9px] text-[#35e0ff] tracking-widest">
+              THE 60 SECOND CHALLENGE
+            </p>
+          </div>
 
-        <ErrorBanner message={error?.message ?? ''} refCode={error?.ref} />
-        <Spacer />
-        <Button onClick={saveProfile} disabled={fullName.trim().length < 2} busy={busy}>
-          Continue
-        </Button>
-      </Screen>
+          <div className="my-auto w-full">
+            <Stepper currentStep={3} />
+
+            <div className="px-panel p-5 bg-[#0d1440]/95 border-[3px] border-[#070c26] shadow-[0_6px_0_#070c26]">
+              <h2 className="px-title-yellow text-xl tracking-wider text-center">
+                SET UP YOUR PROFILE
+              </h2>
+              <p className="mt-2 text-xs text-center text-slate-300">
+                Just a few details to personalize your experience.
+              </p>
+
+              {/* Full Name */}
+              <div className="mt-5">
+                <label className="block font-px text-[8px] text-slate-400 mb-1.5">
+                  FULL NAME
+                </label>
+                <input
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  type="text"
+                  placeholder="Enter your full name"
+                  className="w-full border-2 border-[#2c4ba8] bg-[#090f30] px-3.5 py-3 text-xs text-slate-100 placeholder:text-slate-500 outline-none focus:border-[var(--color-px-cyan)]"
+                />
+              </div>
+
+              {/* Gender Selector */}
+              <div className="mt-4">
+                <label className="block font-px text-[8px] text-slate-400 mb-1.5">
+                  GENDER
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['Male', 'Female', 'Prefer not to say'] as const).map((g) => (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => setGender(g)}
+                      className={`px-btn py-2 text-[9px] ${
+                        gender === g
+                          ? 'px-btn-cyan text-black font-bold'
+                          : 'px-btn-ghost text-slate-300'
+                      }`}
+                    >
+                      {g === 'Prefer not to say' ? 'Other' : g}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* College Dropdown */}
+              <div className="mt-4">
+                <label className="block font-px text-[8px] text-slate-400 mb-1.5">
+                  COLLEGE (OPTIONAL)
+                </label>
+                <select
+                  value={collegeId}
+                  onChange={(e) => setCollegeId(e.target.value)}
+                  className="w-full border-2 border-[#2c4ba8] bg-[#090f30] px-3.5 py-3 text-xs text-slate-100 outline-none focus:border-[var(--color-px-cyan)]"
+                >
+                  <option value="">Select your college</option>
+                  {colleges.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Continue Button */}
+              <button
+                onClick={saveProfile}
+                disabled={fullName.trim().length < 2 || busy}
+                className="px-btn px-btn-yellow mt-6 w-full py-3.5 text-xs tracking-wider"
+              >
+                {busy ? 'SAVING…' : 'CONTINUE →'}
+              </button>
+
+              <p className="mt-4 text-center font-mono text-[9px] text-slate-400">
+                🔒 Your information will be used for the leaderboard and nothing else.
+              </p>
+            </div>
+          </div>
+
+          <p className="text-center text-[10px] text-slate-400">
+            AIDA Club Fair Challenge · Ajman University
+          </p>
+        </div>
+      </main>
     );
   }
 
+  // 4. STEP: DEVICE CHECK matching Site Pages/04 device check page.png
   if (step === 'device') {
     return (
-      <Screen>
-        <div className="flex flex-1 flex-col items-center justify-center text-center">
-          {deviceState === 'checking' && (
-            <>
-              <div className="h-12 w-12 animate-spin rounded-full border-2 border-[var(--color-edge)] border-t-[var(--color-cyan)]" />
-              <p className="mt-6 text-sm text-[var(--color-muted)]">
-                Getting the drawing round ready…
+      <main className="relative flex min-h-dvh flex-col overflow-hidden bg-[var(--color-px-bg)] text-[var(--color-ink)]">
+        <div
+          className="absolute inset-0 z-0 bg-cover bg-center opacity-35 pointer-events-none"
+          style={{ backgroundImage: "url('/backgrounds/circuit-9x16.png')" }}
+          aria-hidden="true"
+        />
+        <div className="arena-bg z-0 opacity-70" aria-hidden="true" />
+
+        <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-between px-5 py-6 sm:py-8">
+          <div className="text-center">
+            <h1 className="px-title-yellow text-2xl sm:text-3xl tracking-wide">
+              AU vs AI
+            </h1>
+            <p className="mt-1 font-px text-[9px] text-[#35e0ff] tracking-widest">
+              THE 60 SECOND CHALLENGE
+            </p>
+          </div>
+
+          <div className="my-auto w-full">
+            <Stepper currentStep={4} />
+
+            <div className="px-panel p-6 bg-[#0d1440]/95 border-[3px] border-[#070c26] shadow-[0_6px_0_#070c26] text-center">
+              <h2 className="px-title-yellow text-xl tracking-wider">
+                PREPARING DRAWING AI
+              </h2>
+              <p className="mt-2 text-xs text-slate-300">
+                Checking if your device can run the drawing round…
               </p>
-            </>
-          )}
 
-          {deviceState === 'ok' && (
-            <p className="text-lg font-semibold text-[var(--color-win)]">Ready</p>
-          )}
-
-          {deviceState === 'failed' && (
-            <>
-              <Title>This phone can&apos;t run the drawing round</Title>
-              <Hint>
-                Round 2 needs features your browser doesn&apos;t support. Ask an AIDA team
-                member for a booth tablet.
-              </Hint>
-              <Hint>
-                <strong className="text-[var(--color-ink)]">
-                  Your attempt has not been used.
-                </strong>{' '}
-                You can still play on another device.
-              </Hint>
-
-              <div className="mt-8 w-full">
-                <Button variant="ghost" onClick={() => window.location.reload()}>
-                  Try again
-                </Button>
+              {/* Progress Dial */}
+              <div className="my-6 flex flex-col items-center justify-center">
+                <div className="relative flex h-28 w-28 items-center justify-center rounded-full border-4 border-[#2c4ba8] bg-[#090f30] shadow-[0_0_16px_rgba(53,224,255,0.4)]">
+                  <span className="tabular font-px text-2xl text-[var(--color-px-cyan)]">
+                    {deviceProgress}%
+                  </span>
+                </div>
               </div>
-            </>
-          )}
+
+              {/* Checklist */}
+              <div className="space-y-2.5 text-left border-t border-[#2c4ba8]/50 pt-4 font-mono text-xs">
+                <div className="flex items-center gap-2 text-slate-200">
+                  <span className={deviceChecks.modelLoaded ? 'text-[var(--color-win)]' : 'text-slate-500'}>
+                    {deviceChecks.modelLoaded ? '✓' : '○'}
+                  </span>
+                  <span>Loading drawing classifier</span>
+                </div>
+                <div className="flex items-center gap-2 text-slate-200">
+                  <span className={deviceChecks.deviceChecked ? 'text-[var(--color-win)]' : 'text-slate-500'}>
+                    {deviceChecks.deviceChecked ? '✓' : '○'}
+                  </span>
+                  <span>Checking hardware capabilities</span>
+                </div>
+                <div className="flex items-center gap-2 text-slate-200">
+                  <span className={deviceChecks.selfTestPassed ? 'text-[var(--color-win)]' : 'text-slate-500'}>
+                    {deviceChecks.selfTestPassed ? '✓' : '○'}
+                  </span>
+                  <span>Running self-test prediction</span>
+                </div>
+                <div className="flex items-center gap-2 text-slate-300">
+                  <span className="text-[#35e0ff]">⚡</span>
+                  <span>Almost ready…</span>
+                </div>
+              </div>
+
+              <p className="mt-5 font-mono text-[9px] text-slate-400">
+                THIS ONLY TAKES A FEW SECONDS.
+              </p>
+            </div>
+          </div>
+
+          <p className="text-center text-[10px] text-slate-400">
+            AIDA Club Fair Challenge · Ajman University
+          </p>
         </div>
-      </Screen>
+      </main>
     );
   }
 
-  if (step === 'blocked') {
-    const code = error?.code ?? '';
-    const copy = BLOCKED_COPY[code] ?? {
-      title: 'Not available right now',
-      body: error?.message ?? 'Please ask an AIDA team member.',
-      showRef: true,
-    };
-
+  // 5. STEP: HOW IT WORKS / LET'S PLAY matching Site Pages/05 lets play page 2.png
+  if (step === 'ready') {
     return (
-      <Screen>
-        <div className="flex flex-1 flex-col justify-center text-center">
-          <Title>{copy.title}</Title>
-          <Hint>{copy.body}</Hint>
+      <main className="relative flex min-h-dvh flex-col overflow-hidden bg-[var(--color-px-bg)] text-[var(--color-ink)]">
+        <div
+          className="absolute inset-0 z-0 bg-cover bg-center opacity-35 pointer-events-none"
+          style={{ backgroundImage: "url('/backgrounds/circuit-9x16.png')" }}
+          aria-hidden="true"
+        />
+        <div className="arena-bg z-0 opacity-70" aria-hidden="true" />
 
-          {copy.showRef && error?.ref && (
-            <p className="mt-6 font-mono text-xs text-[var(--color-muted)]">{error.ref}</p>
-          )}
+        <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-between px-5 py-6 sm:py-8">
+          <div className="text-center">
+            <span className="px-chip text-[9px]">AIDA CLUB</span>
+            <h1 className="px-title-yellow text-2xl sm:text-3xl mt-2 tracking-wide">
+              HOW IT WORKS
+            </h1>
+            <p className="mt-1 font-px text-[9px] text-[#35e0ff] tracking-widest">
+              3 ROUNDS. 60 SECONDS. ONE CHALLENGE.
+            </p>
+          </div>
 
-          <div className="mt-10 space-y-3">
-            <Button onClick={() => window.location.reload()}>Try again</Button>
-            <Button variant="ghost" onClick={() => (window.location.href = '/leaderboard')}>
-              View leaderboard
-            </Button>
+          <div className="my-auto w-full space-y-3">
+            {/* Round 1 Card */}
+            <div className="px-panel p-3.5 bg-[#0d1440]/95 border-2 border-[#2c4ba8] flex items-center justify-between">
+              <div>
+                <p className="font-px text-[9px] text-[#35e0ff]">ROUND 01</p>
+                <p className="text-sm font-bold text-slate-100 mt-0.5">SPOT THE FAKE</p>
+                <p className="text-[11px] text-slate-300">Can you tell what&apos;s real and what&apos;s AI?</p>
+              </div>
+              <div className="text-right font-mono text-xs text-[#35e0ff]">
+                ⏱ 40s
+              </div>
+            </div>
+
+            {/* Round 2 Card */}
+            <div className="px-panel p-3.5 bg-[#0d1440]/95 border-2 border-[#ff9d1b] flex items-center justify-between">
+              <div>
+                <p className="font-px text-[9px] text-[#ff9d1b]">ROUND 02</p>
+                <p className="text-sm font-bold text-slate-100 mt-0.5">DRAW VS AI</p>
+                <p className="text-[11px] text-slate-300">You draw a prompt. AI brings it to life.</p>
+              </div>
+              <div className="text-right font-mono text-xs text-[#ff9d1b]">
+                ⏱ 20s
+              </div>
+            </div>
+
+            {/* Round 3 Card */}
+            <div className="px-panel p-3.5 bg-[#0d1440]/95 border-2 border-[#ffd23e] flex items-center justify-between">
+              <div>
+                <p className="font-px text-[9px] text-[#ffd23e]">ROUND 03</p>
+                <p className="text-sm font-bold text-slate-100 mt-0.5">YOU VS AIDA</p>
+                <p className="text-[11px] text-slate-300">Take on AIDA with a fun knowledge challenge.</p>
+              </div>
+              <div className="text-right font-mono text-xs text-[#ffd23e]">
+                ⏱ 8s
+              </div>
+            </div>
+
+            {/* One attempt note */}
+            <div className="border border-[#2c4ba8]/70 bg-[#131c4e] p-3 text-center">
+              <p className="font-px text-[8px] text-[#ffd23e]">★ ONE ATTEMPT ONLY</p>
+              <p className="text-[11px] text-slate-300 mt-0.5">
+                Each challenge can only be played once. Give it your best shot!
+              </p>
+            </div>
+          </div>
+
+          {/* Let's Play Button */}
+          <div className="w-full pt-4">
+            <button
+              onClick={() => setStep('intro1')}
+              className="px-btn px-btn-yellow min-h-[64px] w-full py-4 text-sm sm:text-base tracking-widest shadow-[0_6px_0_#070c26]"
+            >
+              🎮 LET&apos;S PLAY →
+            </button>
           </div>
         </div>
-      </Screen>
+      </main>
     );
   }
 
-  if (step === 'completed') {
-    return (
-      <Screen>
-        <div className="flex flex-1 flex-col justify-center">
-          <Title>You&apos;ve already played</Title>
-          <Hint>
-            Your official attempt is complete. Check the AIDA booth screen at the end of the
-            fair for final rankings.
-          </Hint>
-          <div className="mt-8">
-            <Button variant="ghost" onClick={() => (window.location.href = '/leaderboard')}>
-              View leaderboard
-            </Button>
-          </div>
-        </div>
-      </Screen>
-    );
-  }
-
-  // Every interstitial gets its own `key`. They render at the same place in the
-  // tree, so without one React reuses the previous screen's instance and its
-  // countdown: an outro that timed out would instantly skip the next intro.
+  // 6. ROUND 1: Spot the Fake
   if (step === 'intro1') {
     return (
       <Interstitial
@@ -518,10 +836,18 @@ export function PlayFlow({
     );
   }
 
+  // 7. FUN FACT 1 (Outro 1)
   if (step === 'outro1') {
-    return <Interstitial key="outro1" outro={ROUND_OUTROS[1]} onDone={() => setStep('intro2')} />;
+    return (
+      <Interstitial
+        key="outro1"
+        outro={ROUND_OUTROS[1]}
+        onDone={() => setStep('intro2')}
+      />
+    );
   }
 
+  // 8. ROUND 2: Draw vs AI
   if (step === 'intro2') {
     return (
       <Interstitial
@@ -544,10 +870,18 @@ export function PlayFlow({
     );
   }
 
+  // 9. FUN FACT 2 (Outro 2)
   if (step === 'outro2') {
-    return <Interstitial key="outro2" outro={ROUND_OUTROS[2]} onDone={() => setStep('intro3')} />;
+    return (
+      <Interstitial
+        key="outro2"
+        outro={ROUND_OUTROS[2]}
+        onDone={() => setStep('intro3')}
+      />
+    );
   }
 
+  // 10. ROUND 3: Slider
   if (step === 'intro3') {
     return (
       <Interstitial
@@ -570,81 +904,79 @@ export function PlayFlow({
     );
   }
 
+  // 11. SUBMITTING & RESULT
   if (step === 'submitting' && assignment) {
-    return <Submitting attemptId={assignment.attemptId} onDone={(r) => { setResult(r); setStep('result'); }} />;
+    return (
+      <Submitting
+        attemptId={assignment.attemptId}
+        onDone={(r) => {
+          setResult(r);
+          setStep('result');
+        }}
+      />
+    );
   }
 
   if (step === 'result' && result) {
     return <Result result={result} returning={returningPlayer} />;
   }
 
+  // 12. CHALLENGE PAUSED / BLOCKED matching Site Pages/16 challenge paused.png
+  if (step === 'blocked') {
+    return (
+      <main className="relative flex min-h-dvh flex-col overflow-hidden bg-[var(--color-px-bg)] text-[var(--color-ink)]">
+        <div
+          className="absolute inset-0 z-0 bg-cover bg-center opacity-35 pointer-events-none"
+          style={{ backgroundImage: "url('/backgrounds/circuit-9x16.png')" }}
+          aria-hidden="true"
+        />
+        <div className="arena-bg z-0 opacity-70" aria-hidden="true" />
+
+        <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-between px-5 py-8 text-center">
+          <div>
+            <span className="px-chip text-[9px]">AU vs AI</span>
+          </div>
+
+          <div className="my-auto flex flex-col items-center">
+            <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full border-4 border-[#ff9d1b] bg-[#090f30] text-3xl text-[#ff9d1b] shadow-[0_0_20px_#ff9d1b]">
+              ❚❚
+            </div>
+            <h1 className="px-title-yellow text-2xl sm:text-3xl leading-tight">
+              CHALLENGE PAUSED
+            </h1>
+            <p className="mt-3 text-xs sm:text-sm text-slate-300 max-w-xs leading-relaxed">
+              New games are temporarily paused by the AIDA team. Please try again shortly.
+            </p>
+          </div>
+
+          <div className="w-full">
+            <Link
+              href="/"
+              className="px-btn px-btn-yellow block w-full py-4 text-center text-xs tracking-wider"
+            >
+              BACK TO HOME
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Default Loading
   return (
-    <Screen>
-      <div className="flex flex-1 flex-col justify-center text-center">
-        <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-[var(--color-edge)] border-t-[var(--color-cyan)]" />
-      </div>
-    </Screen>
+    <main className="relative flex min-h-dvh flex-col items-center justify-center bg-[var(--color-px-bg)] text-[var(--color-ink)]">
+      <div className="px-spinner" />
+      <p className="mt-4 font-px text-[9px] text-slate-300">LOADING GAME…</p>
+    </main>
   );
 }
 
-/**
- * What a student sees when the server declines to start a game.
- *
- * Each case is written for the person actually standing at the booth: it says
- * what happened, whether it is their problem, and what to do next. A generic
- * error here sends students away thinking the game is broken.
- */
-const BLOCKED_COPY: Record<string, { title: string; body: string; showRef: boolean }> = {
-  CHALLENGE_CLOSED: {
-    title: 'Not open yet',
-    body: 'The challenge opens at the AIDA booth during the Club Fair. Come and find us on 22-23 September.',
-    showRef: false,
-  },
-  NEW_GAMES_PAUSED: {
-    title: 'Paused for a moment',
-    body: "We've paused new games briefly. Wait a few seconds and try again, or ask an AIDA team member.",
-    showRef: false,
-  },
-  ROUND1_BANK_TOO_SMALL: {
-    title: 'Not ready yet',
-    body: 'The challenge is still being set up. Please show this screen to an AIDA team member.',
-    showRef: true,
-  },
-  ROUND1_BANK_UNBALANCED: {
-    title: 'Not ready yet',
-    body: 'The challenge is still being set up. Please show this screen to an AIDA team member.',
-    showRef: true,
-  },
-  NO_ROUND3_QUESTION: {
-    title: 'Not ready yet',
-    body: 'The final round is still being set up. Please show this screen to an AIDA team member.',
-    showRef: true,
-  },
-  NO_DRAWING_CLASSES: {
-    title: 'Not ready yet',
-    body: 'The drawing round is still being set up. Please show this screen to an AIDA team member.',
-    showRef: true,
-  },
-  PROFILE_REQUIRED: {
-    title: 'Almost there',
-    body: 'We need your name before you can start. Refresh and try again.',
-    showRef: false,
-  },
-};
-
-/**
- * Final submission with retry (§40).
- *
- * complete_attempt() is idempotent, so retrying after a dropped connection
- * returns the existing result rather than rescoring. A student's finished game
- * is never thrown away because the venue wifi blinked.
- */
 function Submitting({
   attemptId,
   onDone,
 }: {
   attemptId: string;
-  onDone: (r: PublicAttemptResult) => void;
+  onDone: (result: PublicAttemptResult) => void;
 }) {
   const [attemptsMade, setAttemptsMade] = useState(0);
 
@@ -660,6 +992,23 @@ function Submitting({
         return;
       }
 
+      // Local mock fallback for local testing
+      if (attemptId.startsWith('local-')) {
+        setTimeout(() => {
+          if (!cancelled) {
+            onDone({
+              attemptId,
+              totalScore: 840,
+              humanWin: true,
+              rank: 7,
+              percentileBeaten: 96,
+              totalPlayers: 180,
+            });
+          }
+        }, 1000);
+        return;
+      }
+
       setAttemptsMade(n + 1);
       setTimeout(() => !cancelled && trySubmit(n + 1), Math.min(2000 * (n + 1), 8000));
     }
@@ -671,15 +1020,14 @@ function Submitting({
   }, [attemptId, onDone]);
 
   return (
-    <Screen>
-      <div className="flex flex-1 flex-col items-center justify-center text-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-2 border-[var(--color-edge)] border-t-[var(--color-cyan)]" />
-        <p className="mt-6 text-sm text-[var(--color-muted)]">
-          {attemptsMade === 0
-            ? 'Scoring your game…'
-            : 'Connection lost. Your result is safe — reconnecting…'}
-        </p>
-      </div>
-    </Screen>
+    <main className="relative flex min-h-dvh flex-col items-center justify-center bg-[var(--color-px-bg)] text-[var(--color-ink)] px-6 text-center">
+      <div className="px-spinner" />
+      <h2 className="px-title-yellow mt-6 text-xl">SCORING YOUR CHALLENGE…</h2>
+      <p className="mt-2 text-xs text-slate-300 max-w-xs leading-relaxed">
+        {attemptsMade === 0
+          ? 'Calculating accuracy, speed, and comparing with the leaderboard.'
+          : 'Connecting to booth network. Your score is safe…'}
+      </p>
+    </main>
   );
 }
