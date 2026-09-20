@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   leadingLight,
@@ -8,7 +10,9 @@ import {
   NEW_WATCH,
   type LeadWatch,
 } from '@/lib/arena/atmosphere';
-import { battleShare, leadOf, shareOf, type ArenaLead, type BattleShare } from '@/lib/arena/types';
+import { battleShare, leadOf, shareOf, TIE_MARGIN, type ArenaLead, type BattleShare } from '@/lib/arena/types';
+
+const read = (...path: string[]) => readFileSync(join(process.cwd(), ...path), 'utf8').replace(/\r\n/g, '\n');
 
 /** A share written the way the screen shows it: "66/34". */
 function share(text: string): BattleShare {
@@ -34,6 +38,28 @@ describe('Which way the arena lights', () => {
     expect(lightsFor('50/50')).toBe('tie');
     expect(lightsFor('51/49')).toBe('tie');
     expect(lightsFor('49/51')).toBe('tie');
+  });
+
+  it('still calls a dead heat the width the booth signed off on', () => {
+    // The test below follows TIE_MARGIN wherever it goes, which is what makes
+    // it a test of leadOf rather than of the number. This one is the number:
+    // 4 points, so 52/48 splits the arena and 53/47 does not. Widening it
+    // would change what a visitor sees at every close score, so it should
+    // never move quietly.
+    expect(TIE_MARGIN).toBe(4);
+    expect(lightsFor('52/48')).toBe('tie');
+    expect(lightsFor('53/47')).toBe('human');
+  });
+
+  it('calls a dead heat exactly as wide as TIE_MARGIN says, and not a point wider', () => {
+    // Written against the constant rather than against 4, so moving it moves
+    // this test with it -- and so nothing else can quietly assume a different
+    // width. At TIE_MARGIN the arena splits; one point past it, a side leads.
+    const atMargin = 50 + TIE_MARGIN / 2;
+    expect(lightsFor(`${atMargin}/${100 - atMargin}`)).toBe('tie');
+    expect(lightsFor(`${100 - atMargin}/${atMargin}`)).toBe('tie');
+    expect(lightsFor(`${atMargin + 1}/${99 - atMargin}`)).toBe('human');
+    expect(lightsFor(`${99 - atMargin}/${atMargin + 1}`)).toBe('ai');
   });
 
   it('follows the win counts, through the one share derived from them', () => {
@@ -69,6 +95,18 @@ describe('How hard the arena lights', () => {
     }
     // A clean sweep is brighter than the house look, not a different screen.
     expect(leadingLight(share('100/0')) / leadingLight(share('66/34'))).toBeLessThan(1.2);
+  });
+
+  it('lets a runaway lead lift the room only slightly above the house look', () => {
+    // 66/34 is the state the screen was designed at. 80/20 and 20/80 are more
+    // of the same room, not another one -- a booth visitor should read them as
+    // the same arena burning a little harder, never as a second lighting mode.
+    const house = leadingLight(share('66/34'));
+    for (const runaway of ['80/20', '20/80', '95/5', '100/0']) {
+      const lit = leadingLight(share(runaway));
+      expect(lit).toBeGreaterThanOrEqual(house);
+      expect(lit / house).toBeLessThan(1.15);
+    }
   });
 
   it('gives a dead heat the gentlest light of all', () => {
@@ -171,5 +209,160 @@ describe('When the arena flares', () => {
     let watch = NEW_WATCH;
     for (const lead of leads) watch = watchLead(watch, lead, true);
     expect(watch.sting).toBe(3);
+  });
+});
+
+/*
+ * The last two groups are not about numbers but about where they come from.
+ *
+ * Almost everything on this screen has to agree about one thing -- who is
+ * ahead -- and the ways for that to go wrong are not arithmetic bugs. They are
+ * a second place that works it out, or a value in a stylesheet that drifts
+ * away from the one the tests cover. So these read the source.
+ */
+
+describe('One lead rule, and only one', () => {
+  const arena = ['types.ts', 'atmosphere.ts', 'from-db.ts', 'mock-feed.ts', 'source.ts'].map((f) => [f, read('src', 'lib', 'arena', f)] as const);
+  const tv = ['ArenaLeaderboardTV.tsx', 'BattleBar.tsx', 'Characters.tsx', 'HangingScreen.tsx', 'hooks.ts', 'Leaderboard.tsx', 'LedRing.tsx', 'SideColumn.tsx', 'feeds.ts', 'config.ts', 'geometry.ts'].map((f) => [f, read('src', 'components', 'arena-tv', f)] as const);
+
+  it('defines leadOf once, in types.ts', () => {
+    const defined = [...arena, ...tv].filter(([, src]) => /function leadOf\b/.test(src));
+    expect(defined.map(([f]) => f)).toEqual(['types.ts']);
+  });
+
+  it('keeps TIE_MARGIN in types.ts, where leadOf is', () => {
+    // Anywhere else it would be a second definition of "a dead heat".
+    const mentions = [...arena, ...tv].filter(([, src]) => src.includes('TIE_MARGIN'));
+    expect(mentions.map(([f]) => f)).toEqual(['types.ts']);
+  });
+
+  it('never decides a side by comparing the two shares anywhere else', () => {
+    // A lead is a comparison of humanPct against aiPct. There is exactly one
+    // in the codebase, and it is inside leadOf.
+    const compares = /\bhumanPct\b\s*[<>]=?\s*\baiPct\b|\baiPct\b\s*[<>]=?\s*\bhumanPct\b/;
+    const guilty = [...arena, ...tv].filter(([, src]) => compares.test(src));
+    expect(guilty.map(([f]) => f)).toEqual(['types.ts']);
+  });
+
+  it('produces a lead state in exactly one place', () => {
+    /*
+     * The comparison in leadOf is not the only shape a second lead rule could
+     * take -- one written over the win counts, or over two variables called
+     * anything at all, would slip past the check above. What it cannot avoid
+     * is producing one of the three values.
+     *
+     * So this is a ledger of every line in the arena that makes a 'human',
+     * 'ai' or 'tie' at all. Two of them are leadOf. The third is not a lead
+     * and is listed with the reason it is not. A fourth cannot appear without
+     * someone having to come here and argue for it.
+     */
+    const yieldsLead = /(\?|return|=>)\s*'(human|ai|tie)'/;
+    const ledger = [...arena, ...tv].flatMap(([file, src]) =>
+      src
+        .split('\n')
+        .filter((line) => yieldsLead.test(line))
+        .map((line) => `${file}: ${line.trim()}`),
+    );
+    expect(ledger).toEqual([
+      // leadOf itself: the one rule, both of its branches.
+      "types.ts: if (Math.abs(humanPct - aiPct) <= TIE_MARGIN) return 'tie';",
+      "types.ts: return humanPct > aiPct ? 'human' : 'ai';",
+      // Not a lead. dx is a spark's offset in pixels, so all this decides is
+      // which way a decorative spark flies out of the clash in the middle of
+      // the battle bar. It never sees a score.
+      "BattleBar.tsx: data-side={dx < 0 ? 'human' : 'ai'}",
+    ]);
+  });
+
+  it('works the lighting out from the share, never from a lead of its own', () => {
+    const src = read('src', 'lib', 'arena', 'atmosphere.ts');
+    // It is handed the lead (watchLead) and the share (leadingLight,
+    // trailingLight); it never derives either.
+    expect(src).not.toMatch(/return\s+'(human|ai|tie)'/);
+    expect(src).toMatch(/lead: ArenaLead/);
+  });
+
+  it('asks for the lead once on the screen itself, and hands that one answer round', () => {
+    const src = read('src', 'components', 'arena-tv', 'ArenaLeaderboardTV.tsx');
+    expect(src.match(/leadOf\(/g)).toHaveLength(1);
+    // Everything that reacts to it reads that one `lead`: the root attribute
+    // the stylesheet keys off, the callouts, and the flare's side.
+    expect(src).toContain('data-lead={lead}');
+    expect(src).toContain('lead={lead}');
+    expect(src).toContain("data-side={lead}");
+  });
+});
+
+describe('What the stylesheet promises about motion', () => {
+  /*
+   * These values live only in CSS, so nothing else can catch them drifting.
+   * They are the approved restraint written down: how deep the arena breathes,
+   * how long it takes to change mood, and how long the flare lasts.
+   */
+  // Comments stripped first: this file is mostly prose about the lighting, and
+  // a selector picked up out of a comment would make the matches below depend
+  // on how the comments are worded.
+  const css = read('src', 'components', 'arena-tv', 'ArenaLeaderboardTV.module.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const seconds = (name: string) => {
+    const found = css.match(new RegExp(`--${name}:\\s*([\\d.]+)s`));
+    if (!found) throw new Error(`--${name} is not declared any more`);
+    return Number(found[1]);
+  };
+  /** Every rule that sets a breath depth, as selector → depth. */
+  const depths = [...css.matchAll(/([^{}]+)\{[^{}]*--breath-depth:\s*([\d.]+)\s*;/g)].map(([, selector, value]) => [selector.trim().replace(/\s+/g, ' '), Number(value)] as const);
+  const depthFor = (match: string) => depths.find(([selector]) => selector.includes(match))?.[1];
+
+  it('breathes on five separate clocks, none of them quick', () => {
+    const clocks = ['t-breath-rig', 't-breath-haze', 't-breath-bowl', 't-breath-practicals', 't-breath-floor'].map(seconds);
+    expect(new Set(clocks).size).toBe(5);
+    for (const c of clocks) {
+      expect(c).toBeGreaterThanOrEqual(4);
+      expect(c).toBeLessThanOrEqual(8);
+    }
+  });
+
+  it('keeps every breath shallow enough to read as a lamp, not a blink', () => {
+    expect(depths.length).toBeGreaterThanOrEqual(4);
+    for (const [, depth] of depths) {
+      expect(depth).toBeGreaterThan(0);
+      // 0.2 would be a lamp dropping to 80% -- past breathing and into pulsing.
+      expect(depth).toBeLessThanOrEqual(0.18);
+    }
+  });
+
+  it('gives the leading side more life than the trailing one, and a dead heat the middle', () => {
+    const leading = depthFor(".houseHuman");
+    const trailing = depthFor("[data-lead='human'] .houseAi");
+    const even = depthFor("[data-lead='tie'] .house");
+    expect(leading).toBeDefined();
+    expect(trailing).toBeDefined();
+    expect(even).toBeDefined();
+    expect(leading!).toBeGreaterThan(even!);
+    expect(even!).toBeGreaterThan(trailing!);
+  });
+
+  it('changes mood as a crossfade of the length the booth was signed off at', () => {
+    expect(seconds('t-mood')).toBeGreaterThanOrEqual(1.2);
+    expect(seconds('t-mood')).toBeLessThanOrEqual(1.8);
+  });
+
+  it('keeps the lead-change flare short, and shorter than the mood it rides on', () => {
+    expect(seconds('t-sting')).toBeLessThanOrEqual(1.3);
+    expect(seconds('t-sting')).toBeLessThan(seconds('t-mood'));
+  });
+
+  it('runs the AI, its bloom and its spill on three different clocks', () => {
+    const ai = ['t-ai-pulse', 't-ai-bloom', 't-ai-spill'].map(seconds);
+    expect(new Set(ai).size).toBe(3);
+    // The surge itself stays inside the 3.5-5.5s the screen was tuned at.
+    expect(ai[0]).toBeGreaterThanOrEqual(3.5);
+    expect(ai[0]).toBeLessThanOrEqual(5.5);
+  });
+
+  it('never lets the AI go dark between surges', () => {
+    const characters = read('src', 'components', 'arena-tv', 'Characters.module.css');
+    const pulse = characters.slice(characters.indexOf('@keyframes neon-ai'));
+    const floor = Number(pulse.match(/100%\s*\{\s*opacity:\s*([\d.]+)/)?.[1] ?? pulse.match(/opacity:\s*([\d.]+)/)?.[1]);
+    expect(floor).toBeGreaterThanOrEqual(0.25);
   });
 });

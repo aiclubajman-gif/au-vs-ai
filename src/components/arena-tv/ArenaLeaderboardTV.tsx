@@ -81,31 +81,25 @@ export function ArenaLeaderboardTV({ source, className }: { source: ArenaSource;
         <div className={styles.neutral} />
         <div className={styles.dim} />
         {/* Then the lamps, brightness first and colour after -- a gel sits on
-            the lamp, so the light has to arrive already coloured. Rig, wall and
-            haze / seating and practicals / floor. The wrapper crossfades with
-            the lead, each child breathes on its own clock, and the two
-            opacities multiply. */}
+            the lamp, so the light has to arrive already coloured. One element
+            per lighting zone, always these five and in this order (the CSS
+            picks them out by position): rig and wall / haze / seating bowl /
+            barrier practicals / floor pool. The wrapper crossfades with the
+            lead, each zone breathes on its own clock, and the two opacities
+            multiply. */}
         <div className={`${styles.house} ${styles.houseHuman}`}>
-          <i />
-          <i />
-          <i />
+          <Zones />
         </div>
         <div className={`${styles.house} ${styles.houseAi}`}>
-          <i />
-          <i />
-          <i />
+          <Zones />
         </div>
         {/* The same lamps again over the other half, for whoever is ahead: a
             house rig that has taken the room has taken all of it. */}
         <div className={`${styles.far} ${styles.farHuman}`}>
-          <i />
-          <i />
-          <i />
+          <Zones />
         </div>
         <div className={`${styles.far} ${styles.farAi}`}>
-          <i />
-          <i />
-          <i />
+          <Zones />
         </div>
         <div className={`${styles.beam} ${styles.beamLeft}`} />
         <div className={`${styles.beam} ${styles.beamRight}`} />
@@ -160,6 +154,28 @@ export function ArenaLeaderboardTV({ source, className }: { source: ArenaSource;
         <FeedBadge source={source} status={status} />
       </div>
     </main>
+  );
+}
+
+/**
+ * One lamp per lighting zone, in the order the CSS expects: rig and wall,
+ * haze, seating bowl, barrier practicals, floor pool. They carry no markup of
+ * their own -- every gradient, clock and breath is in the stylesheet, which is
+ * the only place that knows where the light in this photograph falls.
+ *
+ * Five plain elements rather than one, because a room does not brighten all at
+ * once: each takes its own duration and its own phase, so the arena settles by
+ * zones the way a venue does.
+ */
+function Zones() {
+  return (
+    <>
+      <i />
+      <i />
+      <i />
+      <i />
+      <i />
+    </>
   );
 }
 

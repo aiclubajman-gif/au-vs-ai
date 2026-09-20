@@ -179,8 +179,21 @@
   animation: neon-mascot var(--t-mascot-glow, 3.6s) ease-in-out infinite;
 }
 
+/*
+ * The AI is powered, and has to look it while standing perfectly still. None
+ * of the artwork moves for this: only the light on it. The seams rise, hold a
+ * moment at full and fall back to a floor they never go under -- embers, not
+ * an off state -- and the bloom around them runs the same shape on a longer
+ * clock, so the two drift in and out of step and the surge never arrives twice
+ * the same way. Nothing here reaches past the fighter: no page brightness, no
+ * board, no bar, no ring.
+ */
 .ai .neon {
   animation: neon-ai var(--t-ai-pulse, 4.6s) ease-in-out infinite;
+}
+
+.ai .neon.bloom {
+  animation-duration: var(--t-ai-bloom, 5.3s);
 }
 
 .bloom {
@@ -210,6 +223,10 @@
   width: 88%;
   height: 70%;
   background: radial-gradient(closest-side, rgb(255 120 30 / 0.5), rgb(255 70 10 / 0.18) 55%, transparent);
+  /* The third part of the surge, and the slowest: the spill swelling and
+     settling behind the fighter. The mascot's aura is deliberately not given
+     one -- the human side's life is in the arena around it. */
+  animation: ai-spill var(--t-ai-spill, 6.7s) ease-in-out infinite;
 }
 
 [data-lead='human'] .mascot .aura,
@@ -306,17 +323,38 @@
   }
 }
 
-/* Power surge: a quick rise, a hold at full, a slow fall back to embers. */
+/*
+ * Power surge: a rise, a brief hold at full, a slow fall back to embers. The
+ * floor is well clear of nothing on purpose -- a booth visitor should read the
+ * AI as running at idle between surges, never as switched off and blinking
+ * back on.
+ */
 @keyframes neon-ai {
   0%,
   100% {
-    opacity: 0.12;
+    opacity: 0.34;
   }
-  38% {
+  42% {
     opacity: 1;
   }
-  52% {
-    opacity: 0.92;
+  56% {
+    opacity: 0.9;
+  }
+}
+
+/*
+ * And what it throws on the haze behind it. This is a scale, not an opacity:
+ * how bright the aura is belongs to the lead (above), and an animation on
+ * opacity would take that away from it. The blur is fixed and painted once;
+ * only the transform moves, on the compositor.
+ */
+@keyframes ai-spill {
+  0%,
+  100% {
+    transform: scale(0.97);
+  }
+  46% {
+    transform: scale(1.055);
   }
 }
 

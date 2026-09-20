@@ -10,18 +10,29 @@
   --t-mascot-bob: 5.2s; /* mascot float / breathing */
   --t-mascot-sway: 7.4s; /* mascot rotation sway */
   --t-mascot-glow: 3.6s; /* headphone and hoodie neon pulse */
+  /* The AI's power cycle, in three parts that never line up: the seams
+     themselves, the bloom around them, and the spill it throws on the haze
+     behind it. Three periods out of ratio, so the surge lands slightly
+     differently every time instead of ticking like a metronome. */
   --t-ai-pulse: 4.6s; /* AI armour seams surge and fade */
+  --t-ai-bloom: 5.3s; /* the bloom around the seams, on its own clock */
+  --t-ai-spill: 6.7s; /* the aura it throws behind it swelling */
   --t-ai-drift: 8s; /* AI idle drift */
   --t-crowd: 2.6s; /* crowd bounce */
   --t-beams: 11s; /* sweeping stadium beams */
   --t-lighting: 2.4s; /* callouts, auras and the screen halo follow the lead */
   --t-mood: 1.6s; /* the arena crossfades to a new lighting state */
-  /* One breath of house light, per lighting zone. Three clocks rather than
-     one, so the room settles the way a venue does: the rig, the seating and
-     the floor are never quite together. */
-  --t-breath-rig: 4.4s;
-  --t-breath-bowl: 5.2s;
-  --t-breath-floor: 4.8s;
+  /* One breath of house light, per lighting zone -- five clocks rather than
+     one, so the room settles the way a venue does: the rig, the haze, the
+     seating, the barrier and the floor are never quite together. Deliberately
+     out of ratio with each other (4.6 / 5.3 / 5.8 / 6.2 / 7.1), so no two come
+     back into step for the length of a booth day. Each is a half breath: the
+     animation alternates, so the round trip is twice the number. */
+  --t-breath-rig: 5.3s;
+  --t-breath-haze: 7.1s;
+  --t-breath-bowl: 6.2s;
+  --t-breath-practicals: 4.6s;
+  --t-breath-floor: 5.8s;
   --t-sting: 1.2s; /* the flare when the lead changes hands, start to finish */
   --ease-mood: cubic-bezier(0.37, 0, 0.3, 1);
   --t-bar-flow: 5.5s; /* battle bar chevrons drifting toward the clash */
@@ -195,18 +206,31 @@
 
 /* ---- The lamps themselves ------------------------------------------------
 
-   The gel says what colour the room is; this says where the light comes from.
-   Six pools a side, screened on so they add brightness rather than tint: the
-   rig overhead, the wall it washes, the haze hanging under the trusses, the
-   band along the seating, the practicals on the barrier, and the pool the
-   floor throws back.
+   The gel says what colour the room is; this says where the light comes from,
+   and it is the only part of the arena that moves of its own accord.
 
-   Each side's three elements breathe on their own clock and their own delay,
-   so the room settles the way a venue does -- by zones, slightly out of step
-   -- rather than one opacity moving everything at once. Opacity and transform
-   only: both ride the compositor, which is what a screen that runs all day
-   wants. The softness that sells these is in the gradients themselves;
-   nothing here asks the GPU for a filter on a 1920-wide layer. */
+   Five zones a side, screened on so they add brightness rather than tint: the
+   rig overhead and the wall it washes, the haze hanging under the trusses, the
+   band along the seating, the practicals on the barrier, and the pool the
+   floor throws back. Each is one element, with its own clock, its own phase
+   and its own share of the breath -- so the room is never one opacity moving
+   everything at once, which is the thing that reads as a web page rather than
+   as a building.
+
+   Opacity and transform only: both ride the compositor, which is what a screen
+   that runs all day wants. The softness that sells these is in the gradients
+   themselves; nothing here asks the GPU for a filter on a 1920-wide layer, and
+   nothing animates one. */
+
+/* How far a zone falls between breaths, as a fraction: 0.12 is a lamp that
+   settles from full down to 88% and back. It is registered so that it can be
+   TRANSITIONED -- the lead moves it (see below), and an unregistered custom
+   property would jump, taking the running breath with it. */
+@property --breath-depth {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0.12;
+}
 
 .house,
 .far {
@@ -214,40 +238,99 @@
   inset: 0;
   mix-blend-mode: screen;
   opacity: 0;
-  transition: opacity var(--t-mood) var(--ease-mood);
+  --breath-depth: 0.12;
+  transition:
+    opacity var(--t-mood) var(--ease-mood),
+    --breath-depth var(--t-mood) var(--ease-mood);
 }
 
 .house i,
 .far i {
   position: absolute;
   inset: 0;
+  /* What this one zone makes of the side's breath. Everything runs off the one
+     --breath-depth; a zone only leans on it harder or softer. */
+  --breath-gain: 1;
   animation: breath var(--t-breath-rig) ease-in-out infinite alternate;
 }
 
-/* The rig, the wall it washes, and the haze hanging under it. */
+/* The floor pool is the widest and brightest surface in the frame, and the one
+   that carries colour furthest, so it takes a little more of the breath. */
+.house i:nth-child(5),
+.far i:nth-child(5) {
+  --breath-gain: 1.1;
+}
+
+/* Zone 2 is the haze, 3 the seating bowl, 4 the barrier practicals, 5 the
+   floor; zone 1 keeps the default clock.
+
+   Each zone also opens part-way through a breath, which is what the negative
+   delays beside the gradients are. They are not arbitrary: every lamp in one
+   rig starts at least a seventh of a cycle from every other, and the same zone
+   on the two sides starts half a cycle apart. Without that the room would open
+   with all ten lamps rising together -- and a booth screen reloads itself
+   every half hour, so how it opens is something a visitor actually sees. After
+   that the five durations, which share no useful factor, keep them apart on
+   their own. */
+.house i:nth-child(2),
+.far i:nth-child(2) {
+  animation-duration: var(--t-breath-haze);
+}
+
+.house i:nth-child(3),
+.far i:nth-child(3) {
+  animation-duration: var(--t-breath-bowl);
+}
+
+.house i:nth-child(4),
+.far i:nth-child(4) {
+  animation-duration: var(--t-breath-practicals);
+}
+
+.house i:nth-child(5),
+.far i:nth-child(5) {
+  animation-duration: var(--t-breath-floor);
+}
+
+/* ---- Where each zone's light falls --------------------------------------
+
+   Every gradient below is positioned against the whole frame, so the zones sit
+   exactly where the photograph is lit. */
+
+/* 1. The rig overhead, and the wall it washes. */
 .houseHuman i:nth-child(1) {
   transform-origin: 22% 8%;
+  animation-delay: -0.5s;
   background:
     radial-gradient(ellipse 52% 38% at 20% 0%, rgb(132 196 255 / 0.5), transparent 70%),
-    radial-gradient(ellipse 26% 64% at -2% 44%, rgb(80 160 255 / 0.5), transparent 72%),
-    radial-gradient(ellipse 62% 34% at 32% 26%, rgb(92 166 255 / 0.22), transparent 74%);
+    radial-gradient(ellipse 26% 64% at -2% 44%, rgb(80 160 255 / 0.5), transparent 72%);
 }
 
-/* The seating, and the practicals along the barrier below it. */
+/* 2. The haze hanging under the trusses -- the slowest thing in the room. */
 .houseHuman i:nth-child(2) {
-  transform-origin: 22% 62%;
-  animation-duration: var(--t-breath-bowl);
-  animation-delay: -1.7s;
-  background:
-    radial-gradient(ellipse 58% 22% at 18% 60%, rgb(96 176 255 / 0.44), transparent 72%),
-    radial-gradient(ellipse 52% 5% at 22% 77%, rgb(152 206 255 / 0.34), transparent 70%);
+  transform-origin: 32% 26%;
+  animation-delay: -6.4s;
+  background: radial-gradient(ellipse 62% 34% at 32% 26%, rgb(92 166 255 / 0.22), transparent 74%);
 }
 
-/* What the floor throws back -- the widest, brightest pool in the frame. */
+/* 3. The band along the seating. */
 .houseHuman i:nth-child(3) {
+  transform-origin: 22% 62%;
+  animation-delay: -8.7s;
+  background: radial-gradient(ellipse 58% 22% at 18% 60%, rgb(96 176 255 / 0.44), transparent 72%);
+}
+
+/* 4. The practicals along the barrier below it -- the quickest. */
+.houseHuman i:nth-child(4) {
+  transform-origin: 22% 77%;
+  animation-delay: -2.3s;
+  background: radial-gradient(ellipse 52% 5% at 22% 77%, rgb(152 206 255 / 0.34), transparent 70%);
+}
+
+/* 5. What the floor throws back. */
+.houseHuman i:nth-child(5) {
   transform-origin: 30% 90%;
-  animation-duration: var(--t-breath-floor);
-  animation-delay: -3.1s;
+  animation-delay: -10.2s;
   background:
     radial-gradient(ellipse 50% 26% at 26% 89%, rgb(92 172 255 / 0.62), rgb(40 115 235 / 0.2) 52%, transparent 78%),
     radial-gradient(ellipse 82% 14% at 40% 96%, rgb(70 150 255 / 0.3), transparent 72%);
@@ -257,25 +340,33 @@
    photographed blue, and has to win it back. */
 .houseAi i:nth-child(1) {
   transform-origin: 78% 8%;
+  animation-delay: -6.1s;
   background:
     radial-gradient(ellipse 52% 38% at 80% 0%, rgb(255 188 110 / 0.56), transparent 70%),
-    radial-gradient(ellipse 26% 64% at 102% 44%, rgb(255 142 52 / 0.58), transparent 72%),
-    radial-gradient(ellipse 62% 34% at 68% 26%, rgb(255 162 74 / 0.28), transparent 74%);
+    radial-gradient(ellipse 26% 64% at 102% 44%, rgb(255 142 52 / 0.58), transparent 72%);
 }
 
 .houseAi i:nth-child(2) {
-  transform-origin: 78% 62%;
-  animation-duration: var(--t-breath-bowl);
-  animation-delay: -0.6s;
-  background:
-    radial-gradient(ellipse 58% 22% at 82% 60%, rgb(255 168 82 / 0.52), transparent 72%),
-    radial-gradient(ellipse 52% 5% at 78% 77%, rgb(255 204 136 / 0.44), transparent 70%);
+  transform-origin: 68% 26%;
+  animation-delay: -13.1s;
+  background: radial-gradient(ellipse 62% 34% at 68% 26%, rgb(255 162 74 / 0.28), transparent 74%);
 }
 
 .houseAi i:nth-child(3) {
-  transform-origin: 70% 90%;
-  animation-duration: var(--t-breath-floor);
+  transform-origin: 78% 62%;
   animation-delay: -2.2s;
+  background: radial-gradient(ellipse 58% 22% at 82% 60%, rgb(255 168 82 / 0.52), transparent 72%);
+}
+
+.houseAi i:nth-child(4) {
+  transform-origin: 78% 77%;
+  animation-delay: -6.6s;
+  background: radial-gradient(ellipse 52% 5% at 78% 77%, rgb(255 204 136 / 0.44), transparent 70%);
+}
+
+.houseAi i:nth-child(5) {
+  transform-origin: 70% 90%;
+  animation-delay: -4.4s;
   background:
     radial-gradient(ellipse 50% 26% at 74% 89%, rgb(255 152 58 / 0.72), rgb(235 92 12 / 0.24) 52%, transparent 78%),
     radial-gradient(ellipse 82% 14% at 60% 96%, rgb(255 138 46 / 0.36), transparent 72%);
@@ -288,7 +379,7 @@
    trusses above the trailing fighter, that wall, that stretch of seating, that
    end of the floor -- or the room stays split down the middle and reads as a
    dead heat however hard the leading half burns. That is what this is: the
-   same six pools again, mirrored, and up only while that side leads.
+   same five zones again, mirrored, and up only while that side leads.
 
    Which is also why a dead heat never gets them. At 50/50 the two half-rigs
    are the picture, and running both of these on top would wash the middle out
@@ -296,49 +387,65 @@
 
 .farHuman i:nth-child(1) {
   transform-origin: 78% 8%;
+  animation-delay: -3.5s;
   background:
     radial-gradient(ellipse 52% 38% at 80% 0%, rgb(132 196 255 / 0.46), transparent 70%),
-    radial-gradient(ellipse 26% 64% at 102% 44%, rgb(80 160 255 / 0.46), transparent 72%),
-    radial-gradient(ellipse 62% 34% at 66% 26%, rgb(92 166 255 / 0.2), transparent 74%);
+    radial-gradient(ellipse 26% 64% at 102% 44%, rgb(80 160 255 / 0.46), transparent 72%);
 }
 
 .farHuman i:nth-child(2) {
-  transform-origin: 78% 62%;
-  animation-duration: var(--t-breath-bowl);
-  animation-delay: -2.6s;
-  background:
-    radial-gradient(ellipse 58% 22% at 82% 60%, rgb(96 176 255 / 0.4), transparent 72%),
-    radial-gradient(ellipse 52% 5% at 78% 77%, rgb(152 206 255 / 0.3), transparent 70%);
+  transform-origin: 66% 26%;
+  animation-delay: -10.1s;
+  background: radial-gradient(ellipse 62% 34% at 66% 26%, rgb(92 166 255 / 0.2), transparent 74%);
 }
 
 .farHuman i:nth-child(3) {
+  transform-origin: 78% 62%;
+  animation-delay: -0.5s;
+  background: radial-gradient(ellipse 58% 22% at 82% 60%, rgb(96 176 255 / 0.4), transparent 72%);
+}
+
+.farHuman i:nth-child(4) {
+  transform-origin: 78% 77%;
+  animation-delay: -5.1s;
+  background: radial-gradient(ellipse 52% 5% at 78% 77%, rgb(152 206 255 / 0.3), transparent 70%);
+}
+
+.farHuman i:nth-child(5) {
   transform-origin: 70% 90%;
-  animation-duration: var(--t-breath-floor);
-  animation-delay: -1.2s;
+  animation-delay: -2.2s;
   background: radial-gradient(ellipse 50% 26% at 72% 89%, rgb(92 172 255 / 0.52), rgb(40 115 235 / 0.16) 52%, transparent 78%);
 }
 
 .farAi i:nth-child(1) {
   transform-origin: 22% 8%;
+  animation-delay: -9.1s;
   background:
     radial-gradient(ellipse 52% 38% at 20% 0%, rgb(255 186 108 / 0.5), transparent 70%),
-    radial-gradient(ellipse 26% 64% at -2% 44%, rgb(255 140 50 / 0.5), transparent 72%),
-    radial-gradient(ellipse 62% 34% at 34% 26%, rgb(255 160 72 / 0.24), transparent 74%);
+    radial-gradient(ellipse 26% 64% at -2% 44%, rgb(255 140 50 / 0.5), transparent 72%);
 }
 
 .farAi i:nth-child(2) {
-  transform-origin: 22% 62%;
-  animation-duration: var(--t-breath-bowl);
+  transform-origin: 34% 26%;
   animation-delay: -3.4s;
-  background:
-    radial-gradient(ellipse 58% 22% at 20% 60%, rgb(255 166 80 / 0.46), transparent 72%),
-    radial-gradient(ellipse 52% 5% at 24% 77%, rgb(255 200 132 / 0.38), transparent 70%);
+  background: radial-gradient(ellipse 62% 34% at 34% 26%, rgb(255 160 72 / 0.24), transparent 74%);
 }
 
 .farAi i:nth-child(3) {
+  transform-origin: 22% 62%;
+  animation-delay: -5.8s;
+  background: radial-gradient(ellipse 58% 22% at 20% 60%, rgb(255 166 80 / 0.46), transparent 72%);
+}
+
+.farAi i:nth-child(4) {
+  transform-origin: 22% 77%;
+  animation-delay: -0.8s;
+  background: radial-gradient(ellipse 52% 5% at 24% 77%, rgb(255 200 132 / 0.38), transparent 70%);
+}
+
+.farAi i:nth-child(5) {
   transform-origin: 30% 90%;
-  animation-duration: var(--t-breath-floor);
-  animation-delay: -0.9s;
+  animation-delay: -7.3s;
   background: radial-gradient(ellipse 50% 26% at 28% 89%, rgb(255 150 56 / 0.62), rgb(235 92 12 / 0.2) 52%, transparent 78%);
 }
 
@@ -390,6 +497,47 @@
 
 [data-lead='tie'] .house {
   opacity: calc(var(--mood, 1) * 0.94);
+}
+
+/* ---- And how hard each side breathes -------------------------------------
+
+   The same one lead state again, saying something slightly different: not how
+   bright a side is but how alive. The side in front breathes a little deeper,
+   the side behind a little shallower, and a dead heat gives both exactly the
+   middle -- so the leading half reads as the more energetic end of the room
+   without being any brighter than the approved mood already makes it.
+
+   All of it is the one --breath-depth the zones already run on, and it is
+   transitioned over the same 1.6s as the colour, so a lead change moves the
+   room's brightness and its pulse together instead of stepping one of them. */
+
+[data-lead='human'] .houseHuman,
+[data-lead='human'] .farHuman,
+[data-lead='ai'] .houseAi,
+[data-lead='ai'] .farAi {
+  --breath-depth: 0.15;
+}
+
+/* Alive, but not arguing with the answer. The wrapper is already down at
+   --fade, so what this changes is the character of the little light left. */
+[data-lead='human'] .houseAi,
+[data-lead='ai'] .houseHuman {
+  --breath-depth: 0.08;
+}
+
+/* A dead heat: the two sides breathe identically, so neither reads as ahead. */
+[data-lead='tie'] .house {
+  --breath-depth: 0.12;
+}
+
+/* A zone nobody can see is a zone nobody has to animate: the far rig of the
+   side that is not leading sits at opacity 0 for hours at a time. Paused, not
+   stopped -- it keeps its place in the cycle, so when that side takes the lead
+   the zone fades up mid-breath rather than snapping to the start of one. */
+[data-lead='human'] .farAi i,
+[data-lead='ai'] .farHuman i,
+[data-lead='tie'] .far i {
+  animation-play-state: paused;
 }
 
 /* ---- Beams from the rig --------------------------------------------------
@@ -762,15 +910,21 @@
    like it is flashing -- a lamp settling, never a cue. The scale is what sells
    it: the pool grows a little as it brightens, the way a real spill does.
    Every zone runs this on its own duration and its own delay, so no two are in
-   step and the room never pulses as one thing. */
+   step and the room never pulses as one thing.
+
+   One number drives all of it, so a zone cannot dim without also shrinking:
+   --breath-depth at 0.12 is 88% to 100% (and 0.985 to 1.04), which is the
+   house look; the lead takes it to 0.15 on the leading side and 0.08 on the
+   trailing one, and the floor leans on it 10% harder than the rest. Nothing
+   here ever reaches 0.2, so no score can turn a breath into a blink. */
 @keyframes breath {
   from {
-    opacity: 0.88;
-    transform: scale(0.985);
+    opacity: calc(1 - var(--breath-depth) * var(--breath-gain));
+    transform: scale(calc(1 - var(--breath-depth) * var(--breath-gain) * 0.125));
   }
   to {
     opacity: 1;
-    transform: scale(1.04);
+    transform: scale(calc(1 + var(--breath-depth) * var(--breath-gain) * 0.333));
   }
 }
 
