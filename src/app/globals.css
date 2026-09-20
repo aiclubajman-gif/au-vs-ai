@@ -72,10 +72,13 @@ button {
   touch-action: none;
 }
 
+/* A display whose motion is the point opts out with data-motion="always":
+   the /tv arena screen, where the "user" is a kiosk PC whose owner may have
+   switched animations off for speed, not someone who needs less motion. */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  :not([data-motion='always'] *),
+  :not([data-motion='always'] *)::before,
+  :not([data-motion='always'] *)::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

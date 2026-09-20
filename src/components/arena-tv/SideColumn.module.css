@@ -1,0 +1,123 @@
+/* Total wins + slogan panel, one column either side of the leaderboard. */
+
+.column {
+  position: absolute;
+  top: 682px;
+  width: 244px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.column[data-side='human'] {
+  left: 364px;
+  --tone: #eaf7ff;
+  --glow: rgb(70 165 255 / 0.85);
+  --count: linear-gradient(180deg, #ffffff 20%, #c4ecff 55%, #56bcff 100%);
+  --edge: linear-gradient(135deg, #8fe3ff, #2a6dff 55%, #6fd0ff);
+}
+
+.column[data-side='ai'] {
+  left: 1312px;
+  --tone: #ffd68a;
+  --glow: rgb(255 125 30 / 0.85);
+  --count: linear-gradient(180deg, #fff4b8 15%, #ffc233 50%, #ff7a1a 100%);
+  --edge: linear-gradient(135deg, #ffd27a, #ff6a12 55%, #ffb13b);
+}
+
+.label {
+  margin: 0 -0.16em 0 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 21px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tone);
+  text-shadow: 0 0 10px var(--glow);
+}
+
+.wins {
+  margin: 2px 0 0;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  filter: drop-shadow(0 0 10px var(--glow));
+}
+
+.trophy {
+  width: 58px;
+  height: 58px;
+  flex: none;
+}
+
+.count {
+  display: inline-block;
+  padding: 0.04em 0.1em;
+  font-family: var(--font-number);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 80px;
+  line-height: 1;
+  background-image: var(--count);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: kick 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Angled glass panel with a glowing edge. */
+.slogan {
+  position: relative;
+  margin: 24px 0 0;
+  width: 236px;
+  height: 104px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 1.45;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--tone);
+  filter: drop-shadow(0 0 8px var(--glow));
+  --cut: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px);
+}
+
+.slogan::before,
+.slogan::after {
+  content: '';
+  position: absolute;
+  clip-path: var(--cut);
+}
+
+.slogan::before {
+  inset: 0;
+  background: var(--edge);
+}
+
+.slogan::after {
+  inset: 2px;
+  background: linear-gradient(180deg, rgb(10 22 64 / 0.92), rgb(4 9 30 / 0.94));
+}
+
+.slogan span {
+  position: relative;
+  z-index: 1;
+  margin-right: -0.12em;
+}
+
+@keyframes kick {
+  from {
+    transform: scale(1.16);
+    filter: brightness(1.9);
+  }
+  to {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}

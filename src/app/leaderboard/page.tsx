@@ -1,5 +1,6 @@
 import { createAdminSupabase } from '@/lib/supabase/server';
 import { LeaderboardScreen, LEADERBOARD_SLOTS } from '@/components/leaderboard/LeaderboardScreen';
+import { leaderboardLabel } from '@/lib/leaderboard-label';
 import type { LeaderboardDisplayMode } from '@/types';
 
 /**
@@ -38,19 +39,12 @@ async function getData() {
   }
 }
 
-/** §5 — never render a full student ID or email, whatever the mode. */
-function label(row: Row, mode: LeaderboardDisplayMode) {
-  if (mode === 'name_only') return row.display_name;
-  if (mode === 'masked_id_only') return `••••${row.masked_id_suffix}`;
-  return `${row.display_name} · ••••${row.masked_id_suffix}`;
-}
-
 export default async function LeaderboardPage() {
   const { rows, mode } = await getData();
 
   return (
     <LeaderboardScreen
-      rows={rows.map((row) => ({ rank: row.rank, name: label(row, mode), score: row.total_score }))}
+      rows={rows.map((row) => ({ rank: row.rank, name: leaderboardLabel(row, mode), score: row.total_score }))}
       emptyMessage={'No scores yet.\nThe challenge opens at the AIDA booth.'}
     />
   );

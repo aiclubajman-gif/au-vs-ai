@@ -1,0 +1,72 @@
+/* Suspended LED ring: painted frame + a turning 3D cylinder of logo panels. */
+
+.ring {
+  position: absolute;
+  pointer-events: none;
+}
+
+.frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/*
+ * The band turns away from us toward its sides; the logos fade there as a real
+ * curved screen does, and so no panel is ever seen edge-on.
+ */
+.content {
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image: linear-gradient(90deg, transparent 3%, #000 18%, #000 82%, transparent 97%);
+  mask-image: linear-gradient(90deg, transparent 3%, #000 18%, #000 82%, transparent 97%);
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+  perspective: var(--ring-perspective);
+  perspective-origin: var(--ring-origin);
+}
+
+.cylinder {
+  position: absolute;
+  left: var(--ring-axis-x);
+  top: var(--ring-band-top);
+  width: 0;
+  height: var(--ring-band-h);
+  transform-style: preserve-3d;
+  animation: spin var(--t-ring-spin, 120s) linear infinite;
+}
+
+.panel {
+  position: absolute;
+  top: 0;
+  left: calc(var(--ring-panel-w) / -2);
+  width: var(--ring-panel-w);
+  height: 100%;
+  display: grid;
+  place-items: center;
+  transform: rotateY(calc(var(--i) * var(--ring-step))) translateZ(var(--ring-radius));
+  /* The far half of the ring faces away: it is behind the band, never seen. */
+  backface-visibility: hidden;
+}
+
+.logo {
+  max-width: 78%;
+  max-height: 70%;
+  object-fit: contain;
+  /* LED emission: a little bloom around the lit pixels. */
+  filter: drop-shadow(0 0 5px rgb(110 180 255 / 0.55));
+}
+
+.logo[data-kind='ajman'] {
+  max-height: 84%;
+}
+
+@keyframes spin {
+  to {
+    transform: rotateY(-360deg);
+  }
+}

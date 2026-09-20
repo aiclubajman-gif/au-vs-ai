@@ -19,7 +19,7 @@ One official attempt per student. Live leaderboard and booth TV dashboard.
 | **Student's code never arrives** | 1. Junk folder. 2. Their AU webmail → **Quarantine** (separate from Junk, invisible on phones). 3. `/admin` → **Override code** → check their AU ID card → tick the box → read them the 6-digit code. Without the ID check they can play but cannot win a prize. |
 | **Student stuck mid-game** | `/admin` → Attempts → find them → Reset. Logs who did it. |
 | **Something is badly wrong** | `/admin` → big red **PAUSE NEW GAMES**. Running games finish; no new ones start. |
-| **TV frozen or blank** | Reload the browser tab. The page also self-reloads every 30 min. |
+| **TV frozen or blank** | Reload the browser tab. The page also self-reloads every 30 min. The TV runs `/tv` and the badge top-left says **LIVE** (**CONNECTING** / **OFFLINE** mean the network dropped — the last numbers stay up). **DEMO DATA** means someone opened `/tv?source=mock`. |
 | **Student says "I already played" but didn't** | Check `/admin` → Attempts. If genuinely broken, Reset. Otherwise they played. |
 | **Error screen with a code (e.g. ERR-7K2M)** | Note the code. `/admin` → Logs → search it. |
 
@@ -148,6 +148,37 @@ npm test           # unit tests (107, incl. static security audit)
 npm run typecheck  # tsc --noEmit
 npm run lint       # eslint
 ```
+
+---
+
+## Arena TV screen (`/tv`)
+
+The booth's big-screen leaderboard: a layered, animated stadium scene (1920 × 1080,
+scales to any 16:9 screen) around live stats — battle share, wins per side, top 3.
+
+| URL | Data |
+|---|---|
+| `/tv` | The real event once deployed; simulated games under `npm run dev`. This is what the booth TV opens. |
+| `/tv?source=live` | The real event, polled from `/api/arena/stats` every 4 s. |
+| `/tv?source=mock` | Simulated games (badge: DEMO DATA). Keys **H / A / T** force humans-lead / AI-lead / dead-heat lighting, **N** finishes a game now. |
+
+**DEMO DATA is the only thing telling a visitor the numbers are not real**, so a deployed
+screen never shows it by accident: simulated games have to be asked for by name.
+
+**F** or double-click toggles full screen. The page keeps the display awake and hides the pointer.
+
+- Numbers: the two win counts are the only source of truth. The battle share is derived from
+  them once (`battleShare` in `src/lib/arena/types.ts`) and that one pair feeds the bar's fill,
+  both percentages and the arena lighting — so nothing on screen can disagree with the totals.
+  No games yet reads 50 / 50.
+- Code: `src/components/arena-tv/` (screen), `src/lib/arena/` (data model, mock feed, DB mapping,
+  which feed a request gets), `src/app/api/arena/stats/route.ts` (live endpoint).
+- The LED ring cycles the institutional marks only (AIDA, Ajman University); the AU vs AI lockup
+  belongs to the hanging screen.
+- Timing: looping animations are the `--t-*` variables at the top of
+  `ArenaLeaderboardTV.module.css`; count-ups, polling and mock ticks are in `config.ts`.
+- Art: `node scripts/build-arena-tv-assets.mjs` rebuilds `public/arena-tv/` from masters in
+  `design-source/arena-tv/` (it also repairs the supplied files — see its header).
 
 ---
 

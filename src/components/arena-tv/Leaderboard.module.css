@@ -1,0 +1,276 @@
+/* Leaderboard panel: top challengers, rows that slide between ranks. */
+
+.board {
+  position: absolute;
+  left: 612px;
+  top: 680px;
+  width: 696px;
+  height: 388px;
+  filter: drop-shadow(0 0 10px rgb(60 150 255 / 0.55)) drop-shadow(0 0 26px rgb(30 90 255 / 0.3));
+  --cut: polygon(28px 0, calc(100% - 28px) 0, 100% 28px, 100% 100%, 0 100%, 0 28px);
+  --row-cut: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  --pitch: 96px;
+}
+
+.board::before,
+.board::after {
+  content: '';
+  position: absolute;
+  clip-path: var(--cut);
+}
+
+.board::before {
+  inset: 0;
+  background: linear-gradient(180deg, #8fe3ff, #2c74ff 40%, #1a3fb8 75%, #3d8bff);
+}
+
+.board::after {
+  inset: 2px;
+  background:
+    radial-gradient(ellipse 70% 40% at 50% 0%, rgb(60 140 255 / 0.28), transparent 70%),
+    linear-gradient(180deg, rgb(8 20 62 / 0.95), rgb(3 8 28 / 0.96));
+}
+
+.title {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 36px;
+  letter-spacing: 0.2em;
+  text-indent: 0.2em;
+  text-transform: uppercase;
+  color: #f2fbff;
+  text-shadow:
+    0 0 8px rgb(140 210 255 / 0.9),
+    0 0 22px rgb(60 140 255 / 0.7);
+}
+
+/* Glowing rule under the heading. */
+.title::after {
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 4px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #7fd8ff 30%, #ffffff 50%, #7fd8ff 70%, transparent);
+  box-shadow: 0 0 10px rgb(120 200 255 / 0.9);
+}
+
+.rows {
+  position: absolute;
+  z-index: 1;
+  left: 18px;
+  right: 18px;
+  top: 88px;
+  height: calc(3 * var(--pitch) - 6px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  /* A row pushed out drops through the bottom edge and is clipped away. */
+  overflow: hidden;
+}
+
+.row,
+.placeholder {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: calc(var(--pitch) - 10px);
+  display: grid;
+  grid-template-columns: 70px 76px 1fr 142px;
+  align-items: center;
+  transform: translateY(calc(var(--slot) * var(--pitch)));
+  transition:
+    transform var(--t-rows, 0.9s) cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.6s ease;
+}
+
+.row::before,
+.row::after,
+.placeholder::before,
+.placeholder::after {
+  content: '';
+  position: absolute;
+  clip-path: var(--row-cut);
+  z-index: -1;
+}
+
+.row::before,
+.placeholder::before {
+  inset: 0;
+  background: linear-gradient(90deg, #5fb6ff, #2a5fe0 45%, #2a5fe0 70%, #5fb6ff);
+}
+
+.row::after,
+.placeholder::after {
+  inset: 2px;
+  background: linear-gradient(180deg, rgb(20 44 120 / 0.9), rgb(8 18 58 / 0.95));
+}
+
+/* First place: a warmer edge and a slow gleam. */
+.row[data-rank='1']::before {
+  background: linear-gradient(90deg, #ffe07a, #5fb6ff 30%, #2a5fe0 60%, #9fd9ff);
+}
+
+.row[data-rank='1']::after {
+  background:
+    linear-gradient(100deg, transparent 30%, rgb(140 200 255 / 0.16) 45%, transparent 60%) 0 0 / 300% 100%,
+    linear-gradient(180deg, rgb(26 54 138 / 0.92), rgb(8 18 58 / 0.95));
+  animation: gleam 6s ease-in-out infinite;
+}
+
+.row {
+  animation: row-in 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* An animation, not opacity: row-in's fill would otherwise hold it at 1. */
+.row[data-leaving] {
+  animation: row-out 0.7s ease both;
+}
+
+.placeholder {
+  opacity: 0.55;
+}
+
+.placeholder[data-filled='true'] {
+  opacity: 0;
+}
+
+.rank {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-family: var(--font-number);
+  font-style: italic;
+  font-weight: 800;
+  font-size: 52px;
+  line-height: 1;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgb(120 200 255 / 0.8);
+  border-right: 2px solid rgb(110 180 255 / 0.35);
+  animation: pop 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.crownCell {
+  display: grid;
+  place-items: center;
+  animation: pop 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.08s both;
+}
+
+.crown {
+  width: 56px;
+  height: 46px;
+  filter: drop-shadow(0 0 6px rgb(255 210 90 / 0.55));
+}
+
+.row[data-rank='2'] .crown {
+  filter: drop-shadow(0 0 6px rgb(210 225 255 / 0.6));
+}
+
+.row[data-rank='3'] .crown {
+  filter: drop-shadow(0 0 6px rgb(255 150 70 / 0.55));
+}
+
+/* Name, then the masked ID tag when the display setting shows one. The name
+   gives way (ellipsis) before the tag does. */
+.who {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 0 14px 0 6px;
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-family: var(--font-name);
+  font-weight: 600;
+  font-size: 40px;
+  line-height: 1.1;
+  color: #f4f9ff;
+  text-shadow: 0 0 8px rgb(100 170 255 / 0.5);
+}
+
+.tag {
+  flex: none;
+  font-family: var(--font-name);
+  font-weight: 600;
+  font-size: 24px;
+  letter-spacing: 0.06em;
+  color: rgb(160 200 255 / 0.8);
+}
+
+.score {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-family: var(--font-number);
+  font-weight: 800;
+  font-size: 46px;
+  line-height: 1;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgb(120 200 255 / 0.75);
+  border-left: 2px solid rgb(110 180 255 / 0.35);
+}
+
+.waiting {
+  grid-column: 2 / -1;
+  padding-left: 22px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgb(170 205 255 / 0.8);
+}
+
+@keyframes row-in {
+  from {
+    translate: -48px 0;
+    opacity: 0;
+  }
+  to {
+    translate: 0 0;
+    opacity: 1;
+  }
+}
+
+@keyframes row-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.4) rotate(-10deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.14) rotate(2deg);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+
+@keyframes gleam {
+  0%,
+  40% {
+    background-position: 100% 0, 0 0;
+  }
+  100% {
+    background-position: -50% 0, 0 0;
+  }
+}
