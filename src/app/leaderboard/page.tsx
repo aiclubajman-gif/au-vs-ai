@@ -28,6 +28,9 @@ const FALLBACK_ROWS: Row[] = [
 ];
 
 async function getData() {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return { rows: FALLBACK_ROWS, isLive: false, mode: 'name_only' as LeaderboardDisplayMode };
+  }
   try {
     const supabase = createAdminSupabase();
     const [{ data: rows }, { data: settings }] = await Promise.all([
