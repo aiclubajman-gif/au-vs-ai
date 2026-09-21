@@ -237,6 +237,8 @@ export const ANIMATED = [
 
 export type AnimatedName = (typeof ANIMATED)[number];
 
+const ANIM_VERSION = '3';
+
 export function AnimatedSprite({
   name,
   className = '',
@@ -254,8 +256,8 @@ export function AnimatedSprite({
       style={{ ...style, ['--frame-speed' as string]: speed }}
       aria-hidden="true"
     >
-      <img src={`/sprites/anim/${name}-1.png`} alt="" draggable={false} className="px-anim__f1 pixelated" />
-      <img src={`/sprites/anim/${name}-2.png`} alt="" draggable={false} className="px-anim__f2 pixelated" />
+      <img src={`/sprites/anim/${name}-1.png?v=${ANIM_VERSION}`} alt="" draggable={false} className="px-anim__f1 pixelated" />
+      <img src={`/sprites/anim/${name}-2.png?v=${ANIM_VERSION}`} alt="" draggable={false} className="px-anim__f2 pixelated" />
     </span>
   );
 }
