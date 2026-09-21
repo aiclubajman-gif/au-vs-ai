@@ -30,6 +30,10 @@ import {
   setStoredAvatar,
   getStoredGender,
   setStoredGender,
+  setStoredUserName,
+  setStoredUserDisplayName,
+  setStoredUserMaskedId,
+  computeDisplayName,
 } from '@/lib/avatars';
 import { PxButton, PxLink } from '@/components/px';
 import type { College, AttemptAssignment, PublicAttemptResult, EventSettings } from '@/types';
@@ -207,6 +211,17 @@ export function PlayFlow({
           setStep('email');
           return;
         }
+        if (res.data.fullName) setStoredUserName(res.data.fullName);
+        if (res.data.displayName) setStoredUserDisplayName(res.data.displayName);
+        if (res.data.maskedIdSuffix) setStoredUserMaskedId(res.data.maskedIdSuffix);
+        if (res.data.avatarId) {
+          setStoredAvatar(res.data.avatarId);
+          setAvatar(res.data.avatarId);
+        }
+        if (res.data.gender) {
+          setStoredGender(res.data.gender);
+          setGender(res.data.gender);
+        }
         if (res.data.attemptStatus === 'completed') {
           await loadResult();
           return;
@@ -300,6 +315,16 @@ export function PlayFlow({
     setError(null);
     setStoredAvatar(avatar);
     setStoredGender(gender);
+    setStoredUserName(fullName.trim());
+    const compName = computeDisplayName(fullName.trim());
+    if (compName) setStoredUserDisplayName(compName);
+
+    fetch('/api/avatar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ avatarId: avatar, gender }),
+    }).catch(() => {});
+
     const res = await post('/api/profile', {
       fullName: fullName.trim(),
       collegeId: collegeId ? Number(collegeId) : null,

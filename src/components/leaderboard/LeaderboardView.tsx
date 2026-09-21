@@ -5,7 +5,18 @@ import { avatarFor, playerLabel } from '@/components/home/TopChallengers';
 import {
   getStoredAvatar,
   getStoredGender,
+  setStoredAvatar,
+  setStoredGender,
   getAvatarSrc,
+  getStoredUserDisplayName,
+  setStoredUserDisplayName,
+  getStoredUserMaskedId,
+  setStoredUserMaskedId,
+  getStoredUserName,
+  setStoredUserName,
+  isCurrentPlayer,
+  resolvePlayerAvatar,
+  type CurrentPlayerIdentity,
   type Gender,
 } from '@/lib/avatars';
 import { ChangeAvatarModal } from '@/components/leaderboard/ChangeAvatarModal';
@@ -30,14 +41,26 @@ export function LeaderboardView({
   rows,
   mode,
   isLive,
+  avatarMap,
+  currentUser,
 }: {
   rows: LeaderboardRow[];
   mode: LeaderboardDisplayMode;
   isLive: boolean;
+  avatarMap?: Record<string, string>;
+  currentUser?: CurrentPlayerIdentity | null;
 }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [currentAvatar, setCurrentAvatar] = useState('avatar_boy_1');
   const [currentGender, setCurrentGender] = useState<Gender>('Male');
+  const [activeUser, setActiveUser] = useState<CurrentPlayerIdentity | null>(() => {
+    if (currentUser) return currentUser;
+    return {
+      displayName: getStoredUserDisplayName(),
+      maskedIdSuffix: getStoredUserMaskedId(),
+      fullName: getStoredUserName(),
+    };
+  });
 
   useEffect(() => {
     setCurrentAvatar(getStoredAvatar());
@@ -49,6 +72,36 @@ export function LeaderboardView({
     };
 
     window.addEventListener('au_vs_ai_avatar_changed', handleAvatarChanged);
+
+    // Also fetch session to update identity and avatar from server
+    (async () => {
+      try {
+        const res = await fetch('/api/session').then((r) => r.json()).catch(() => null);
+        if (res?.ok && res.data?.signedIn) {
+          if (res.data.displayName) setStoredUserDisplayName(res.data.displayName);
+          if (res.data.maskedIdSuffix) setStoredUserMaskedId(res.data.maskedIdSuffix);
+          if (res.data.fullName) setStoredUserName(res.data.fullName);
+
+          setActiveUser({
+            displayName: res.data.displayName ?? getStoredUserDisplayName(),
+            maskedIdSuffix: res.data.maskedIdSuffix ?? getStoredUserMaskedId(),
+            fullName: res.data.fullName ?? getStoredUserName(),
+          });
+
+          if (res.data.avatarId) {
+            setStoredAvatar(res.data.avatarId);
+            setCurrentAvatar(res.data.avatarId);
+          }
+          if (res.data.gender) {
+            setStoredGender(res.data.gender);
+            setCurrentGender(res.data.gender);
+          }
+        }
+      } catch {
+        // Safe offline
+      }
+    })();
+
     return () => window.removeEventListener('au_vs_ai_avatar_changed', handleAvatarChanged);
   }, []);
 
@@ -109,16 +162,36 @@ export function LeaderboardView({
             <ol className="px-scroll mt-3 flex-1 space-y-2">
               {rows.map((row) => {
                 const podium = PODIUM[row.rank as 1 | 2 | 3];
+                const isMe = isCurrentPlayer(row, activeUser);
+                const rowAvatarSrc = resolvePlayerAvatar(
+                  row,
+                  activeUser,
+                  currentAvatar,
+                  avatarMap
+                );
+
                 const inner = (
-                  <div className="grid grid-cols-[3rem_1fr_4.5rem] items-center gap-2 px-2 py-2">
+                  <div
+                    className={`grid grid-cols-[3rem_1fr_4.5rem] items-center gap-2 px-2 py-2 transition-colors ${
+                      isMe ? 'bg-[#0e275c]/85 rounded-lg ring-1 ring-[#ffe66a]/70' : ''
+                    }`}
+                  >
                     <span className={`flex items-center justify-center font-px text-[12px] sm:text-[13px] ${podium ? podium.text : 'text-[#dff6ff]'}`}>
                       {row.rank === 1 ? <Sprite src="/sprites/badge-crown-gold.png" className="h-6 w-6" alt="1st" /> : row.rank}
                     </span>
                     <span className="flex min-w-0 items-center gap-3">
-                      <Sprite src={avatarFor(row.masked_id_suffix + row.display_name)} className="h-8 w-8 shrink-0 sm:h-9 sm:w-9" />
-                      <span className={`truncate font-px text-[10px] sm:text-[11px] ${podium ? podium.text : 'text-[#dff6ff]'}`}>
+                      <Sprite
+                        src={rowAvatarSrc}
+                        className={`h-8 w-8 shrink-0 sm:h-9 sm:w-9 ${isMe ? 'ring-2 ring-[#ffe66a] rounded-full' : ''}`}
+                      />
+                      <span className={`truncate font-px text-[10px] sm:text-[11px] ${podium ? podium.text : isMe ? 'text-[#ffe66a] font-bold' : 'text-[#dff6ff]'}`}>
                         {playerLabel(row, mode)}
                       </span>
+                      {isMe && (
+                        <span className="shrink-0 rounded bg-[#ffe66a] px-1.5 py-0.5 font-px text-[6px] font-bold text-[#2a1200] shadow-sm sm:text-[7px]">
+                          YOU
+                        </span>
+                      )}
                       {row.human_win && (
                         <span className="hidden shrink-0 font-px text-[6px] text-[#7dff6a] sm:inline" aria-label="Human win">
                           WIN
