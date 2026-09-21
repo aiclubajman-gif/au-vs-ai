@@ -56,20 +56,62 @@ export function calculateImpactPosition(humanWins: number, aiWins: number): numb
   const total = humanWins + aiWins;
   if (total <= 0) return 160;
   const humanRatio = humanWins / total;
-  const aiRatio = aiWins / total;
-  const advantage = humanRatio - aiRatio;
-  return clamp(160 + advantage * 40, 120, 200);
+
+  // Visible dynamic range: 60px (heavy AI win) to 260px (heavy Human win) on 320px canvas
+  // 50/50 -> 160 (exact center)
+  // 75/25 Human -> 210 (visibly shows mostly orange beam!)
+  // 25/75 Human (75% AI) -> 110 (visibly shows mostly blue beam!)
+  const MIN_IMPACT = 60;
+  const MAX_IMPACT = 260;
+  return clamp(MIN_IMPACT + humanRatio * (MAX_IMPACT - MIN_IMPACT), MIN_IMPACT, MAX_IMPACT);
 }
 
-export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true }: ClashBeamProps) {
+export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, className = '', showLabels = true }: ClashBeamProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const scoreRef = useRef({ humanWins, aiWins });
   const isVisibleRef = useRef(true);
 
+  // Allow live polling and URL override (?h=80&a=20) for easy visual testing
+  const scoreRef = useRef({ humanWins: propHumanWins, aiWins: propAiWins });
+  scoreRef.current = { humanWins: propHumanWins, aiWins: propAiWins };
+
   useEffect(() => {
-    scoreRef.current = { humanWins, aiWins };
-  }, [humanWins, aiWins]);
+    // Check for testing query params (e.g. ?h=90&a=10 or ?human=80&ai=20)
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const hParam = params.get('h') ?? params.get('human');
+      const aParam = params.get('a') ?? params.get('ai');
+      if (hParam !== null && aParam !== null) {
+        const h = parseInt(hParam, 10);
+        const a = parseInt(aParam, 10);
+        if (!isNaN(h) && !isNaN(a)) {
+          scoreRef.current = { humanWins: h, aiWins: a };
+        }
+      }
+    }
+
+    // Poll live kiosk stats every 8 seconds so the beam smoothly shifts as people play
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch('/api/kiosk');
+        if (!res.ok) return;
+        const json = await res.json();
+        if (json.ok && json.data) {
+          const params = new URLSearchParams(window.location.search);
+          if (!params.has('h') && !params.has('human')) {
+            scoreRef.current = {
+              humanWins: json.data.humanWins ?? propHumanWins,
+              aiWins: json.data.aiWins ?? propAiWins,
+            };
+          }
+        }
+      } catch {
+        // keep current scores if offline
+      }
+    }, 8000);
+
+    return () => clearInterval(interval);
+  }, [propHumanWins, propAiWins]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -145,11 +187,29 @@ export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true
       ctx.imageSmoothingEnabled = false;
 
       const roundedImpactX = Math.round(currentImpactX);
+
+      // 1. DRAW HUMAN BEAM with clipping [10 .. roundedImpactX]
       if (humanImg.complete && humanImg.naturalWidth > 0) {
         ctx.save();
         ctx.beginPath();
         ctx.rect(10, 0, Math.max(0, roundedImpactX - 10), HEIGHT);
         ctx.clip();
+
+        // If impact pushed far right (> 200), fill base from x=10 so no empty gap appears
+        if (roundedImpactX - HUMAN_FRAME.contactX > 10) {
+          ctx.drawImage(
+            humanImg,
+            humanFrame * HUMAN_FRAME.width,
+            0,
+            HUMAN_FRAME.width,
+            HUMAN_FRAME.height,
+            10,
+            CENTER_Y - HUMAN_FRAME.contactY,
+            HUMAN_FRAME.width,
+            HUMAN_FRAME.height
+          );
+        }
+
         ctx.drawImage(
           humanImg,
           humanFrame * HUMAN_FRAME.width,
@@ -163,11 +223,29 @@ export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true
         );
         ctx.restore();
       }
+
+      // 2. DRAW AI BEAM with clipping [roundedImpactX .. 310]
       if (aiImg.complete && aiImg.naturalWidth > 0) {
         ctx.save();
         ctx.beginPath();
         ctx.rect(roundedImpactX, 0, Math.max(0, 310 - roundedImpactX), HEIGHT);
         ctx.clip();
+
+        // If impact pushed far left (< 120), fill base up to x=310 so no empty gap appears
+        if (roundedImpactX - AI_FRAME.contactX + AI_FRAME.width < 310) {
+          ctx.drawImage(
+            aiImg,
+            aiFrame * AI_FRAME.width,
+            0,
+            AI_FRAME.width,
+            AI_FRAME.height,
+            310 - AI_FRAME.width,
+            CENTER_Y - AI_FRAME.contactY,
+            AI_FRAME.width,
+            AI_FRAME.height
+          );
+        }
+
         ctx.drawImage(
           aiImg,
           aiFrame * AI_FRAME.width,
@@ -181,6 +259,8 @@ export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true
         );
         ctx.restore();
       }
+
+      // 3. SPARKS (Orange sparks on human side, Blue sparks on AI side)
       if (!reduceMotion) {
         sparkSpawnTimer += dt;
         if (sparkSpawnTimer >= 40) {
@@ -234,6 +314,8 @@ export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true
           ctx.fillRect(Math.round(sp.x), Math.round(sp.y), sp.w, sp.h);
         }
       }
+
+      // 4. IMPACT SPRITE (always on top)
       if (impactImg.complete && impactImg.naturalWidth > 0) {
         ctx.drawImage(
           impactImg,
