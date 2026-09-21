@@ -12,6 +12,10 @@ export const dynamic = 'force-dynamic';
 export default async function KioskPage() {
   const site = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://auvsai.com').replace(/\/$/, '');
   const opts = { errorCorrectionLevel: 'M' as const, margin: 1, width: 640, color: { dark: '#1c2b4b', light: '#ffffff' } };
-  const [qr, qrWhatsapp] = await Promise.all([QRCode.toDataURL(site, opts), QRCode.toDataURL(CLUB.whatsapp, opts)]);
-  return <Kiosk siteUrl={site} qr={qr} qrWhatsapp={qrWhatsapp} />;
+  const [qr, qrClub, qrWhatsapp] = await Promise.all([
+    QRCode.toDataURL(site, opts),
+    QRCode.toDataURL(`${site}/club`, opts),
+    QRCode.toDataURL(CLUB.whatsapp, opts),
+  ]);
+  return <Kiosk siteUrl={site} qr={qr} qrClub={qrClub} qrWhatsapp={qrWhatsapp} />;
 }

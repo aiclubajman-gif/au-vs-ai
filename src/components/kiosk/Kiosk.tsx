@@ -53,7 +53,7 @@ const EMPTY: KioskData = {
   updatedAt: '',
 };
 
-export function Kiosk({ siteUrl, qr, qrWhatsapp }: { siteUrl: string; qr: string; qrWhatsapp: string }) {
+export function Kiosk({ siteUrl, qr, qrClub, qrWhatsapp }: { siteUrl: string; qr: string; qrClub: string; qrWhatsapp: string }) {
   const [data, setData] = useState<KioskData>(EMPTY);
   const [forced, setForced] = useState<'attract' | 'live' | null>(null);
   const [cursor, setCursor] = useState({ mode: 'attract', index: 0 });
@@ -203,7 +203,7 @@ export function Kiosk({ siteUrl, qr, qrWhatsapp }: { siteUrl: string; qr: string
           <section key={`${modeKey}-${index}`} className="kiosk__panel kiosk__panel--active">
             {panel.id === 'video' && <VideoPanel videoRef={videoRef} qrWhatsapp={qrWhatsapp} />}
             {panel.id === 'game' && <GamePanel qr={qr} siteUrl={siteUrl} data={data} />}
-            {panel.id === 'prizes' && <PrizesPanel qr={qr} qrWhatsapp={qrWhatsapp} siteUrl={siteUrl} />}
+            {panel.id === 'prizes' && <PrizesPanel qr={qr} qrClub={qrClub} siteUrl={siteUrl} />}
             {panel.id === 'board' && <BoardPanel data={data} qr={qr} />}
           </section>
 
@@ -418,7 +418,7 @@ function GamePanel({ qr, siteUrl, data }: { qr: string; siteUrl: string; data: K
   );
 }
 
-function PrizesPanel({ qr, qrWhatsapp, siteUrl }: { qr: string; qrWhatsapp: string; siteUrl: string }) {
+function PrizesPanel({ qr, qrClub, siteUrl }: { qr: string; qrClub: string; siteUrl: string }) {
   return (
     <div className="k-scene k-prizes">
       <div className="k-glow" style={{ left: '-14%', top: '-30%' }} />
@@ -465,12 +465,12 @@ function PrizesPanel({ qr, qrWhatsapp, siteUrl }: { qr: string; qrWhatsapp: stri
             <span className="k-card__plan">Plus</span>
             <span className="k-card__term">1 month · drawn at the end of the fair</span>
           </div>
-          <p className="k-card__how">Join AIDA on ORS during the fair and you are in the draw. ORS → New Request → Student Life → Club Membership → AI &amp; Data Science Club.</p>
+          <p className="k-card__how">Join AIDA on ORS during the fair and you are in the draw. Takes two minutes; we can help at the booth.</p>
           <footer className="k-card__foot">
-            <img src={qrWhatsapp} alt="QR code for the AIDA WhatsApp group" />
+            <img src={qrClub} alt={`QR code for ${siteUrl}/club`} />
             <div>
-              <strong>Scan for the ORS steps</strong>
-              <span>Joins our WhatsApp group · we walk you through it</span>
+              <strong>Scan to join the club</strong>
+              <span>{siteUrl.replace(/^https?:\/\//, '')}/club · step-by-step ORS guide</span>
             </div>
           </footer>
         </article>
