@@ -28,9 +28,10 @@
  *   3. Character cut-outs carry stray specks from the background removal;
  *      islands too small to be part of the figure are dropped.
  *
- * It also derives two "emissive" layers — just the glowing lines of the AI's
+ * It also derives the "emissive" layers — just the glowing lines of the AI's
  * armour and the mascot's headphones/hoodie — which the page pulses on top of
- * the untouched character art.
+ * the untouched character art. The AI gets two of them: the glow it gives off,
+ * and the channels themselves, which mask the current travelling through it.
  *
  * sharp is not a direct dependency; it is installed with next.
  */
@@ -68,13 +69,13 @@ function toSharp(img) {
   return sharp(img.data, { raw: { width: img.width, height: img.height, channels: 4 } });
 }
 
-async function write(img, file, { width, format = 'webp' } = {}) {
+async function write(img, file, { width, format = 'webp', webp } = {}) {
   let pipeline = toSharp(img);
   if (width && width !== img.width) pipeline = pipeline.resize({ width, kernel: 'lanczos3' });
   const buf =
     format === 'png'
       ? await pipeline.png({ compressionLevel: 9 }).toBuffer()
-      : await pipeline.webp(WEBP).toBuffer();
+      : await pipeline.webp({ ...WEBP, ...webp }).toBuffer();
   fs.writeFileSync(path.join(OUT, file), buf);
   const meta = await sharp(buf).metadata();
   console.log(`${file.padEnd(28)} ${meta.width}x${meta.height}  ${(buf.length / 1024).toFixed(0)} KB`);
@@ -308,6 +309,160 @@ function emissive(img, weight, core, { minAlpha = 0.04 } = {}) {
   return { data: out, width, height };
 }
 
+/* -- The AI's emissive channels ---------------------------------------------
+ *
+ * Colour alone cannot find them. The whole figure is rim-lit in the same
+ * orange the channels are made of, so "bright and orange" selects the armour's
+ * every contour, the skull's outline and the profile of the face along with
+ * the circuitry — an edge trace of the fighter rather than its wiring. Two
+ * things tell a channel from a lit edge, and neither is a colour:
+ *
+ *   inside   A channel is cut into the armour, so it sits well inside the
+ *            cut-out. Rim light lies along the cut-out's own boundary, and
+ *            dies with a distance transform.
+ *   line     A channel is a thin bright line with darker armour on both sides.
+ *            A lit edge, a bevel or the sheen across the top of the helmet has
+ *            armour on one side only, and fades on the other. Sampling both
+ *            ways along four axes separates them — but only where both samples
+ *            are still on the figure, or the transparent side of a rim would
+ *            read as the darker one and every outline would pass.
+ *
+ * The line test is applied per connected region rather than per pixel: a
+ * channel's own core, where two channels meet, and the few pixels either side
+ * of a fork are all legitimately flat, and cutting them individually leaves
+ * the circuitry dashed. Judging the whole region keeps each line continuous.
+ */
+
+/** Distance, in pixels, from every opaque pixel to the nearest clear one. */
+function innerDistance(img) {
+  const { data, width, height } = img;
+  const n = width * height;
+  // Chamfer 3-4, in thirds of a pixel, in two sweeps.
+  const dist = new Float32Array(n);
+  for (let p = 0; p < n; p++) dist[p] = data[p * 4 + 3] > 40 ? Infinity : 0;
+  const at = (x, y) => (x < 0 || y < 0 || x >= width || y >= height ? 0 : dist[y * width + x]);
+  for (let y = 0; y < height; y++)
+    for (let x = 0; x < width; x++) {
+      const p = y * width + x;
+      if (!dist[p]) continue;
+      dist[p] = Math.min(dist[p], at(x - 1, y) + 3, at(x, y - 1) + 3, at(x - 1, y - 1) + 4, at(x + 1, y - 1) + 4);
+    }
+  for (let y = height - 1; y >= 0; y--)
+    for (let x = width - 1; x >= 0; x--) {
+      const p = y * width + x;
+      if (!dist[p]) continue;
+      dist[p] = Math.min(dist[p], at(x + 1, y) + 3, at(x, y + 1) + 3, at(x + 1, y + 1) + 4, at(x - 1, y + 1) + 4);
+    }
+  for (let p = 0; p < n; p++) dist[p] /= 3;
+  return dist;
+}
+
+const smoothstep = (e0, e1, x) => {
+  const t = clamp01((x - e0) / (e1 - e0));
+  return t * t * (3 - 2 * t);
+};
+
+/**
+ * Everything about the figure that both mask passes need, measured once:
+ * how far inside the cut-out each pixel is, how much orange it puts out, and
+ * how far it stands above the armour on either side of it.
+ */
+function channelField(img, { reach = 8 } = {}) {
+  const { data, width, height } = img;
+  const n = width * height;
+  const dist = innerDistance(img);
+  // Orange output: red past what a neutral highlight of the same blue would
+  // carry. Skin and the white-metal specular both hold too much blue to score.
+  const emit = new Float32Array(n);
+  for (let p = 0; p < n; p++) {
+    const i = p * 4;
+    if (data[i + 3] < 16) continue;
+    emit[p] = Math.max(0, data[i] - data[i + 2] * 0.6) * (data[i + 3] / 255);
+  }
+  const r = Math.round((reach * width) / 1000);
+  const axes = [
+    [1, 0],
+    [0, 1],
+    [1, 1],
+    [1, -1],
+  ];
+  /** How far p rises above the armour `r` away on both sides, at its best angle. */
+  const ridge = (p) => {
+    const x = p % width;
+    const y = (p - x) / width;
+    let best = 0;
+    for (const [ux, uy] of axes) {
+      const ax = x + ux * r, ay = y + uy * r, bx = x - ux * r, by = y - uy * r;
+      if (ax < 0 || ay < 0 || ax >= width || ay >= height) continue;
+      if (bx < 0 || by < 0 || bx >= width || by >= height) continue;
+      const pa = ay * width + ax, pb = by * width + bx;
+      // Off the figure on either side: this is a silhouette, not a line.
+      if (data[pa * 4 + 3] < 40 || data[pb * 4 + 3] < 40) continue;
+      const drop = Math.min(emit[p] - emit[pa], emit[p] - emit[pb]);
+      if (drop > best) best = drop;
+    }
+    return best;
+  };
+  return { dist, ridge, scale: width / 1000 };
+}
+
+/**
+ * One emissive layer: the pixels that pass `weight`, are far enough inside the
+ * cut-out, and belong to a region that reads as a line. `core` tints it toward
+ * the colour the channel runs at; passing null leaves it white, for a layer
+ * that is only ever used as a mask.
+ *
+ * Every length is quoted per 1000px of width and scaled to the master, so a
+ * re-export at another size selects the same lines.
+ */
+function channels(img, field, weight, core, { edge, floor, minRegion, minLine, lineAt = 18 } = {}) {
+  const { data, width, height } = img;
+  const { dist, ridge, scale } = field;
+  const n = width * height;
+  const w = new Float32Array(n);
+  for (let p = 0; p < n; p++) {
+    const i = p * 4;
+    if (data[i + 3] < 16) continue;
+    const colour = clamp01(weight(data[i], data[i + 1], data[i + 2]));
+    if (colour <= 0) continue;
+    const inside = smoothstep(edge[0] * scale, edge[1] * scale, dist[p]);
+    if (inside <= 0) continue;
+    // The floor is what stops a faint wash of near-misses from filling the
+    // gaps between the channels back in.
+    const v = clamp01((colour * inside * (data[i + 3] / 255) - floor) / (1 - floor));
+    if (v > 0) w[p] = v;
+  }
+
+  const mask = new Uint8Array(n);
+  for (let p = 0; p < n; p++) mask[p] = w[p] > 0 ? 1 : 0;
+  const { labels, sizes } = components(mask, width, height);
+  const lines = new Int32Array(sizes.length);
+  for (let p = 0; p < n; p++) if (labels[p] && ridge(p) >= lineAt) lines[labels[p]]++;
+  const keep = new Uint8Array(sizes.length);
+  for (let l = 1; l < sizes.length; l++) {
+    keep[l] = sizes[l] >= minRegion * scale * scale && lines[l] / sizes[l] >= minLine ? 1 : 0;
+  }
+
+  const out = Buffer.alloc(n * 4);
+  let kept = 0;
+  for (let p = 0; p < n; p++) {
+    if (!labels[p] || !keep[labels[p]]) continue;
+    const i = p * 4;
+    const a = w[p];
+    if (core) {
+      out[i] = Math.round(data[i] + (core[0] - data[i]) * a * 0.6);
+      out[i + 1] = Math.round(data[i + 1] + (core[1] - data[i + 1]) * a * 0.6);
+      out[i + 2] = Math.round(data[i + 2] + (core[2] - data[i + 2]) * a * 0.6);
+    } else {
+      out[i] = out[i + 1] = out[i + 2] = 255;
+    }
+    out[i + 3] = Math.round(a * 255);
+    kept++;
+  }
+  const regions = keep.reduce((a, b) => a + b, 0);
+  return { layer: { data: out, width, height }, kept, regions, total: sizes.length - 1 };
+}
+
 // ---------------------------------------------------------------------------
 
 // Background: two sizes, picked by the browser with srcset (1080p vs 4K).
@@ -350,14 +505,38 @@ function emissive(img, weight, core, { minAlpha = 0.04 } = {}) {
   const ai = await load('ai_right.png');
   console.log('  ai: removed', removeIslands(ai, 400), 'speck px');
   await write(ai, 'ai.webp', { width: 1600 });
-  // Orange emissive seams: hot red channel, little blue. Skin and lips carry
-  // too much blue to pass.
-  const glow = emissive(
+
+  const field = channelField(ai);
+  /*
+   * Two passes over the same channels, at two widths. The glow is the light
+   * the armour actually gives off — the line and the first of its falloff —
+   * and is what the page pulses. The veins layer is the line alone, and is
+   * only ever a mask: it is where the travelling fronts are allowed to put
+   * their current, so a front tracks the circuitry instead of washing across
+   * the halo around it. Anything looser than these belongs to the still art,
+   * which neither layer touches.
+   */
+  const glow = channels(
     ai,
-    (r, g, b) => clamp01((r - 190) / 50) * clamp01((110 - b) / 60) * clamp01((g - 50) / 60),
+    field,
+    (r, g, b) => clamp01((r - 214) / 32) * clamp01((r - b - 84) / 56) * clamp01((g - 38) / 58),
     [255, 214, 140],
+    { edge: [9, 20], floor: 0.07, minRegion: 45, minLine: 0.34 },
   );
-  await write(glow, 'ai-glow.webp', { width: 1000 });
+  console.log(`  ai glow:  ${glow.kept} px, ${glow.regions}/${glow.total} regions`);
+  await write(glow.layer, 'ai-glow.webp', { width: 1000 });
+
+  const veins = channels(
+    ai,
+    field,
+    (r, g, b) => clamp01((r - 238) / 14) * clamp01((r - b - 104) / 46) * clamp01((g - 46) / 58),
+    null,
+    { edge: [8, 17], floor: 0.1, minRegion: 55, minLine: 0.42 },
+  );
+  console.log(`  ai veins: ${veins.kept} px, ${veins.regions}/${veins.total} regions`);
+  // A mask, so only its alpha is ever read: keep that crisp, and let the flat
+  // white it carries cost almost nothing.
+  await write(veins.layer, 'ai-veins.webp', { width: 1000, webp: { alphaQuality: 100 } });
 }
 
 for (const [from, to] of [

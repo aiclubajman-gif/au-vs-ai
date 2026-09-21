@@ -202,13 +202,22 @@
 
 /* ---- Current running through the AI's channels ---------------------------
 
-   The whole effect is cut to ai-glow.webp — the emissive layer the asset build
-   derives, holding the armour's lit seams and nothing else. It is the MASK
-   here, not the picture: each layer is a sheet of travelling light with the
-   glow image cut out of it, so light can only ever land where a channel
-   already exists. That is what keeps this from being a flash: the artwork
-   underneath is untouched, no global opacity moves, and a channel's own colour
-   is never replaced -- it only gets hotter as a front passes through it.
+   The whole effect is cut to ai-veins.webp — the channel layer the asset build
+   derives: the armour's circuitry, the cracks and the seams, and none of the
+   rim light that runs along the figure's outline. It is the MASK here, not the
+   picture: each layer is a sheet of travelling light with the channels cut out
+   of it, so light can only ever land where a channel already exists. That is
+   what keeps this from being a flash: the artwork underneath is untouched, no
+   global opacity moves, and a channel's own colour is never replaced -- it
+   only gets hotter as a front passes through it.
+
+   Why the veins layer and not ai-glow.webp, which the neon above uses: the
+   glow carries the first of each channel's falloff, the halo the armour throws
+   around the line. A front crossing the halo washes over the plates between
+   the channels, and the effect reads as a light sweeping over the robot. Cut
+   to the line alone, the same front reads as current inside it. The halo is
+   still there -- it is what the neon layers are pulsing -- it simply is not
+   what the current is allowed to travel down.
 
    The mask is fixed and the light moves inside it. That is deliberate: a mask
    that moves every frame repaints the whole figure every frame, while a fixed
@@ -231,11 +240,10 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
-  opacity: var(--charge);
   transition: opacity var(--t-lighting, 2.4s) ease-in-out;
-  /* Only the lit seams, exactly where the art has them. */
-  -webkit-mask-image: url('/arena-tv/ai-glow.webp');
-  mask-image: url('/arena-tv/ai-glow.webp');
+  /* Only the channels themselves, exactly where the art has them. */
+  -webkit-mask-image: url('/arena-tv/ai-veins.webp');
+  mask-image: url('/arena-tv/ai-veins.webp');
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
   -webkit-mask-repeat: no-repeat;
@@ -245,44 +253,71 @@
 }
 
 /*
- * The front itself: a few soft bands repeating every 300px, rotated to cross
- * the figure at an angle and slid along their own axis by exactly one period,
- * so the loop has no seam to see. Oversized because a rotated rectangle has
- * to stay over the figure at every angle.
+ * The fronts do not all come on together. Each has its own threshold on the
+ * charge, so a losing machine runs one slow front down a few channels and a
+ * winning one has all three crossing at once: fewer channels lit and less
+ * movement at the bottom, more of both at the top, with the step between them
+ * carried by the transition above rather than a switch. The first front never
+ * goes out -- the AI idles, it does not power down.
+ */
+.veins i:nth-child(1) {
+  opacity: clamp(0.14, var(--charge), 1);
+}
+
+.veins i:nth-child(2) {
+  opacity: clamp(0, (var(--charge) - 0.28) * 1.4, 1);
+}
+
+.veins i:nth-child(3) {
+  opacity: clamp(0, (var(--charge) - 0.48) * 1.9, 1);
+}
+
+/*
+ * The front itself: a few soft bands repeating every --vein-period, rotated to
+ * cross the figure at an angle and slid along their own axis by exactly one
+ * period, so the loop has no seam to see. Oversized because a rotated
+ * rectangle has to stay over the figure at every angle.
+ *
+ * Each front sets its own period as well as its own clock. Three spacings that
+ * do not line up mean the gaps between the bands land somewhere different
+ * every pass, so the figure is never lit all at once and never dark all at
+ * once: some channels are taking a front, some are holding the last one.
  */
 .veins i::before {
   content: '';
   position: absolute;
   inset: -75%;
-  background: repeating-linear-gradient(
-    180deg,
-    transparent 0 114px,
-    rgb(255 168 78 / 0.34) 134px,
-    rgb(255 250 236 / 0.98) 150px,
-    rgb(255 168 78 / 0.34) 166px,
-    transparent 186px 300px
-  );
   animation: vein-flow 7.3s linear infinite;
 }
 
 /* Up through the body, the quickest and the one that reads as the pulse. */
 .veins i:nth-child(1)::before {
   --vein-tilt: 14deg;
+  --vein-period: 300px;
   animation-duration: 7.3s;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0 132px,
+    rgb(255 168 78 / 0.32) 152px,
+    rgb(255 250 236 / 0.98) 166px,
+    rgb(255 168 78 / 0.32) 180px,
+    transparent 200px 300px
+  );
 }
 
 /* Across it the other way and slower, so the two cross rather than stack. */
 .veins i:nth-child(2)::before {
   --vein-tilt: -68deg;
+  --vein-period: 360px;
   animation-duration: 9.7s;
   animation-delay: -3.1s;
   background: repeating-linear-gradient(
     180deg,
-    transparent 0 126px,
-    rgb(255 146 56 / 0.3) 146px,
-    rgb(255 240 210 / 0.86) 162px,
-    rgb(255 146 56 / 0.3) 178px,
-    transparent 198px 300px
+    transparent 0 176px,
+    rgb(255 146 56 / 0.28) 196px,
+    rgb(255 240 210 / 0.86) 210px,
+    rgb(255 146 56 / 0.28) 224px,
+    transparent 244px 360px
   );
 }
 
@@ -290,15 +325,16 @@
    looks, and the reason the channels settle rather than strobe. */
 .veins i:nth-child(3)::before {
   --vein-tilt: 38deg;
+  --vein-period: 440px;
   animation-duration: 13.1s;
   animation-delay: -5.7s;
   background: repeating-linear-gradient(
     180deg,
-    transparent 0 60px,
-    rgb(255 132 40 / 0.26) 118px,
-    rgb(255 214 148 / 0.6) 150px,
-    rgb(255 132 40 / 0.26) 182px,
-    transparent 240px 300px
+    transparent 0 150px,
+    rgb(255 132 40 / 0.24) 212px,
+    rgb(255 214 148 / 0.58) 250px,
+    rgb(255 132 40 / 0.24) 288px,
+    transparent 350px 440px
   );
 }
 
@@ -310,7 +346,7 @@
     transform: rotate(var(--vein-tilt, 0deg)) translateY(0);
   }
   to {
-    transform: rotate(var(--vein-tilt, 0deg)) translateY(-300px);
+    transform: rotate(var(--vein-tilt, 0deg)) translateY(calc(-1 * var(--vein-period, 300px)));
   }
 }
 
