@@ -1250,19 +1250,26 @@ input.px-slider::-moz-range-thumb {
 }
 
 .px-fighter--bird {
-  left: -3%;
+  left: 0;
+  width: 9.4%;
+  aspect-ratio: auto;
 }
 
 .px-fighter--cell {
-  right: -3%;
+  right: 0;
+  width: 9.4%;
+  aspect-ratio: auto;
 }
 
 .px-fighter--in {
   opacity: 1;
+}
+
+.px-fighter--in .px-fighter__pose {
   animation: px-teleport-in 420ms steps(6) both;
 }
 
-.px-fighter--cell.px-fighter--in {
+.px-fighter--cell.px-fighter--in .px-fighter__pose {
   animation-name: px-teleport-in-r;
 }
 
@@ -1340,16 +1347,17 @@ input.px-slider::-moz-range-thumb {
   bottom: 0;
   height: 100%;
   width: auto;
+  max-width: none;
   opacity: 0;
   transform-origin: 50% 100%;
 }
 
 .px-fighter--bird .px-fighter__pose {
-  left: 0;
+  right: 0;
 }
 
 .px-fighter--cell .px-fighter__pose {
-  right: 0;
+  left: 0;
 }
 
 .px-fighter--charge .px-fighter__pose--charge,
@@ -1359,25 +1367,33 @@ input.px-slider::-moz-range-thumb {
 }
 
 .px-fighter--push .px-fighter__pose--push {
-  animation: px-fighter-push 0.7s steps(2) infinite;
+  animation: px-teleport-in 420ms steps(6) both, px-fighter-push 0.7s steps(2) 420ms infinite;
 }
 
 .px-fighter--strain .px-fighter__pose--strain {
-  animation: px-fighter-strain 0.32s steps(2) infinite;
+  animation: px-teleport-in 420ms steps(6) both, px-fighter-strain 0.32s steps(2) 420ms infinite;
 }
 
 .px-fighter--charge.px-fighter--in .px-fighter__pose--charge {
-  animation: px-fighter-charge 0.5s steps(2) infinite;
+  animation: px-teleport-in 420ms steps(6) both, px-fighter-charge 0.5s steps(2) 420ms infinite;
+}
+
+.px-fighter--cell.px-fighter--push .px-fighter__pose--push {
+  animation: px-teleport-in-r 420ms steps(6) both, px-fighter-push-r 0.7s steps(2) 420ms infinite;
+}
+
+.px-fighter--cell.px-fighter--strain .px-fighter__pose--strain {
+  animation: px-teleport-in-r 420ms steps(6) both, px-fighter-strain-r 0.32s steps(2) 420ms infinite;
+}
+
+.px-fighter--cell.px-fighter--charge.px-fighter--in .px-fighter__pose--charge {
+  animation: px-teleport-in-r 420ms steps(6) both, px-fighter-charge 0.5s steps(2) 420ms infinite;
 }
 
 @keyframes px-fighter-push {
   50% {
     transform: translate(1.5%, -2.5%);
   }
-}
-
-.px-fighter--cell.px-fighter--push .px-fighter__pose--push {
-  animation-name: px-fighter-push-r;
 }
 
 @keyframes px-fighter-push-r {
@@ -1390,10 +1406,6 @@ input.px-slider::-moz-range-thumb {
   50% {
     transform: translate(2%, -1%) rotate(-1.5deg);
   }
-}
-
-.px-fighter--cell.px-fighter--strain .px-fighter__pose--strain {
-  animation-name: px-fighter-strain-r;
 }
 
 @keyframes px-fighter-strain-r {
@@ -1415,12 +1427,9 @@ input.px-slider::-moz-range-thumb {
     bottom: -2%;
   }
 
-  .px-fighter--bird {
-    left: -5%;
-  }
-
+  .px-fighter--bird,
   .px-fighter--cell {
-    right: -5%;
+    width: 9.4%;
   }
 }
 

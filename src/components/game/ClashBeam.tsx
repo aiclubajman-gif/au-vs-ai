@@ -10,8 +10,8 @@ const HUMAN_FRAME = { width: 200, height: 64, contactX: 190, contactY: 32 };
 const AI_FRAME = { width: 200, height: 64, contactX: 10, contactY: 32 };
 const IMPACT_FRAME = { width: 72, height: 72, centerX: 36, centerY: 36 };
 // Base anchors on the 320px canvas (matching original pixel art: Human base at x=25, AI base at x=295)
-const HUMAN_SPRITE_BASE_X = 17; // 25 - 8
-const AI_SPRITE_BASE_X = 103;   // 295 - 192
+const HUMAN_ORIGIN_X = 30;
+const AI_ORIGIN_X = 290;
 
 const HUMAN_SPARK_COLORS = ['#B83A00', '#F05A00', '#FF8C00', '#FFC928', '#FFF0A0'];
 const AI_SPARK_COLORS = ['#004A9F', '#0079E8', '#00C4FF', '#62ECFF', '#DFFFFF'];
@@ -247,111 +247,48 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
       const roundedImpactX = Math.round(currentImpactX);
       if (process.env.NODE_ENV !== 'production') canvas.dataset.impact = String(roundedImpactX);
 
-      // 1. DRAW HUMAN BEAM with clipping [0 .. roundedImpactX]
+      const humanStart = HUMAN_ORIGIN_X;
+      const humanLen = Math.max(24, roundedImpactX + 12 - humanStart);
       if (humanImg.complete && humanImg.naturalWidth > 0) {
         ctx.save();
         ctx.beginPath();
         ctx.rect(0, 0, Math.max(0, roundedImpactX), HEIGHT);
         ctx.clip();
-
-        for (let k = 1; k <= 3; k++) {
-          ctx.drawImage(
-            humanImg,
-            humanFrame * HUMAN_FRAME.width + 24,
-            0,
-            40,
-            HUMAN_FRAME.height,
-            HUMAN_SPRITE_BASE_X + 24 - k * 34,
-            CENTER_Y - HUMAN_FRAME.contactY,
-            40,
-            HUMAN_FRAME.height,
-          );
-        }
-
-        // Always draw the base anchored at the left origin so natural flame base shows
         ctx.drawImage(
           humanImg,
-          humanFrame * HUMAN_FRAME.width,
+          humanFrame * HUMAN_FRAME.width + 8,
           0,
-          HUMAN_FRAME.width,
+          HUMAN_FRAME.width - 8,
           HUMAN_FRAME.height,
-          HUMAN_SPRITE_BASE_X,
+          humanStart,
           CENTER_Y - HUMAN_FRAME.contactY,
-          HUMAN_FRAME.width,
+          humanLen,
           HUMAN_FRAME.height,
         );
-
-        // If impact pushed far right (> 200), also draw contact sprite to reach impact
-        if (roundedImpactX > 200) {
-          ctx.drawImage(
-            humanImg,
-            humanFrame * HUMAN_FRAME.width,
-            0,
-            HUMAN_FRAME.width,
-            HUMAN_FRAME.height,
-            roundedImpactX - HUMAN_FRAME.contactX,
-            CENTER_Y - HUMAN_FRAME.contactY,
-            HUMAN_FRAME.width,
-            HUMAN_FRAME.height,
-          );
-        }
-
         ctx.restore();
       }
 
-      // 2. DRAW AI BEAM with clipping [roundedImpactX .. WIDTH]
+      const aiEnd = AI_ORIGIN_X;
+      const aiLen = Math.max(24, aiEnd - (roundedImpactX - 12));
       if (aiImg.complete && aiImg.naturalWidth > 0) {
         ctx.save();
         ctx.beginPath();
         ctx.rect(roundedImpactX, 0, Math.max(0, WIDTH - roundedImpactX), HEIGHT);
         ctx.clip();
-
-        for (let k = 1; k <= 3; k++) {
-          ctx.drawImage(
-            aiImg,
-            aiFrame * AI_FRAME.width + AI_FRAME.width - 64,
-            0,
-            40,
-            AI_FRAME.height,
-            AI_SPRITE_BASE_X + AI_FRAME.width - 64 + k * 34,
-            CENTER_Y - AI_FRAME.contactY,
-            40,
-            AI_FRAME.height,
-          );
-        }
-
-        // Always draw the base anchored at the right origin so natural flame base shows
         ctx.drawImage(
           aiImg,
           aiFrame * AI_FRAME.width,
           0,
-          AI_FRAME.width,
+          AI_FRAME.width - 8,
           AI_FRAME.height,
-          AI_SPRITE_BASE_X,
+          aiEnd - aiLen,
           CENTER_Y - AI_FRAME.contactY,
-          AI_FRAME.width,
+          aiLen,
           AI_FRAME.height,
         );
-
-        // If impact pushed far left (< 120), also draw contact sprite to reach impact
-        if (roundedImpactX < 120) {
-          ctx.drawImage(
-            aiImg,
-            aiFrame * AI_FRAME.width,
-            0,
-            AI_FRAME.width,
-            AI_FRAME.height,
-            roundedImpactX - AI_FRAME.contactX,
-            CENTER_Y - AI_FRAME.contactY,
-            AI_FRAME.width,
-            AI_FRAME.height,
-          );
-        }
-
         ctx.restore();
       }
 
-      // 3. SPARKS (Orange sparks on human side, Blue sparks on AI side)
       if (!reduceMotion) {
         sparkSpawnTimer += dt;
         if (sparkSpawnTimer >= 40) {
