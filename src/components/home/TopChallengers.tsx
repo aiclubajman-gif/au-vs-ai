@@ -9,20 +9,10 @@ export interface TopRow {
   total_score: number;
 }
 
-const AVATARS = [
-  'boy_avatar1',
-  'f_girl1',
-  'mblonde_avatar',
-  'boy2_avatar',
-  'f_purple_hijab',
-  'm_emarati_avatar',
-  'f_black_hijab',
-];
+import { resolveAvatar } from '@/lib/avatars';
 
 export function avatarFor(seed: string) {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  return `/avatars/${AVATARS[h % AVATARS.length]}.png`;
+  return resolveAvatar(seed);
 }
 
 export function playerLabel(row: TopRow, mode: LeaderboardDisplayMode) {

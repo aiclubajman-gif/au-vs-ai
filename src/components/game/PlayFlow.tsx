@@ -24,6 +24,13 @@ import {
   type DeviceChecks,
   type Gender,
 } from '@/components/game/screens/Onboarding';
+import {
+  AVATAR_OPTIONS,
+  getStoredAvatar,
+  setStoredAvatar,
+  getStoredGender,
+  setStoredGender,
+} from '@/lib/avatars';
 import { PxButton, PxLink } from '@/components/px';
 import type { College, AttemptAssignment, PublicAttemptResult, EventSettings } from '@/types';
 
@@ -153,7 +160,8 @@ export function PlayFlow({
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [fullName, setFullName] = useState('');
-  const [gender, setGender] = useState<Gender>('Male');
+  const [gender, setGender] = useState<Gender>(() => getStoredGender());
+  const [avatar, setAvatar] = useState<string>(() => getStoredAvatar());
   const [collegeId, setCollegeId] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
@@ -267,10 +275,31 @@ export function PlayFlow({
     [email, busy, startDeviceCheck]
   );
 
+  const handleGenderChange = useCallback((newGender: Gender) => {
+    setGender(newGender);
+    setStoredGender(newGender);
+    setAvatar((prev) => {
+      const prevIsGirl = prev.includes('girl');
+      const prevSlots = AVATAR_OPTIONS[prevIsGirl ? 'Female' : 'Male'];
+      const slotIndex = prevSlots.findIndex((a) => a.id === prev);
+      const newSlots = AVATAR_OPTIONS[newGender];
+      const nextAv = newSlots[slotIndex >= 0 ? slotIndex : 0].id;
+      setStoredAvatar(nextAv);
+      return nextAv;
+    });
+  }, []);
+
+  const handleAvatarChange = useCallback((avId: string) => {
+    setAvatar(avId);
+    setStoredAvatar(avId);
+  }, []);
+
   const saveProfile = useCallback(async () => {
     if (fullName.trim().length < 2 || busy) return;
     setBusy(true);
     setError(null);
+    setStoredAvatar(avatar);
+    setStoredGender(gender);
     const res = await post('/api/profile', {
       fullName: fullName.trim(),
       collegeId: collegeId ? Number(collegeId) : null,
@@ -281,7 +310,7 @@ export function PlayFlow({
       return;
     }
     setError({ message: res.error.message, ref: res.error.ref, code: res.error.code });
-  }, [fullName, collegeId, busy, startDeviceCheck]);
+  }, [fullName, collegeId, avatar, gender, busy, startDeviceCheck]);
 
   useEffect(() => {
     if (step !== 'device') return;
@@ -406,7 +435,9 @@ export function PlayFlow({
           fullName={fullName}
           onFullName={setFullName}
           gender={gender}
-          onGender={setGender}
+          onGender={handleGenderChange}
+          avatar={avatar}
+          onAvatar={handleAvatarChange}
           collegeId={collegeId}
           onCollege={setCollegeId}
           colleges={colleges}
