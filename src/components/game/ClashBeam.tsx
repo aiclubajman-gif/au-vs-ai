@@ -10,8 +10,10 @@ const HUMAN_FRAME = { width: 200, height: 64, contactX: 190, contactY: 32 };
 const AI_FRAME = { width: 200, height: 64, contactX: 10, contactY: 32 };
 const IMPACT_FRAME = { width: 72, height: 72, centerX: 36, centerY: 36 };
 // Base anchors on the 320px canvas (matching original pixel art: Human base at x=25, AI base at x=295)
-const HUMAN_ORIGIN_X = 30;
-const AI_ORIGIN_X = 290;
+const HUMAN_ORIGIN_X = 24;
+const AI_ORIGIN_X = 296;
+const IGNITE_AT_MS = 1350;
+const IGNITE_MS = 420;
 
 const HUMAN_SPARK_COLORS = ['#B83A00', '#F05A00', '#FF8C00', '#FFC928', '#FFF0A0'];
 const AI_SPARK_COLORS = ['#004A9F', '#0079E8', '#00C4FF', '#62ECFF', '#DFFFFF'];
@@ -180,14 +182,22 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
+    let startTime = 0;
     const render = (time: number) => {
       if (!reduceMotion) {
         frameId = requestAnimationFrame(render);
       }
       if (!isVisibleRef.current) return;
+      if (!startTime) startTime = time;
 
       const dt = Math.min(time - prevTime || 16, 50);
       prevTime = time;
+      const sinceStart = time - startTime;
+      const ignite = reduceMotion ? 1 : Math.max(0, Math.min(1, (sinceStart - IGNITE_AT_MS) / IGNITE_MS));
+      if (ignite <= 0) {
+        ctx.clearRect(0, 0, WIDTH, HEIGHT);
+        return;
+      }
 
       const scores = scoreRef.current;
       const baseImpactX = calculateImpactPosition(scores.humanWins, scores.aiWins);
@@ -247,8 +257,9 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
       const roundedImpactX = Math.round(currentImpactX);
       if (process.env.NODE_ENV !== 'production') canvas.dataset.impact = String(roundedImpactX);
 
+      const reach = 1 - Math.pow(1 - ignite, 3);
       const humanStart = HUMAN_ORIGIN_X;
-      const humanLen = Math.max(24, roundedImpactX + 12 - humanStart);
+      const humanLen = Math.max(24, (roundedImpactX + 12 - humanStart) * reach);
       if (humanImg.complete && humanImg.naturalWidth > 0) {
         ctx.save();
         ctx.beginPath();
@@ -269,7 +280,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
       }
 
       const aiEnd = AI_ORIGIN_X;
-      const aiLen = Math.max(24, aiEnd - (roundedImpactX - 12));
+      const aiLen = Math.max(24, (aiEnd - (roundedImpactX - 12)) * reach);
       if (aiImg.complete && aiImg.naturalWidth > 0) {
         ctx.save();
         ctx.beginPath();
@@ -289,7 +300,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
         ctx.restore();
       }
 
-      if (!reduceMotion) {
+      if (!reduceMotion && ignite >= 1) {
         sparkSpawnTimer += dt;
         if (sparkSpawnTimer >= 40) {
           sparkSpawnTimer = 0;
@@ -344,7 +355,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
       }
 
       // 4. IMPACT SPRITE (always on top)
-      if (impactImg.complete && impactImg.naturalWidth > 0) {
+      if (ignite >= 1 && impactImg.complete && impactImg.naturalWidth > 0) {
         ctx.drawImage(
           impactImg,
           impactFrame * IMPACT_FRAME.width,

@@ -1251,13 +1251,13 @@ input.px-slider::-moz-range-thumb {
 
 .px-fighter--bird {
   left: 0;
-  width: 9.4%;
+  width: 7.5%;
   aspect-ratio: auto;
 }
 
 .px-fighter--cell {
   right: 0;
-  width: 9.4%;
+  width: 7.5%;
   aspect-ratio: auto;
 }
 
@@ -1429,7 +1429,7 @@ input.px-slider::-moz-range-thumb {
 
   .px-fighter--bird,
   .px-fighter--cell {
-    width: 9.4%;
+    width: 7.5%;
   }
 }
 
