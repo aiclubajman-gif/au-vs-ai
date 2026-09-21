@@ -7,6 +7,7 @@ export const CLUB = {
   short: 'AIDA',
   university: 'Ajman University',
   email: 'aiclubajman@gmail.com',
+  whatsapp: 'https://chat.whatsapp.com/FQ3AfxNQHkrGDstO8R0a06',
   socials: [
     { label: 'Instagram', handle: '@aic_au', url: 'https://instagram.com/aic_au' },
     { label: 'TikTok', handle: '@aic_au', url: 'https://tiktok.com/@aic_au' },

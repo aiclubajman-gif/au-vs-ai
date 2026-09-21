@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatedSprite, Wordmark } from '@/components/px';
 import { ClashBeam } from '@/components/game/ClashBeam';
 import { avatarFor, playerLabel } from '@/components/home/TopChallengers';
@@ -45,7 +45,7 @@ const EMPTY: KioskData = {
   updatedAt: '',
 };
 
-export function Kiosk({ siteUrl, qr }: { siteUrl: string; qr: string }) {
+export function Kiosk({ siteUrl, qr, qrWhatsapp }: { siteUrl: string; qr: string; qrWhatsapp: string }) {
   const [data, setData] = useState<KioskData>(EMPTY);
   const [forced, setForced] = useState<'attract' | 'live' | null>(null);
   const [cursor, setCursor] = useState({ mode: 'attract', index: 0 });
@@ -95,13 +95,20 @@ export function Kiosk({ siteUrl, qr }: { siteUrl: string; qr: string }) {
     leaderRef.current = key;
   }, [data.rows]);
 
+  const busy = useRef(false);
   const go = useCallback(
     (delta: number) => {
+      if (busy.current) return;
+      busy.current = true;
       setWipe((w) => w + 1);
       window.setTimeout(() => {
         setCursor((c) => ({ mode: modeKey, index: ((c.mode === modeKey ? c.index : 0) + delta + playlist.length) % playlist.length }));
         setElapsed(0);
-      }, 420);
+      }, 500);
+      window.setTimeout(() => {
+        busy.current = false;
+        setWipe(0);
+      }, 1150);
     },
     [playlist.length, modeKey]
   );
@@ -125,21 +132,10 @@ export function Kiosk({ siteUrl, qr }: { siteUrl: string; qr: string }) {
 
   useEffect(() => {
     const v = videoRef.current;
-    if (!v) return;
-    if (panel.id === 'video') {
-      v.currentTime = 0;
-      if (!paused) v.play().catch(() => {});
-    } else {
-      v.pause();
-    }
-  }, [panel.id, paused]);
-
-  useEffect(() => {
-    const v = videoRef.current;
     if (!v || panel.id !== 'video') return;
     if (paused) v.pause();
     else v.play().catch(() => {});
-  }, [paused, panel.id]);
+  }, [paused, panel.id, index]);
 
   const wake = useCallback(() => {
     setShowControls(true);
@@ -168,7 +164,6 @@ export function Kiosk({ siteUrl, qr }: { siteUrl: string; qr: string }) {
   }, [next, prev, wake]);
 
   const progress = Math.min(1, elapsed / panel.seconds);
-  const panels = useMemo(() => ['video', 'game', 'prizes', 'board'] as PanelId[], []);
 
   return (
     <div className={`kiosk ${showControls ? 'kiosk--controls' : ''}`}>
@@ -195,14 +190,12 @@ export function Kiosk({ siteUrl, qr }: { siteUrl: string; qr: string }) {
         </div>
 
         <div className="kiosk__panels">
-          {panels.map((id) => (
-            <section key={id} className={`kiosk__panel ${panel.id === id ? 'kiosk__panel--active' : ''}`} aria-hidden={panel.id !== id}>
-              {id === 'video' && <VideoPanel videoRef={videoRef} qr={qr} siteUrl={siteUrl} />}
-              {id === 'game' && <GamePanel qr={qr} siteUrl={siteUrl} data={data} />}
-              {id === 'prizes' && <PrizesPanel qr={qr} siteUrl={siteUrl} />}
-              {id === 'board' && <BoardPanel data={data} qr={qr} />}
-            </section>
-          ))}
+          <section key={`${modeKey}-${index}`} className="kiosk__panel kiosk__panel--active">
+            {panel.id === 'video' && <VideoPanel videoRef={videoRef} qr={qr} siteUrl={siteUrl} />}
+            {panel.id === 'game' && <GamePanel qr={qr} siteUrl={siteUrl} data={data} />}
+            {panel.id === 'prizes' && <PrizesPanel qr={qr} qrWhatsapp={qrWhatsapp} siteUrl={siteUrl} />}
+            {panel.id === 'board' && <BoardPanel data={data} qr={qr} />}
+          </section>
 
           {wipe > 0 && <div key={wipe} className="kiosk__wipe kiosk__wipe--run" aria-hidden="true" />}
 
@@ -341,17 +334,14 @@ function VideoPanel({
   return (
     <div className="k-panel k-video">
       <div className="k-video__frame">
-        <div className="k-glow" style={{ left: '-10%', top: '-20%' }} />
         <video ref={videoRef} src="/kiosk/regwiz.mp4" muted playsInline preload="auto" loop={false} />
       </div>
-      <div className="k-strip">
+      <div className="k-strip k-fade" style={{ ['--i' as string]: 2 }}>
         <div className="k-strip__copy">
           <span className="k-strip__title">
             <Reveal text="RegWiz — course registration, without the headache." />
           </span>
-          <span className="k-strip__sub k-fade" style={{ ['--i' as string]: 3 }}>
-            Built by AIDA students for AU students. Ask us for a demo at the booth.
-          </span>
+          <span className="k-strip__sub">Built by AIDA students for AU students. Ask us for a demo at the booth.</span>
         </div>
         <div className="k-strip__qr">
           <span>
@@ -423,55 +413,62 @@ function GamePanel({ qr, siteUrl, data }: { qr: string; siteUrl: string; data: K
   );
 }
 
-function PrizesPanel({ qr, siteUrl }: { qr: string; siteUrl: string }) {
+function PrizesPanel({ qr, qrWhatsapp, siteUrl }: { qr: string; qrWhatsapp: string; siteUrl: string }) {
   return (
-    <div className="k-panel k-prizes">
-      <div className="k-prize">
-        <span className="k-prize__badge">Prize 1</span>
-        <span className="k-prize__eyebrow k-fade" style={{ ['--i' as string]: 0 }}>
-          Top score of the fair
+    <div className="k-scene k-prizes">
+      <div className="k-glow" style={{ left: '-14%', top: '-30%' }} />
+      <div className="k-glow k-glow--gold" style={{ right: '-16%', bottom: '-36%' }} />
+      <div className="k-prizes__head">
+        <span className="k-eyebrow k-fade" style={{ ['--i' as string]: 0 }}>
+          Two prizes · Club fair 2026
         </span>
-        <h2 className="k-prize__title">
-          <Reveal text="A year of" /> <Reveal text="ChatGPT Plus" em offset={3} /> <Reveal text="for the best human." offset={5} />
+        <h2 className="k-prizes__title">
+          <Reveal text="Two ChatGPT Plus subscriptions" /> <Reveal text="are up for grabs." offset={4} />
         </h2>
-        <p className="k-prize__lead k-fade" style={{ ['--i' as string]: 4 }}>
-          Play the 60 second challenge. The highest verified score on the leaderboard when the fair closes takes the subscription.
-        </p>
-        <div className="k-prize__qr k-fade" style={{ ['--i' as string]: 5 }}>
-          <img src={qr} alt={`QR code for ${siteUrl}`} />
-          <span>
-            Scan to play
-            <br />
-            {siteUrl.replace(/^https?:\/\//, '')}
-          </span>
-        </div>
       </div>
-      <div className="k-prize">
-        <span className="k-prize__badge">Prize 2</span>
-        <span className="k-prize__eyebrow k-fade" style={{ ['--i' as string]: 1 }}>
-          Join the club
-        </span>
-        <h2 className="k-prize__title">
-          <Reveal text="Register on ORS, enter the" offset={2} /> <Reveal text="raffle." em offset={7} />
-        </h2>
-        <p className="k-prize__lead k-fade" style={{ ['--i' as string]: 5 }}>
-          Every student who joins AIDA through ORS during the fair is in the draw for a second ChatGPT Plus subscription.
-        </p>
-        <ol className="k-steps">
-          {CLUB.ors.steps.map((s, i) => (
-            <li key={s} className="k-fade" style={{ ['--i' as string]: 6 + i }}>
-              {s}
-            </li>
-          ))}
-        </ol>
-        <div className="k-prize__qr k-fade" style={{ ['--i' as string]: 10 }}>
-          <img src="/kiosk/qr-whatsapp.png" alt="QR code for the AIDA WhatsApp group" />
-          <span>
-            Scan to join our
-            <br />
-            WhatsApp group
-          </span>
-        </div>
+      <div className="k-prizes__cards">
+        <article className="k-card k-fade" style={{ ['--i' as string]: 2 }}>
+          <header className="k-card__head">
+            <span className="k-card__tag">Top score</span>
+            <span className="k-card__value">
+              <small>worth</small> $20
+            </span>
+          </header>
+          <div className="k-card__product">
+            <span className="k-card__brand">ChatGPT</span>
+            <span className="k-card__plan">Plus</span>
+            <span className="k-card__term">1 month · paid by the club</span>
+          </div>
+          <p className="k-card__how">Play the 60 second challenge. The highest score on the leaderboard when the fair closes wins.</p>
+          <footer className="k-card__foot">
+            <img src={qr} alt={`QR code for ${siteUrl}`} />
+            <div>
+              <strong>Scan to play</strong>
+              <span>{siteUrl.replace(/^https?:\/\//, '')} · one attempt per student</span>
+            </div>
+          </footer>
+        </article>
+        <article className="k-card k-card--alt k-fade" style={{ ['--i' as string]: 3 }}>
+          <header className="k-card__head">
+            <span className="k-card__tag">Member raffle</span>
+            <span className="k-card__value">
+              <small>worth</small> $20
+            </span>
+          </header>
+          <div className="k-card__product">
+            <span className="k-card__brand">ChatGPT</span>
+            <span className="k-card__plan">Plus</span>
+            <span className="k-card__term">1 month · drawn at the end of the fair</span>
+          </div>
+          <p className="k-card__how">Join AIDA on ORS during the fair and you are in the draw. ORS → New Request → Student Life → Club Membership → AI &amp; Data Science Club.</p>
+          <footer className="k-card__foot">
+            <img src={qrWhatsapp} alt="QR code for the AIDA WhatsApp group" />
+            <div>
+              <strong>Scan for the ORS steps</strong>
+              <span>Joins our WhatsApp group · we walk you through it</span>
+            </div>
+          </footer>
+        </article>
       </div>
     </div>
   );
@@ -482,9 +479,8 @@ function BoardPanel({ data, qr }: { data: KioskData; qr: string }) {
   const humanPct = total > 0 ? Math.round((data.humanWins / total) * 100) : 50;
   return (
     <div className="k-scene">
-      <div className="k-scene__bg" style={{ backgroundImage: "url('/backgrounds/circuit-16x9.png')", opacity: 0.35 }} />
+      <div className="k-scene__bg" style={{ backgroundImage: "url('/backgrounds/circuit-16x9.png')", opacity: 0.5 }} />
       <div className="k-panel k-board">
-        <div className="k-glow" style={{ right: '-20%', bottom: '-30%' }} />
         <div className="k-board__left">
           <span className="k-eyebrow k-fade" style={{ ['--i' as string]: 0 }}>
             Live leaderboard
