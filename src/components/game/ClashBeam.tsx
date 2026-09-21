@@ -120,10 +120,9 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
       }
     }
 
-    // Poll live kiosk stats every 8 seconds so the beam smoothly shifts as people play
-    const interval = setInterval(async () => {
+    const poll = async () => {
       try {
-        const res = await fetch('/api/kiosk');
+        const res = await fetch('/api/kiosk', { cache: 'no-store' });
         if (!res.ok) return;
         const json = await res.json();
         if (json.ok && json.data) {
@@ -137,10 +136,10 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
             }
           }
         }
-      } catch {
-        // keep current scores if offline
-      }
-    }, 8000);
+      } catch {}
+    };
+    poll();
+    const interval = setInterval(poll, 8000);
 
     return () => clearInterval(interval);
   }, [propHumanWins, propAiWins]);

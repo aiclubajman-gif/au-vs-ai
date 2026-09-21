@@ -53,8 +53,8 @@ async function getTopChallengers(): Promise<{ rows: TopRow[]; mode: LeaderboardD
 
 export default async function LandingPage() {
   const [stats, board] = await Promise.all([getStats(), getTopChallengers()]);
-  const humanWins = stats?.humanWins ?? 142;
-  const aiWins = stats?.aiWins ?? 118;
+  const humanWins = stats?.humanWins ?? 27;
+  const aiWins = stats?.aiWins ?? 37;
   const rows = board.rows.length > 0 ? board.rows : FALLBACK_ROWS;
 
   return (
