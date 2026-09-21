@@ -246,17 +246,37 @@ export type AnimatedName = (typeof ANIMATED)[number];
 
 const ANIM_VERSION = '6';
 
+const CHEERING: ReadonlySet<string> = new Set([
+  'emirati-boy',
+  'girl-purple-hijab',
+  'girl-purple-hijab-up',
+  'girl-abaya',
+  'boy-cheer',
+  'mascot-boy-cheer',
+  'mascot-girl-cheer',
+  'robot-arms-raised',
+  'robot-happy-cheering',
+  'robot-cheering',
+]);
+
+function CheerMarks() {
+  return <img src="/sprites/cheer-marks.png" alt="" draggable={false} className="px-anim__marks pixelated" />;
+}
+
 export function AnimatedSprite({
   name,
   className = '',
   style,
   speed,
+  marks,
 }: {
   name: AnimatedName;
   className?: string;
   style?: CSSProperties;
   speed?: string;
+  marks?: boolean;
 }) {
+  const showMarks = marks ?? CHEERING.has(name);
   return (
     <span
       className={`px-anim select-none ${className}`}
@@ -265,6 +285,7 @@ export function AnimatedSprite({
     >
       <img src={`/sprites/anim/${name}-1.png?v=${ANIM_VERSION}`} alt="" draggable={false} className="px-anim__f1 pixelated" />
       <img src={`/sprites/anim/${name}-2.png?v=${ANIM_VERSION}`} alt="" draggable={false} className="px-anim__f2 pixelated" />
+      {showMarks && <CheerMarks />}
     </span>
   );
 }
