@@ -332,7 +332,7 @@ describe('Round 1 — response lost after the answer committed', () => {
     expect(row(db, 'attempt_round1', 2)).toMatchObject({
       selected_answer: 'ai_generated',
       correct: true,
-      points: 125,
+      points: 62,
     });
     expect(db.rowsWritten('attempt_round1')).toEqual([1]);
     expect(db.rpcCount('bump_image_stats')).toBe(1);
@@ -383,7 +383,7 @@ describe('Round 1 — response lost after the answer committed', () => {
     expect(bodies.every((r) => r.ok === true)).toBe(true);
     expect(db.rowsWritten('attempt_round1')).toEqual([1, 0]);
     expect(db.rpcCount('bump_image_stats')).toBe(1);
-    expect(row(db, 'attempt_round1', 3).points).toBe(125);
+    expect(row(db, 'attempt_round1', 3).points).toBe(63);
   });
 
   it('a later, different submission can never replace the committed answer', async () => {

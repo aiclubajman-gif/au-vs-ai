@@ -24,48 +24,50 @@ import {
 // ROUND 1
 // ===========================================================================
 describe('Round 1 scoring', () => {
-  it('four slots sum to exactly 500', () => {
+  it('eight slots sum to exactly 500', () => {
     expect(ROUND1_SLOT_POINTS.reduce((a, b) => a + b, 0)).toBe(MAX_ROUND1);
     expect(ROUND1_SLOT_POINTS).toHaveLength(ROUND1_SLOTS);
   });
 
-  it('every slot is worth the same, so slot order cannot disadvantage anyone', () => {
-    expect(new Set(ROUND1_SLOT_POINTS).size).toBe(1);
+  it('slots differ by at most one point, so slot order cannot meaningfully disadvantage anyone', () => {
+    expect(Math.max(...ROUND1_SLOT_POINTS) - Math.min(...ROUND1_SLOT_POINTS)).toBeLessThanOrEqual(1);
   });
 
-  it('all four correct scores exactly 500', () => {
-    const all = [1, 2, 3, 4].map((slot) => ({ slot, correct: true }));
+  const SLOTS = [1, 2, 3, 4, 5, 6, 7, 8];
+
+  it('all eight correct scores exactly 500', () => {
+    const all = SLOTS.map((slot) => ({ slot, correct: true }));
     expect(scoreRound1(all)).toBe(500);
   });
 
-  it('all four wrong scores 0', () => {
-    const none = [1, 2, 3, 4].map((slot) => ({ slot, correct: false }));
+  it('all eight wrong scores 0', () => {
+    const none = SLOTS.map((slot) => ({ slot, correct: false }));
     expect(scoreRound1(none)).toBe(0);
   });
 
-  it('scores scale evenly with correct answers', () => {
-    const build = (n: number) =>
-      [1, 2, 3, 4].map((slot) => ({ slot, correct: slot <= n }));
+  it('scores scale with correct answers', () => {
+    const build = (n: number) => SLOTS.map((slot) => ({ slot, correct: slot <= n }));
     expect(scoreRound1(build(0))).toBe(0);
-    expect(scoreRound1(build(1))).toBe(125);
-    expect(scoreRound1(build(2))).toBe(250);
-    expect(scoreRound1(build(3))).toBe(375);
-    expect(scoreRound1(build(4))).toBe(500);
+    expect(scoreRound1(build(1))).toBe(63);
+    expect(scoreRound1(build(2))).toBe(125);
+    expect(scoreRound1(build(4))).toBe(250);
+    expect(scoreRound1(build(6))).toBe(375);
+    expect(scoreRound1(build(8))).toBe(500);
   });
 
   it('scores partial answers when an attempt is incomplete', () => {
-    expect(scoreRound1([{ slot: 1, correct: true }])).toBe(125);
+    expect(scoreRound1([{ slot: 1, correct: true }])).toBe(63);
     expect(scoreRound1([])).toBe(0);
   });
 
   it('rejects an out-of-range slot', () => {
     expect(() => scoreRound1Slot(0, true)).toThrow(RangeError);
-    expect(() => scoreRound1Slot(5, true)).toThrow(RangeError);
+    expect(() => scoreRound1Slot(9, true)).toThrow(RangeError);
     expect(() => scoreRound1Slot(1.5, true)).toThrow(RangeError);
   });
 
-  it('accepts slot 4', () => {
-    expect(scoreRound1Slot(4, true)).toBe(125);
+  it('accepts slot 8', () => {
+    expect(scoreRound1Slot(8, true)).toBe(62);
   });
 
   it('rejects duplicate slots so a replayed request cannot double-score', () => {

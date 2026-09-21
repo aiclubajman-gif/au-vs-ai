@@ -120,14 +120,14 @@ describe('Round 1 submission schema', () => {
     expect(round1SubmitSchema.safeParse(valid).success).toBe(true);
   });
 
-  it('accepts all four slots', () => {
-    for (const slot of [1, 2, 3, 4]) {
+  it('accepts all eight slots', () => {
+    for (const slot of [1, 2, 3, 4, 5, 6, 7, 8]) {
       expect(round1SubmitSchema.safeParse({ ...valid, slot }).success).toBe(true);
     }
   });
 
   it('rejects an out-of-range slot', () => {
-    expect(round1SubmitSchema.safeParse({ ...valid, slot: 5 }).success).toBe(false);
+    expect(round1SubmitSchema.safeParse({ ...valid, slot: 9 }).success).toBe(false);
     expect(round1SubmitSchema.safeParse({ ...valid, slot: 0 }).success).toBe(false);
     expect(round1SubmitSchema.safeParse({ ...valid, slot: 2.5 }).success).toBe(false);
   });

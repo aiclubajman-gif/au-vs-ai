@@ -1,6 +1,7 @@
 /** AU vs AI — input validation (§39). Every server route validates with these. */
 
 import { z } from 'zod';
+import { ROUND1_SLOTS } from '@/lib/scoring';
 import { AU_EMAIL_DOMAIN } from '@/types';
 
 // ---------------------------------------------------------------------------
@@ -90,7 +91,7 @@ export const profileSetupSchema = z.object({
 
 export const round1SubmitSchema = z.object({
   attemptId: z.uuid(),
-  slot: z.number().int().min(1).max(4),
+  slot: z.number().int().min(1).max(ROUND1_SLOTS),
   /** null = the timer ran out with no choice made. Scores zero. */
   selectedAnswer: z.enum(['real', 'ai_generated']).nullable(),
   responseTimeMs: z.number().int().min(0).max(120_000),

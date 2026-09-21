@@ -17,21 +17,20 @@ export const MAX_ROUND3 = 250;
 export const MAX_TOTAL = 1000;
 
 /**
- * Four images at 125 points each, summing exactly to 500 (§12).
+ * Eight images alternating 63/62 points, summing exactly to 500 (§12).
  *
- * Four divides 500 evenly, which removes the awkward 167/167/166 split, and
- * gives a fairer read on whether a student can actually spot AI rather than
- * getting lucky on three.
+ * 500 does not divide by eight, so half the slots carry one extra point; slot
+ * order is shuffled per attempt, so the extra point never favours anyone.
  */
-export const ROUND1_SLOTS = 4;
-export const ROUND1_SLOT_POINTS: readonly number[] = [125, 125, 125, 125];
+export const ROUND1_SLOTS = 8;
+export const ROUND1_SLOT_POINTS: readonly number[] = [63, 62, 63, 62, 63, 62, 63, 62];
 
 // ---------------------------------------------------------------------------
 // ROUND 1
 // ---------------------------------------------------------------------------
 
 export interface Round1Answer {
-  /** 1 to 4 */
+  /** 1 to 8 */
   slot: number;
   correct: boolean;
 }
