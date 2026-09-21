@@ -272,9 +272,8 @@ export function PlayFlow({
     setBusy(true);
     setError(null);
     const res = await post('/api/profile', {
-      displayName: fullName.trim(),
-      collegeId: collegeId || null,
-      gender,
+      fullName: fullName.trim(),
+      collegeId: collegeId ? Number(collegeId) : null,
     });
     setBusy(false);
     if (res.ok || offline(res.error)) {
@@ -282,7 +281,7 @@ export function PlayFlow({
       return;
     }
     setError({ message: res.error.message, ref: res.error.ref, code: res.error.code });
-  }, [fullName, collegeId, gender, busy, startDeviceCheck]);
+  }, [fullName, collegeId, busy, startDeviceCheck]);
 
   useEffect(() => {
     if (step !== 'device') return;
