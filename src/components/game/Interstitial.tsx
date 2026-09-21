@@ -72,7 +72,7 @@ export const ROUND_OUTROS: Record<1 | 2 | 3, RoundOutro> = {
 export function Interstitial({
   intro,
   outro,
-  seconds = 7,
+  seconds = 15,
   timerValue,
   onDone,
 }: {
