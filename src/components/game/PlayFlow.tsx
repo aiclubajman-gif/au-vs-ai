@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { resolveClassifier } from '@/lib/ml/classifier';
 import { isAuEmail } from '@/lib/client/email';
 import { Interstitial, ROUND_INTROS, ROUND_OUTROS } from '@/components/game/Interstitial';
@@ -24,7 +24,7 @@ import {
   type DeviceChecks,
   type Gender,
 } from '@/components/game/screens/Onboarding';
-import { PxLink } from '@/components/px';
+import { PxButton, PxLink } from '@/components/px';
 import type { College, AttemptAssignment, PublicAttemptResult, EventSettings } from '@/types';
 
 type Step =
@@ -89,6 +89,47 @@ function createLocalAssignment(): AttemptAssignment {
   };
 }
 
+const BLOCKED_COPY: Record<string, { title: string; body: string; showRef: boolean }> = {
+  CHALLENGE_CLOSED: {
+    title: 'CHALLENGE NOT OPEN',
+    body: 'The challenge is not open yet. Come back to the AIDA booth when the fair starts.',
+    showRef: false,
+  },
+  NEW_GAMES_PAUSED: {
+    title: 'CHALLENGE PAUSED',
+    body: 'New games are paused for a moment by the AIDA team. Try again shortly.',
+    showRef: false,
+  },
+  PROFILE_REQUIRED: {
+    title: 'ONE MORE STEP',
+    body: 'Enter your name before starting so your score can go on the leaderboard.',
+    showRef: false,
+  },
+  ROUND1_BANK_TOO_SMALL: {
+    title: 'NOT READY YET',
+    body: 'The image bank is still being loaded. Show this screen to an AIDA team member.',
+    showRef: true,
+  },
+  ROUND1_BANK_UNBALANCED: {
+    title: 'NOT READY YET',
+    body: 'The image bank is still being loaded. Show this screen to an AIDA team member.',
+    showRef: true,
+  },
+  NO_DRAWING_CLASSES: {
+    title: 'NOT READY YET',
+    body: 'The drawing round is not configured. Show this screen to an AIDA team member.',
+    showRef: true,
+  },
+  NO_ROUND3_QUESTION: {
+    title: 'NOT READY YET',
+    body: 'The final round is not configured. Show this screen to an AIDA team member.',
+    showRef: true,
+  },
+};
+
+const DEVICE_FAILED_MESSAGE =
+  "This device can't run the drawing round. Your attempt has not been used, so please try again on one of the AIDA booth tablets.";
+
 const LOCAL_RESULT = (attemptId: string, humanWin: boolean): PublicAttemptResult => ({
   attemptId,
   totalScore: humanWin ? 840 : 620,
@@ -119,11 +160,23 @@ export function PlayFlow({
   const [cooldown, setCooldown] = useState(0);
   const [deviceProgress, setDeviceProgress] = useState(10);
   const [deviceRun, setDeviceRun] = useState(0);
+  const [deviceState, setDeviceState] = useState<'checking' | 'failed'>('checking');
+  const [blocked, setBlocked] = useState<{ code: string; ref?: string; message: string } | null>(null);
+  const sending = useRef(false);
   const [deviceChecks, setDeviceChecks] = useState<DeviceChecks>({
     modelLoaded: false,
     deviceChecked: false,
     selfTestPassed: false,
   });
+
+  const startDeviceCheck = useCallback(() => {
+    setError(null);
+    setDeviceState('checking');
+    setDeviceProgress(10);
+    setDeviceChecks({ modelLoaded: false, deviceChecked: false, selfTestPassed: false });
+    setDeviceRun((n) => n + 1);
+    setStep('device');
+  }, []);
 
   const loadResult = useCallback(async () => {
     const r = await post('/api/attempt/result', {});
@@ -150,7 +203,8 @@ export function PlayFlow({
           await loadResult();
           return;
         }
-        setStep(res.data.needsProfile ? 'profile' : 'device');
+        if (res.data.needsProfile) setStep('profile');
+        else startDeviceCheck();
       } catch {
         if (!cancelled) setStep('email');
       }
@@ -158,7 +212,7 @@ export function PlayFlow({
     return () => {
       cancelled = true;
     };
-  }, [loadResult]);
+  }, [loadResult, startDeviceCheck]);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -168,19 +222,25 @@ export function PlayFlow({
 
   const emailValid = isAuEmail(email);
 
-  const sendCode = useCallback(async () => {
-    if (!emailValid || busy) return;
+  async function sendCode() {
+    if (!emailValid) return;
+    if (sending.current) return;
+    sending.current = true;
     setBusy(true);
     setError(null);
-    const res = await post('/api/auth/send-otp', { email: email.trim().toLowerCase() });
-    setBusy(false);
-    if (res.ok || offline(res.error)) {
-      setStep('otp');
-      setCooldown(45);
-      return;
+    try {
+      const res = await post('/api/auth/send-otp', { email: email.trim().toLowerCase() });
+      if (res.ok || offline(res.error)) {
+        setStep('otp');
+        setCooldown(45);
+        return;
+      }
+      setError({ message: res.error.message, ref: res.error.ref, code: res.error.code });
+    } finally {
+      sending.current = false;
+      setBusy(false);
     }
-    setError({ message: res.error.message, ref: res.error.ref, code: res.error.code });
-  }, [email, emailValid, busy]);
+  }
 
   const verifyCode = useCallback(
     async (token: string) => {
@@ -193,7 +253,8 @@ export function PlayFlow({
       });
       setBusy(false);
       if (res.ok) {
-        setStep(res.data.needsProfile ? 'profile' : 'device');
+        if (res.data.needsProfile) setStep('profile');
+        else startDeviceCheck();
         return;
       }
       if (offline(res.error)) {
@@ -203,7 +264,7 @@ export function PlayFlow({
       setCode('');
       setError({ message: res.error.message, ref: res.error.ref, code: res.error.code });
     },
-    [email, busy]
+    [email, busy, startDeviceCheck]
   );
 
   const saveProfile = useCallback(async () => {
@@ -217,18 +278,15 @@ export function PlayFlow({
     });
     setBusy(false);
     if (res.ok || offline(res.error)) {
-      setStep('device');
+      startDeviceCheck();
       return;
     }
     setError({ message: res.error.message, ref: res.error.ref, code: res.error.code });
-  }, [fullName, collegeId, gender, busy]);
+  }, [fullName, collegeId, gender, busy, startDeviceCheck]);
 
   useEffect(() => {
     if (step !== 'device') return;
     let cancelled = false;
-    setError(null);
-    setDeviceProgress(10);
-    setDeviceChecks({ modelLoaded: false, deviceChecked: false, selfTestPassed: false });
 
     (async () => {
       try {
@@ -236,34 +294,30 @@ export function PlayFlow({
         if (cancelled) return;
         setDeviceProgress(40);
         setDeviceChecks((c) => ({ ...c, modelLoaded: true }));
-
         setDeviceProgress(65);
         setDeviceChecks((c) => ({ ...c, deviceChecked: true }));
 
         const passed = await classifier.selfTest();
         if (cancelled) return;
-        if (!passed) {
-          setError({ message: "This device can't run the drawing challenge. Please use one of the AIDA booth tablets.", code: 'MODEL_UNAVAILABLE' });
+        if (passed) {
+          setDeviceProgress(90);
+          setDeviceChecks((c) => ({ ...c, selfTestPassed: true }));
+        } else {
+          setDeviceState('failed');
           return;
         }
-        setDeviceProgress(90);
-        setDeviceChecks((c) => ({ ...c, selfTestPassed: true }));
 
-        const res = await post<AttemptAssignment>('/api/attempt/start', { modelReady: true });
+        const res = await post('/api/attempt/start', { modelReady: true });
         if (cancelled) return;
         if (res.ok) {
-          setAssignment(res.data);
+          const data = res.data as AttemptAssignment;
+          setAssignment(data);
           setDeviceProgress(100);
-          setTimeout(() => !cancelled && setStep(res.data.resumed ? roundStep(res.data) : 'ready'), 600);
+          setTimeout(() => !cancelled && setStep(data.resumed ? roundStep(data) : 'ready'), 600);
           return;
         }
         if (res.error.code === 'ALREADY_COMPLETED') {
           await loadResult();
-          return;
-        }
-        if (res.error.code === 'NEW_GAMES_PAUSED' || res.error.code === 'CHALLENGE_CLOSED') {
-          setError({ message: res.error.message, code: res.error.code, ref: res.error.ref });
-          setStep('blocked');
           return;
         }
         if (offline(res.error)) {
@@ -272,16 +326,10 @@ export function PlayFlow({
           setTimeout(() => !cancelled && setStep('ready'), 600);
           return;
         }
-        setError({ message: res.error.message, ref: res.error.ref, code: res.error.code });
+        setBlocked({ code: res.error.code, ref: res.error.ref, message: res.error.message });
+        setStep('blocked');
       } catch {
-        if (cancelled) return;
-        if (DEV_FALLBACK) {
-          setAssignment(createLocalAssignment());
-          setDeviceProgress(100);
-          setTimeout(() => !cancelled && setStep('ready'), 600);
-          return;
-        }
-        setError({ message: "This device can't run the drawing challenge. Please use one of the AIDA booth tablets.", code: 'MODEL_UNAVAILABLE' });
+        if (!cancelled) setDeviceState('failed');
       }
     })();
 
@@ -304,7 +352,17 @@ export function PlayFlow({
   if (step === 'email') {
     return (
       <>
-        <EmailScreen email={email} onEmail={setEmail} valid={emailValid} busy={busy} error={error} onSend={sendCode} />
+        <EmailScreen
+          email={email}
+          onEmail={setEmail}
+          valid={emailValid}
+          busy={busy}
+          error={error}
+          onSend={sendCode}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') sendCode();
+          }}
+        />
         {devBar}
       </>
     );
@@ -356,7 +414,12 @@ export function PlayFlow({
   if (step === 'device') {
     return (
       <>
-        <DeviceScreen progress={deviceProgress} checks={deviceChecks} error={error} onRetry={() => setDeviceRun((n) => n + 1)} />
+        <DeviceScreen
+          progress={deviceProgress}
+          checks={deviceChecks}
+          error={deviceState === 'failed' ? { message: DEVICE_FAILED_MESSAGE, code: 'MODEL_UNAVAILABLE' } : error}
+          onRetry={startDeviceCheck}
+        />
         {devBar}
       </>
     );
@@ -461,12 +524,25 @@ export function PlayFlow({
   }
 
   if (step === 'blocked') {
+    const copy = BLOCKED_COPY[blocked?.code ?? ''] ?? {
+      title: 'SOMETHING WENT WRONG',
+      body: blocked?.message ?? 'Show this screen to an AIDA team member.',
+      showRef: true,
+    };
     return (
       <>
         <NoticeScreen
-          title="CHALLENGE PAUSED"
-          message={error?.message ?? 'New games are paused for a moment by the AIDA team. Try again shortly.'}
-          sprite="/sprites/robot-peeking.png"
+          title={copy.title}
+          message={copy.body}
+          refCode={copy.showRef ? blocked?.ref : undefined}
+          sprite={copy.showRef ? '/sprites/confused-humans.png' : '/sprites/robot-peeking.png'}
+          action={
+            blocked?.code === 'PROFILE_REQUIRED' ? (
+              <PxButton onClick={() => setStep('profile')} className="min-h-[56px] w-full text-[11px]">
+                ENTER YOUR NAME
+              </PxButton>
+            ) : undefined
+          }
         />
         {devBar}
       </>

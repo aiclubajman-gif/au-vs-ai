@@ -260,7 +260,7 @@ export function Round1({
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <PxButton
             onClick={() => answer('real')}
-            disabled={!active}
+            disabled={locked || imageState !== 'ready'}
             className="min-h-[96px] text-[20px] sm:min-h-[104px] sm:text-[22px] lg:min-h-[76px]"
             labelClassName="text-[#1b1a5c]"
           >
@@ -269,7 +269,7 @@ export function Round1({
           <PxButton
             variant="cyan"
             onClick={() => answer('ai_generated')}
-            disabled={!active}
+            disabled={locked || imageState !== 'ready'}
             className="min-h-[96px] text-[14px] sm:min-h-[104px] sm:text-[16px] lg:min-h-[76px]"
             labelClassName="flex-col gap-1 leading-relaxed text-[#032846]"
           >

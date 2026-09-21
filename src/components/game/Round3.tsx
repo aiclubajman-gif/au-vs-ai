@@ -85,11 +85,7 @@ export function Round3({
     lockedAt.current = Date.now();
     setLocked(true);
 
-    const body: Round3AnswerBody = {
-      attemptId,
-      guess,
-      idempotencyKey: crypto.randomUUID(),
-    };
+    const body: Round3AnswerBody = { attemptId, guess, idempotencyKey: crypto.randomUUID() };
     submission.current = body;
     save(body);
   }, [attemptId, guess, save]);

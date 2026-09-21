@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { PxButton, PxChip, PxPanel, Scene, Sprite, Wordmark } from '@/components/px';
 
 export interface RoundIntro {
   eyebrow: string;
@@ -95,93 +96,73 @@ export function Interstitial({
   const content = intro ?? outro;
   if (!content) return null;
   const isIntro = Boolean(intro);
+  const round = intro ? ROUND_BY_TITLE[intro.title] : outro ? ROUND_BY_EYEBROW[outro.eyebrow] : 1;
+  const art = ROUND_ART[round];
 
   return (
-    <main className="relative flex min-h-dvh flex-col overflow-hidden bg-[var(--color-px-bg)] text-[var(--color-ink)]">
-      {/* Background with circuit glow */}
-      <div
-        className="absolute inset-0 z-0 bg-cover bg-center opacity-35 pointer-events-none"
-        style={{ backgroundImage: "url('/backgrounds/circuit-9x16.png')" }}
-        aria-hidden="true"
-      />
-      <div className="arena-bg z-0 opacity-70" aria-hidden="true" />
-
-      <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-between px-5 py-6 sm:py-8">
-        {/* Top Header */}
-        <div className="text-center">
-          <span className="px-chip text-[9px] sm:text-[10px]">
-            {content.eyebrow}
-          </span>
+    <Scene left={art.left} right={art.right} leftWidth="24vw" rightWidth="22vw">
+      <div className="mx-auto flex w-full max-w-[520px] flex-1 flex-col px-4 pb-6 pt-5 sm:px-6">
+        <div className="flex justify-center">
+          <PxChip className="text-[9px] sm:text-[10px]">{content.eyebrow}</PxChip>
         </div>
 
-        {/* Center Content */}
-        <div className="my-auto flex flex-col items-center text-center">
+        <div className="my-auto flex flex-col items-center py-5 text-center">
           {isIntro && intro && (
-            <div className="w-full">
-              <h1 className="px-title-yellow text-2xl sm:text-3xl leading-tight">
-                {intro.title.toUpperCase()}
-              </h1>
-              <ul className="px-panel mt-6 space-y-3 px-5 py-5 text-left bg-[#0d1440]/90">
-                {intro.lines.map((line, i) => (
-                  <li
-                    key={i}
-                    className="flex items-start gap-3 text-xs leading-relaxed text-slate-200"
-                  >
-                    <span className="mt-1.5 h-2 w-2 shrink-0 bg-[var(--color-px-cyan)] shadow-[0_0_6px_var(--color-px-cyan)]" />
-                    <span>
-                      {timerValue != null
-                        ? line.replace('{n}', String(timerValue))
-                        : line.replace('{n}', '')}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <>
+              <Wordmark name={art.wordmark} priority className="w-[86%] max-w-[420px]" />
+              <div className="mt-4 flex items-end gap-3">
+                <Sprite src={art.human} className="px-bob h-24 w-auto sm:h-28" />
+                <Sprite src={art.robot} className="px-bob px-bob--delay h-24 w-auto drop-shadow-[0_0_14px_rgba(0,187,252,0.5)] sm:h-28" />
+              </div>
+              <PxPanel tone="cyan" className="mt-4 w-full px-5 py-5 text-left">
+                <ul className="space-y-3">
+                  {intro.lines.map((line, i) => (
+                    <li key={i} className="flex items-start gap-3 text-[16px] leading-snug text-[#dff6ff]">
+                      <span className="mt-1.5 h-3 w-3 shrink-0 bg-[#7ffafe] shadow-[0_0_6px_#7ffafe]" aria-hidden="true" />
+                      <span>{line.replace('{n}', timerValue != null ? String(timerValue) : '')}</span>
+                    </li>
+                  ))}
+                </ul>
+              </PxPanel>
+            </>
           )}
 
           {!isIntro && outro && (
-            <div className="w-full flex flex-col items-center">
-              {/* Fun fact illustration: Mascot with Dual-Brain */}
-              <div className="relative mb-4 flex items-center justify-center">
-                <img
+            <>
+              <h2 className="font-px text-[22px] text-[#ffe66a] px-text-outline sm:text-[26px]">{outro.title ?? 'FUN FACT'}</h2>
+              <div className="relative mt-4 w-full">
+                <Sprite
                   src="/sprites/mascot-girl-cheer.png"
-                  alt="AIDA Mascot"
-                  className="pixelated h-32 w-auto drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]"
+                  className="px-bob absolute -top-10 left-2 z-10 h-32 w-auto sm:-left-2 sm:h-40"
                 />
+                <PxPanel tone="gold" className="w-full py-5 pl-[38%] pr-5 text-left sm:pl-[36%]">
+                  <p className="text-[17px] leading-snug text-[#f4f6ff] sm:text-[18px]">{outro.fact}</p>
+                </PxPanel>
               </div>
-
-              <h2 className="px-title-yellow text-2xl tracking-wider">
-                {outro.title ?? 'FUN FACT'}
-              </h2>
-
-              <div className="px-panel mt-4 p-5 text-center bg-[#0d1440]/95 border-[3px] border-[#070c26]">
-                <p className="text-xs sm:text-sm leading-relaxed text-slate-200 font-medium">
-                  {outro.fact}
-                </p>
-                {outro.tagline && (
-                  <p className="mt-4 pt-3 border-t border-[#2c4ba8]/50 font-px text-[8px] text-[#35e0ff] tracking-wider">
-                    {outro.tagline}
-                  </p>
-                )}
-              </div>
-            </div>
+              {outro.tagline && (
+                <p className="mt-4 font-px text-[7px] leading-relaxed text-[#7ffafe] sm:text-[8px]">{outro.tagline}</p>
+              )}
+            </>
           )}
         </div>
 
-        {/* Bottom CTA */}
-        <div className="w-full pt-4">
-          <button
-            onClick={onDone}
-            className="px-btn px-btn-yellow min-h-[58px] w-full py-4 text-xs tracking-wider"
-          >
+        <div>
+          <PxButton onClick={onDone} className="min-h-[64px] w-full text-[14px]">
             {isIntro ? "I'M READY" : 'NEXT ROUND →'}
-            <span className="tabular ml-2 opacity-70">({remaining}s)</span>
-          </button>
-          <p className="mt-2 text-center text-[10px] text-slate-400">
-            This screen is not timed against your 60-second game score.
-          </p>
+            <span className="tabular text-[10px] opacity-70">({remaining}s)</span>
+          </PxButton>
+          <p className="mt-2 text-center font-px text-[7px] text-[#9fb3e6]">THIS SCREEN IS NOT TIMED AGAINST YOUR SCORE.</p>
         </div>
       </div>
-    </main>
+    </Scene>
   );
 }
+
+const ROUND_BY_TITLE: Record<string, 1 | 2 | 3> = { 'Spot the Fake': 1, 'Draw vs AI': 2, 'You vs AIDA': 3 };
+const ROUND_BY_EYEBROW: Record<string, 1 | 2 | 3> = { 'ROUND 1 COMPLETE': 1, 'ROUND 2 COMPLETE': 2, 'ALL ROUNDS COMPLETE': 3 };
+
+const ROUND_ART = {
+  1: { wordmark: 'real-or-ai', left: '/sprites/round1-left-flank.png', right: '/art/flanks/r1-right.webp', human: '/sprites/boy.png', robot: '/sprites/robot-1.png' },
+  2: { wordmark: 'draw-vs-ai', left: '/art/flanks/r2-left.webp', right: '/art/flanks/r2-right.webp', human: '/sprites/girl-cheering.png', robot: '/sprites/robot-cat.png' },
+  3: { wordmark: 'ai-knowledge', left: '/art/flanks/r3-left.webp', right: '/art/flanks/r3-right.webp', human: '/sprites/boy-confused.png', robot: '/sprites/robot-smirking.png' },
+} as const;

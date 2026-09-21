@@ -5,14 +5,11 @@ import { PxChip, PxLink, PxPanel, Scene, Sprite, Wordmark } from '@/components/p
 import type { PublicAttemptResult } from '@/types';
 
 function useCountUp(target: number, skip: boolean) {
-  const [shown, setShown] = useState(skip ? target : 0);
+  const [shown, setShown] = useState(() =>
+    skip || (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) ? target : 0
+  );
   useEffect(() => {
-    if (skip) return;
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce) {
-      setShown(target);
-      return;
-    }
+    if (skip || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const duration = 1400;
     const start = performance.now();
     let frame = 0;

@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
 import Link from 'next/link';
 import { OtpInput } from '@/components/game/OtpInput';
 import { ErrorBanner, PxButton, PxChip, PxLink, PxPanel, PxStar, Scene, Sprite, Wordmark } from '@/components/px';
@@ -129,6 +129,7 @@ export function EmailScreen({
   busy,
   error,
   onSend,
+  onKeyDown,
 }: {
   email: string;
   onEmail: (v: string) => void;
@@ -136,6 +137,7 @@ export function EmailScreen({
   busy: boolean;
   error: ApiError | null;
   onSend: () => void;
+  onKeyDown: (e: KeyboardEvent<HTMLInputElement>) => void;
 }) {
   return (
     <OnboardingShell step={1}>
@@ -143,13 +145,7 @@ export function EmailScreen({
         <PanelTitle accent="STARTED">LET&apos;S GET</PanelTitle>
         <Body className="mt-3">Enter your Ajman University email to begin the challenge.</Body>
 
-        <form
-          className="mt-5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            onSend();
-          }}
-        >
+        <div className="mt-5">
           <label htmlFor="email" className="sr-only">
             AU email
           </label>
@@ -157,6 +153,7 @@ export function EmailScreen({
             id="email"
             value={email}
             onChange={(e) => onEmail(e.target.value)}
+            onKeyDown={onKeyDown}
             type="email"
             inputMode="email"
             autoComplete="email"
@@ -164,15 +161,10 @@ export function EmailScreen({
             className="px-input"
           />
           <ErrorBanner message={error?.message ?? ''} refCode={error?.ref} />
-          <PxButton
-            type="submit"
-            busy={busy}
-            disabled={!valid}
-            className="mt-4 min-h-[60px] w-full text-[13px]"
-          >
+          <PxButton onClick={onSend} busy={busy} disabled={!valid} className="mt-4 min-h-[60px] w-full text-[13px]">
             SEND CODE →
           </PxButton>
-        </form>
+        </div>
 
         <div className="mt-5 space-y-4 border-t-[3px] border-[#1e4ea8] pt-4">
           <InfoRow icon="cap" title="AU STUDENTS ONLY">

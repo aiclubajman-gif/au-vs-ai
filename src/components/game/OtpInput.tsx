@@ -1,18 +1,7 @@
 'use client';
 
-import { useRef, useState, useEffect, type ClipboardEvent, type KeyboardEvent } from 'react';
+import { useRef, useEffect, type ClipboardEvent, type KeyboardEvent } from 'react';
 
-/**
- * Six-box verification code entry.
- *
- * Behaviours that matter at a crowded booth:
- *   - numeric keyboard on phones (inputMode + pattern)
- *   - autoComplete="one-time-code" so iOS offers the code from Messages/Mail
- *   - pasting the whole code fills every box, however the student pastes it
- *   - typing auto-advances; backspace on an empty box steps back
- *   - arrow keys work, because some students will use a laptop
- *   - submits itself once six digits are present, so there is no "now what"
- */
 export function OtpInput({
   value,
   onChange,
@@ -25,34 +14,36 @@ export function OtpInput({
   disabled?: boolean;
 }) {
   const refs = useRef<(HTMLInputElement | null)[]>([]);
-  const [submitted, setSubmitted] = useState(false);
+  const submitted = useRef(false);
 
   const digits = value.padEnd(6, ' ').slice(0, 6).split('');
 
   useEffect(() => {
-    if (value.length === 6 && !submitted) {
-      setSubmitted(true);
+    if (value.length === 6 && !submitted.current) {
+      submitted.current = true;
       onComplete(value);
     }
-    if (value.length < 6 && submitted) setSubmitted(false);
-  }, [value, submitted, onComplete]);
+    if (value.length < 6) submitted.current = false;
+  }, [value, onComplete]);
 
   useEffect(() => {
     refs.current[0]?.focus();
   }, []);
 
-  function setDigit(index: number, digit: string) {
-    const chars = value.padEnd(6, ' ').split('');
-    chars[index] = digit;
-    onChange(chars.join('').replace(/\s+$/, '').trimEnd());
-  }
-
   function handleInput(index: number, raw: string) {
-    const digit = raw.replace(/\D/g, '').slice(-1);
-    if (!digit) return;
+    const typed = raw.replace(/\D/g, '');
+    if (!typed) return;
 
-    setDigit(index, digit);
-    if (index < 5) refs.current[index + 1]?.focus();
+    const chars = value.padEnd(6, ' ').split('');
+    const incoming = typed.length > 1 && chars[index] === typed[0] ? typed.slice(1) : typed;
+    let cursor = index;
+    for (const d of incoming) {
+      if (cursor > 5) break;
+      chars[cursor] = d;
+      cursor += 1;
+    }
+    onChange(chars.join('').replace(/\s+$/, ''));
+    refs.current[Math.min(cursor, 5)]?.focus();
   }
 
   function handleKeyDown(index: number, e: KeyboardEvent<HTMLInputElement>) {
@@ -75,8 +66,7 @@ export function OtpInput({
     if (e.key === 'ArrowRight' && index < 5) refs.current[index + 1]?.focus();
   }
 
-  /** Accepts a pasted code from any box, and tolerates spaces or dashes. */
-  function handlePaste(e: ClipboardEvent<HTMLInputElement>) {
+    function handlePaste(e: ClipboardEvent<HTMLInputElement>) {
     e.preventDefault();
     const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
     if (!pasted) return;
@@ -104,7 +94,6 @@ export function OtpInput({
           inputMode="numeric"
           pattern="[0-9]*"
           autoComplete={i === 0 ? 'one-time-code' : 'off'}
-          maxLength={1}
           aria-label={`Digit ${i + 1}`}
           className="tabular disabled:opacity-40"
         />

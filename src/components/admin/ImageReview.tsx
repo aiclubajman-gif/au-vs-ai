@@ -169,7 +169,6 @@ export function ImageReview({
               : 'border-[var(--color-edge)]'
           }`}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={current.storagePath}
             alt=""

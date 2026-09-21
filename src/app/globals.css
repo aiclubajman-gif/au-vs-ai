@@ -143,23 +143,25 @@
 
 .px-flank {
   display: none;
-  position: absolute;
+  position: fixed;
   top: 0;
-  bottom: 0;
+  height: 100dvh;
+  z-index: 1;
   pointer-events: none;
   user-select: none;
+  image-rendering: pixelated;
   background-repeat: no-repeat;
-  background-size: cover;
+  background-size: auto 100%;
 }
 
 .px-flank--left {
   left: 0;
-  background-position: left center;
+  background-position: left bottom;
 }
 
 .px-flank--right {
   right: 0;
-  background-position: right center;
+  background-position: right bottom;
 }
 
 @media (min-width: 1024px) {

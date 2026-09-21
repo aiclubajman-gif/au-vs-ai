@@ -79,7 +79,6 @@ export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true
     if (!ctx) return;
 
     ctx.imageSmoothingEnabled = false;
-    let loaded = false;
     const humanImg = new Image();
     const aiImg = new Image();
     const impactImg = new Image();
@@ -90,7 +89,6 @@ export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true
 
     const checkImages = () => {
       if (humanImg.complete && aiImg.complete && impactImg.complete) {
-        loaded = true;
       }
     };
 
