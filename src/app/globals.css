@@ -1244,35 +1244,21 @@ input.px-slider::-moz-range-thumb {
 }
 
 .px-beam-labels--on {
-  animation: px-label-in 360ms steps(4) both;
-  animation-delay: 120ms;
+  opacity: 1;
 }
 
-.px-beam-labels--on span:first-child {
-  animation: px-label-slide-l 360ms steps(4) both;
-  animation-delay: 120ms;
+.px-beam-labels--on span {
+  animation: px-label-pop 260ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
 }
 
 .px-beam-labels--on span:last-child {
-  animation: px-label-slide-r 360ms steps(4) both;
-  animation-delay: 120ms;
+  animation-delay: 60ms;
 }
 
-@keyframes px-label-in {
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes px-label-slide-l {
+@keyframes px-label-pop {
   from {
-    transform: translateX(-18px);
-  }
-}
-
-@keyframes px-label-slide-r {
-  from {
-    transform: translateX(18px);
+    opacity: 0;
+    transform: scale(0.6);
   }
 }
 

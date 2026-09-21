@@ -13,7 +13,8 @@ const IMPACT_FRAME = { width: 72, height: 72, centerX: 36, centerY: 36 };
 const HUMAN_ORIGIN_X = 24;
 const AI_ORIGIN_X = 296;
 const IGNITE_AT_MS = 1350;
-const IGNITE_MS = 600;
+const IGNITE_MS = 300;
+const GROW_MS = 220;
 
 const HUMAN_SPARK_COLORS = ['#B83A00', '#F05A00', '#FF8C00', '#FFC928', '#FFF0A0'];
 const AI_SPARK_COLORS = ['#004A9F', '#0079E8', '#00C4FF', '#62ECFF', '#DFFFFF'];
@@ -200,7 +201,9 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
         ctx.clearRect(0, 0, WIDTH, HEIGHT);
         return;
       }
-      if (ignite >= 1 && !litRef.current) {
+      const grow = reduceMotion ? 1 : Math.max(0, Math.min(1, (sinceStart - IGNITE_AT_MS - IGNITE_MS) / GROW_MS));
+      const reach = Math.ceil(grow * 8) / 8;
+      if (reach >= 1 && !litRef.current) {
         litRef.current = true;
         setLit(true);
       }
@@ -284,7 +287,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
       if (process.env.NODE_ENV !== 'production') canvas.dataset.impact = String(roundedImpactX);
 
       const humanStart = HUMAN_ORIGIN_X;
-      const humanLen = Math.max(24, roundedImpactX + 12 - humanStart);
+      const humanLen = Math.max(24, (roundedImpactX + 12 - humanStart) * reach);
       if (humanImg.complete && humanImg.naturalWidth > 0) {
         ctx.save();
         ctx.beginPath();
@@ -305,7 +308,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
       }
 
       const aiEnd = AI_ORIGIN_X;
-      const aiLen = Math.max(24, aiEnd - (roundedImpactX - 12));
+      const aiLen = Math.max(24, (aiEnd - (roundedImpactX - 12)) * reach);
       if (aiImg.complete && aiImg.naturalWidth > 0) {
         ctx.save();
         ctx.beginPath();
@@ -325,7 +328,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
         ctx.restore();
       }
 
-      if (!reduceMotion && ignite >= 1) {
+      if (!reduceMotion && reach >= 1) {
         sparkSpawnTimer += dt;
         if (sparkSpawnTimer >= 40) {
           sparkSpawnTimer = 0;
@@ -380,7 +383,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
       }
 
       // 4. IMPACT SPRITE (always on top)
-      if (ignite >= 1 && impactImg.complete && impactImg.naturalWidth > 0) {
+      if (reach >= 1 && impactImg.complete && impactImg.naturalWidth > 0) {
         ctx.drawImage(
           impactImg,
           impactFrame * IMPACT_FRAME.width,
