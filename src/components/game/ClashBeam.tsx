@@ -98,7 +98,11 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
 
   // Allow live polling and URL override (?h=80&a=20) for easy visual testing
   const scoreRef = useRef({ humanWins: propHumanWins, aiWins: propAiWins });
-  scoreRef.current = { humanWins: propHumanWins, aiWins: propAiWins };
+  const pinnedRef = useRef(false);
+
+  useEffect(() => {
+    if (!pinnedRef.current) scoreRef.current = { humanWins: propHumanWins, aiWins: propAiWins };
+  }, [propHumanWins, propAiWins]);
 
   useEffect(() => {
     // Check for testing query params (e.g. ?h=90&a=10 or ?human=80&ai=20)
@@ -111,6 +115,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
         const a = parseInt(aParam, 10);
         if (!isNaN(h) && !isNaN(a)) {
           scoreRef.current = { humanWins: h, aiWins: a };
+          pinnedRef.current = true;
         }
       }
     }
@@ -124,10 +129,12 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
         if (json.ok && json.data) {
           const params = new URLSearchParams(window.location.search);
           if (!params.has('h') && !params.has('human')) {
-            scoreRef.current = {
-              humanWins: json.data.humanWins ?? propHumanWins,
-              aiWins: json.data.aiWins ?? propAiWins,
-            };
+            const h = json.data.humanWins;
+            const a = json.data.aiWins;
+            if (typeof h === 'number' && typeof a === 'number' && h + a > 0) {
+              scoreRef.current = { humanWins: h, aiWins: a };
+              pinnedRef.current = true;
+            }
           }
         }
       } catch {
@@ -258,6 +265,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
       ctx.imageSmoothingEnabled = false;
 
       const roundedImpactX = Math.round(currentImpactX);
+      if (process.env.NODE_ENV !== 'production') canvas.dataset.impact = String(roundedImpactX);
 
       // 1. DRAW HUMAN BEAM with clipping [0 .. roundedImpactX]
       if (humanImg.complete && humanImg.naturalWidth > 0) {
