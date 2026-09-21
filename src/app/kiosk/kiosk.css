@@ -834,7 +834,8 @@
 
 .k-board__right {
   position: relative;
-  padding: 40px 80px 40px 30px;
+  min-height: 0;
+  padding: 36px 80px 56px 30px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -917,7 +918,11 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 10px;
+  grid-auto-rows: minmax(0, 1fr);
+  gap: min(10px, 0.9vh);
+  height: 100%;
+  max-height: 840px;
+  min-height: 0;
 }
 
 .k-row {
@@ -925,7 +930,8 @@
   grid-template-columns: 64px 56px 1fr auto;
   align-items: center;
   gap: 18px;
-  padding: 12px 22px 12px 12px;
+  min-height: 0;
+  padding: 0 22px 0 12px;
   border-radius: 16px;
   background: #16244a;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -951,7 +957,7 @@
   display: grid;
   place-items: center;
   width: 44px;
-  height: 44px;
+  height: min(44px, 4.4vh);
   margin-left: 8px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.08);
@@ -975,14 +981,14 @@
 }
 
 .k-row__avatar {
-  width: 48px;
-  height: 48px;
+  width: min(48px, 4.8vh);
+  height: min(48px, 4.8vh);
   image-rendering: pixelated;
   border-radius: 12px;
 }
 
 .k-row__name {
-  font: 700 26px/1 var(--font-ui);
+  font: 700 min(26px, 2.8vh)/1 var(--font-ui);
   color: #fff;
   overflow: hidden;
   white-space: nowrap;
@@ -990,13 +996,13 @@
 }
 
 .k-row__score {
-  font: 800 30px/1 var(--font-display);
+  font: 800 min(30px, 3.2vh)/1 var(--font-display);
   color: var(--k-gold);
   font-variant-numeric: tabular-nums;
 }
 
 .k-row__score .k-num {
-  font: 800 30px/1 var(--font-display);
+  font: 800 min(30px, 3.2vh)/1 var(--font-display);
   color: var(--k-gold);
 }
 

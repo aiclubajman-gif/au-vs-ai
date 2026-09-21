@@ -54,6 +54,8 @@ const SAMPLE: KioskData = {
     { rank: 6, display_name: 'QuizWizard', masked_id_suffix: '9420', total_score: 690, human_win: false },
     { rank: 7, display_name: 'NeuronNinja', masked_id_suffix: '5318', total_score: 620, human_win: true },
     { rank: 8, display_name: 'IdeaForge', masked_id_suffix: '2774', total_score: 580, human_win: false },
+    { rank: 9, display_name: 'PixelPilot', masked_id_suffix: '7105', total_score: 540, human_win: true },
+    { rank: 10, display_name: 'DataDune', masked_id_suffix: '3390', total_score: 505, human_win: false },
   ],
   timings: DEFAULT_TIMINGS,
   updatedAt: new Date().toISOString(),
