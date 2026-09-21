@@ -13,7 +13,7 @@ const IMPACT_FRAME = { width: 72, height: 72, centerX: 36, centerY: 36 };
 const HUMAN_ORIGIN_X = 24;
 const AI_ORIGIN_X = 296;
 const IGNITE_AT_MS = 1350;
-const IGNITE_MS = 420;
+const IGNITE_MS = 140;
 
 const HUMAN_SPARK_COLORS = ['#B83A00', '#F05A00', '#FF8C00', '#FFC928', '#FFF0A0'];
 const AI_SPARK_COLORS = ['#004A9F', '#0079E8', '#00C4FF', '#62ECFF', '#DFFFFF'];
@@ -198,6 +198,18 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
         ctx.clearRect(0, 0, WIDTH, HEIGHT);
         return;
       }
+      if (ignite < 1) {
+        ctx.clearRect(0, 0, WIDTH, HEIGHT);
+        const r = 6 + ignite * 22;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(HUMAN_ORIGIN_X - r / 2, CENTER_Y - r / 2, r, r);
+        ctx.fillRect(AI_ORIGIN_X - r / 2, CENTER_Y - r / 2, r, r);
+        ctx.fillStyle = '#FFC928';
+        ctx.fillRect(HUMAN_ORIGIN_X - r / 4, CENTER_Y - r / 4, r / 2, r / 2);
+        ctx.fillStyle = '#62ECFF';
+        ctx.fillRect(AI_ORIGIN_X - r / 4, CENTER_Y - r / 4, r / 2, r / 2);
+        return;
+      }
 
       const scores = scoreRef.current;
       const baseImpactX = calculateImpactPosition(scores.humanWins, scores.aiWins);
@@ -257,9 +269,8 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
       const roundedImpactX = Math.round(currentImpactX);
       if (process.env.NODE_ENV !== 'production') canvas.dataset.impact = String(roundedImpactX);
 
-      const reach = 1 - Math.pow(1 - ignite, 3);
       const humanStart = HUMAN_ORIGIN_X;
-      const humanLen = Math.max(24, (roundedImpactX + 12 - humanStart) * reach);
+      const humanLen = Math.max(24, roundedImpactX + 12 - humanStart);
       if (humanImg.complete && humanImg.naturalWidth > 0) {
         ctx.save();
         ctx.beginPath();
@@ -280,7 +291,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
       }
 
       const aiEnd = AI_ORIGIN_X;
-      const aiLen = Math.max(24, (aiEnd - (roundedImpactX - 12)) * reach);
+      const aiLen = Math.max(24, aiEnd - (roundedImpactX - 12));
       if (aiImg.complete && aiImg.naturalWidth > 0) {
         ctx.save();
         ctx.beginPath();

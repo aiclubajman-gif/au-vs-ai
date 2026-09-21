@@ -1240,25 +1240,23 @@ input.px-slider::-moz-range-thumb {
 }
 
 .px-fighter {
+  --fh: clamp(96px, 26cqw, 250px);
   position: absolute;
   bottom: -4%;
-  height: min(92%, 250px);
-  aspect-ratio: 0.78;
+  width: 0;
+  height: var(--fh);
   opacity: 0;
   z-index: 3;
   pointer-events: none;
+  overflow: visible;
 }
 
 .px-fighter--bird {
-  left: 0;
-  width: 7.5%;
-  aspect-ratio: auto;
+  left: 7.5%;
 }
 
 .px-fighter--cell {
-  right: 0;
-  width: 7.5%;
-  aspect-ratio: auto;
+  right: 7.5%;
 }
 
 .px-fighter--in {
@@ -1345,7 +1343,7 @@ input.px-slider::-moz-range-thumb {
 .px-fighter__pose {
   position: absolute;
   bottom: 0;
-  height: 100%;
+  height: var(--fh);
   width: auto;
   max-width: none;
   opacity: 0;
@@ -1423,13 +1421,8 @@ input.px-slider::-moz-range-thumb {
 
 @media (max-width: 640px) {
   .px-fighter {
-    height: 84%;
+    --fh: clamp(80px, 24cqw, 140px);
     bottom: -2%;
-  }
-
-  .px-fighter--bird,
-  .px-fighter--cell {
-    width: 7.5%;
   }
 }
 
