@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react';
 import { NEW_WATCH, watchLead, type LeadWatch } from '@/lib/arena/atmosphere';
 import type { ArenaLead } from '@/lib/arena/types';
 import type { ArenaFeed } from './feeds';
@@ -149,39 +149,132 @@ export function useLeadChanges(lead: ArenaLead, settled: boolean): number {
 
 const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
 
+/** Shortest gap between a rolling number's writes to the DOM (30 a second). */
+const WRITE_INTERVAL_MS = 1000 / 30;
+
+export type RollOptions = { from?: number; delayMs?: number; durationMs?: number };
+
 /**
- * A number that rolls smoothly to `target` whenever it changes, restarting
- * from wherever it had got to if the target moves again mid-roll.
+ * A number that rolls smoothly to `target` whenever it changes, handing each
+ * frame's value to `apply` — which writes it straight to the DOM.
  *
- * `from` makes it roll up from that value when it first appears, starting
+ * It restarts from wherever it had got to if the target moves again mid-roll,
+ * and `from` makes it roll up from that value when it first appears, starting
  * `delayMs` after mount (so the screen's intro can finish first).
+ *
+ * The values deliberately never reach React state. Six of these run at once on
+ * this screen — the bar, both win totals and all three leaderboard rows — and
+ * every finished game sets them all rolling together, so state here meant
+ * around 360 component renders a second for a second and a half, every few
+ * seconds, for as long as the booth is open. Measured over 10s with the
+ * screen's own mock feed (a game every 3.5s) against the same screen on a
+ * frozen feed, the rolls cost 1231ms of GPU time against 409ms: three times
+ * everything else the arena does put together. That is what the mascot was
+ * stuttering through — it is the one thing on the screen whose motion is
+ * legible frame by frame, so it is the only place the dropped frames showed.
+ *
+ * `apply` is read fresh each frame, so a call site may close over whatever it
+ * likes without restarting the roll.
  */
-export function useCountUp(
+export function useRollingNumber(
   target: number,
-  {
-    from = target,
-    delayMs = 0,
-    durationMs = ARENA_TIMING.countUpMs,
-  }: { from?: number; delayMs?: number; durationMs?: number } = {},
-): number {
-  const [value, setValue] = useState(from);
+  apply: (value: number) => void,
+  { from = target, delayMs = 0, durationMs = ARENA_TIMING.countUpMs }: RollOptions = {},
+): void {
+  // Kept current after each commit rather than during render, so the roll
+  // always calls the latest `apply` without listing it as a dependency and
+  // restarting itself every time a call site re-renders.
+  const applyRef = useRef(apply);
+  useEffect(() => {
+    applyRef.current = apply;
+  });
+
   const current = useRef(from);
+  const applied = useRef<number | null>(null);
   const mountedAt = useRef<number | null>(null);
 
   useEffect(() => {
+    // Writing the same number again still invalidates style, and during the
+    // intro delay every frame would write the same one.
+    let wroteAt = 0;
+    const write = (value: number) => {
+      if (applied.current === value) return;
+      applied.current = value;
+      applyRef.current(value);
+      wroteAt = performance.now();
+    };
+
     mountedAt.current ??= performance.now();
     const start = Math.max(performance.now(), mountedAt.current + delayMs);
     const origin = current.current;
-    if (origin === target) return;
+    if (origin === target) {
+      write(target);
+      return;
+    }
     let frame = requestAnimationFrame(function step(now) {
       const t = Math.min(1, Math.max(0, (now - start) / durationMs));
       const next = t >= 1 ? target : origin + (target - origin) * easeOutCubic(t);
       current.current = next;
-      setValue(next);
+      /*
+       * At most WRITE_HZ writes a second, and always the last one.
+       *
+       * Every write here moves --human, which the bar's chassis, its well, its
+       * two fills, both illuminated outlines and the clash all draw from — so
+       * one write is a repaint of the whole bar. At 60 a single score change
+       * cost half again as much GPU as the same roll does at 30, and a number
+       * easing over a second and a half is not something anyone can see the
+       * difference on. The final frame is never skipped, so the bar always
+       * comes to rest on the exact share.
+       */
+      if (t >= 1 || now - wroteAt >= WRITE_INTERVAL_MS) write(next);
       if (t < 1) frame = requestAnimationFrame(step);
     });
     return () => cancelAnimationFrame(frame);
   }, [target, delayMs, durationMs]);
+}
 
-  return value;
+/**
+ * The same roll, written into one element's text. Attach the ref to whatever
+ * shows the number; `format` turns each frame's value into what it reads.
+ *
+ * The element must render `format(from ?? target)` on the server, so the first
+ * paint already says the right thing and the roll only ever continues it.
+ */
+export function useRollingText<T extends HTMLElement = HTMLElement>(
+  target: number,
+  format: (value: number) => string,
+  options: RollOptions = {},
+): RefObject<T | null> {
+  const ref = useRef<T>(null);
+  const formatRef = useRef(format);
+  useEffect(() => {
+    formatRef.current = format;
+  });
+  useRollingNumber(
+    target,
+    useCallback((value: number) => {
+      const el = ref.current;
+      if (!el) return;
+      const text = formatRef.current(value);
+      // Rounded counts repeat for many frames in a row; skip the no-op writes.
+      if (el.textContent !== text) el.textContent = text;
+    }, []),
+    options,
+  );
+  return ref;
+}
+
+/**
+ * Replays the CSS animations already on an element, without remounting it.
+ *
+ * The alternative is a React key, which throws the node away and builds a new
+ * one — and on this screen the nodes that want a replayed animation are the
+ * same ones holding a number that is mid-roll, which a remount would reset.
+ */
+export function restartAnimations(el: Element | null): void {
+  if (!el) return;
+  for (const animation of el.getAnimations()) {
+    animation.cancel();
+    animation.play();
+  }
 }

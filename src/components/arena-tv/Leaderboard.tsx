@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { ARENA_TOP_PLAYERS, type LeaderboardEntry } from '@/lib/arena/types';
 import { ARENA_TIMING } from './config';
-import { useCountUp } from './hooks';
+import { useRollingText } from './hooks';
 import { Crown } from './icons';
 import styles from './Leaderboard.module.css';
 
@@ -45,8 +45,10 @@ export function Leaderboard({ players }: { players: LeaderboardEntry[] }) {
 }
 
 function Row({ entry, rank, leaving = false }: { entry: LeaderboardEntry; rank: number; leaving?: boolean }) {
-  // A newcomer's score rolls up from nothing once its row has slid in.
-  const score = useCountUp(entry.score, { from: 0, delayMs: 400 });
+  // A newcomer's score rolls up from nothing once its row has slid in. The
+  // value is written straight into the span rather than held in state: every
+  // finished game rolls all three rows at once (see useRollingNumber).
+  const scoreRef = useRollingText<HTMLSpanElement>(entry.score, formatScore, { from: 0, delayMs: 400 });
   return (
     <li
       className={styles.row}
@@ -66,7 +68,9 @@ function Row({ entry, rank, leaving = false }: { entry: LeaderboardEntry; rank: 
         <span className={styles.name}>{entry.name}</span>
         {entry.tag && <span className={styles.tag}>{entry.tag}</span>}
       </span>
-      <span className={`${styles.score} tabular`}>{formatScore(score)}</span>
+      <span ref={scoreRef} className={`${styles.score} tabular`}>
+        {formatScore(0)}
+      </span>
     </li>
   );
 }

@@ -1,5 +1,6 @@
+import { useEffect, useRef } from 'react';
 import { ARENA_TIMING } from './config';
-import { useCountUp } from './hooks';
+import { restartAnimations, useRollingText } from './hooks';
 import { Trophy } from './icons';
 import styles from './SideColumn.module.css';
 
@@ -18,15 +19,27 @@ export function SideColumn({
   wins: number;
   slogan: readonly [string, string];
 }) {
-  const shown = useCountUp(wins, { from: 0, delayMs: ARENA_TIMING.introDelayMs, durationMs: 1800 });
+  const countRef = useRollingText<HTMLSpanElement>(wins, formatCount, {
+    from: 0,
+    delayMs: ARENA_TIMING.introDelayMs,
+    durationMs: 1800,
+  });
+  // The kick replays on each new win by restarting the animation in place.
+  // Keying this span instead would rebuild the very node the count is rolling
+  // in, which snapped the number back to where the last render left it.
+  const firstWins = useRef(wins);
+  useEffect(() => {
+    if (wins === firstWins.current) return;
+    restartAnimations(countRef.current);
+  }, [wins, countRef]);
+
   return (
     <section className={styles.column} data-side={side}>
       <h2 className={styles.label}>Total wins</h2>
       <p className={styles.wins}>
         <Trophy side={side} className={styles.trophy} />
-        {/* Re-mounted on each new win so the kick animation replays. */}
-        <span key={wins} className={`${styles.count} tabular`}>
-          {formatCount(shown)}
+        <span ref={countRef} className={`${styles.count} tabular`}>
+          {formatCount(0)}
         </span>
       </p>
       <p className={styles.slogan}>

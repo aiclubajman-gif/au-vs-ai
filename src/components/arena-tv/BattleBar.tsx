@@ -1,7 +1,7 @@
-import type { CSSProperties } from 'react';
+import { useCallback, useRef, type CSSProperties } from 'react';
 import type { BattleShare } from '@/lib/arena/types';
 import { ARENA_TIMING } from './config';
-import { useCountUp } from './hooks';
+import { useRollingNumber } from './hooks';
 import styles from './BattleBar.module.css';
 
 /** Spark directions around the clash point (dx, dy in px). */
@@ -49,17 +49,36 @@ export function BattleBar({
   share: BattleShare;
   intro?: { from: number; delayMs: number } | null;
 }) {
-  const rolling = useCountUp(share.humanPct, intro ?? {});
-  const { fill, human, ai } = battleBarView(rolling);
+  const opening = battleBarView(intro ? intro.from : share.humanPct);
+
+  const rootRef = useRef<HTMLElement>(null);
+  const humanRef = useRef<HTMLSpanElement>(null);
+  const aiRef = useRef<HTMLSpanElement>(null);
+
+  // One write per frame of the roll, straight to the DOM. The lane's --human
+  // and both percentages are the same number, written three times.
+  useRollingNumber(
+    share.humanPct,
+    useCallback((value: number) => {
+      const view = battleBarView(value);
+      rootRef.current?.style.setProperty('--human', String(view.fill));
+      if (humanRef.current) humanRef.current.textContent = String(view.human);
+      if (aiRef.current) aiRef.current.textContent = String(view.ai);
+    }, []),
+    intro ?? {},
+  );
 
   return (
     <section
+      ref={rootRef}
       className={styles.battle}
-      style={{ '--human': fill } as CSSProperties}
+      style={{ '--human': opening.fill } as CSSProperties}
       aria-label={`Battle share: humans ${share.humanPct}%, AI ${share.aiPct}%`}
     >
       <p className={`${styles.pct} ${styles.pctHuman}`}>
-        <span className="tabular">{human}</span>
+        <span ref={humanRef} className="tabular">
+          {opening.human}
+        </span>
         <small>%</small>
       </p>
 
@@ -115,7 +134,9 @@ export function BattleBar({
       </div>
 
       <p className={`${styles.pct} ${styles.pctAi}`}>
-        <span className="tabular">{ai}</span>
+        <span ref={aiRef} className="tabular">
+          {opening.ai}
+        </span>
         <small>%</small>
       </p>
     </section>

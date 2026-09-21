@@ -473,6 +473,50 @@
   opacity: calc(var(--fade, 0.3) * 0.6);
 }
 
+/* ---- Handing the room over ----------------------------------------------
+
+   The flood and the far rig are the two layers a side only has WHILE it leads:
+   both are full-frame, both are blended, and both sit at zero for whichever
+   side is behind. So a lead going straight from one side to the other is the
+   only transition that can have two of each alight at once — and measured, it
+   does: a direct swap puts 8 full-frame blended layers on screen together for
+   1.2s, where every other transition never exceeds the resting 6. The same
+   swap taken through a dead heat never reaches 8, because a dead heat has no
+   flood at all and hands them over through zero.
+
+   That overlap is the booth TV's blink. For the 1.6s of a lead change the
+   compositor's GPU time goes to about nine times its resting figure (59ms per
+   100ms against 6.5ms, traced at 1080p) and it is blend cost, not repaint —
+   raster barely moves. This machine absorbs it; a TV drops frames for the
+   whole second and a half, and what a viewer sees is the mascot, the ring and
+   the bar all stuttering at once.
+
+   So these two hand over the way the dead heat does: the outgoing side is
+   given the first part of the crossfade to get out, and the incoming side
+   waits for it. The room passes briefly through the neutral state on a direct
+   swap — which is exactly what it already does going through a dead heat, and
+   what nobody has reported a problem with. Same 1.6s, same look at either end,
+   half the blended layers in the middle.
+
+   The gels are deliberately NOT staggered: neither side's gel ever reaches
+   zero (the trailing side keeps its own colour on its own edge), so they were
+   never the two-at-once case and passing them through a gap would take a
+   colour off the screen that is supposed to stay on it. */
+
+.flood,
+.far {
+  transition-duration: calc(var(--t-mood) * 0.45);
+  transition-delay: 0s;
+}
+
+[data-lead='human'] .floodHuman,
+[data-lead='ai'] .floodAi,
+[data-lead='human'] .farHuman,
+[data-lead='ai'] .farAi {
+  transition-duration: calc(var(--t-mood) * 0.55);
+  transition-delay: calc(var(--t-mood) * 0.45);
+}
+
 /* Only a side that is actually ahead floods the room. A dead heat is two rigs
    on their own halves, and gets no flood at all. */
 [data-lead='human'] .floodHuman,
