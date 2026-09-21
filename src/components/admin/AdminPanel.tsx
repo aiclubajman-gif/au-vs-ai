@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { OverrideTool } from '@/components/admin/OverrideTool';
 
 /**
@@ -65,6 +65,66 @@ export function AdminPanel({
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<
+    'all' | 'completed' | 'in_progress' | 'disqualified' | 'invalidated'
+  >('all');
+  const [remoteResults, setRemoteResults] = useState<AttemptRow[] | null>(null);
+  const [isSearchingRemote, setIsSearchingRemote] = useState(false);
+
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (!q) {
+      setRemoteResults(null);
+      setIsSearchingRemote(false);
+      return;
+    }
+
+    setIsSearchingRemote(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/admin/attempt?q=${encodeURIComponent(q)}`).then((r) =>
+          r.json(),
+        );
+        if (res.ok && res.data?.attempts) {
+          setRemoteResults(res.data.attempts);
+        }
+      } catch {
+        // keep local results on network error
+      } finally {
+        setIsSearchingRemote(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const combinedAttempts = useMemo(() => {
+    if (!remoteResults) return attempts;
+    const existingIds = new Set(attempts.map((a) => a.id));
+    const newItems = remoteResults.filter((r) => !existingIds.has(r.id));
+    return [...newItems, ...attempts];
+  }, [attempts, remoteResults]);
+
+  const filteredAttempts = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    return combinedAttempts.filter((a) => {
+      if (statusFilter === 'completed' && a.status !== 'completed') return false;
+      if (statusFilter === 'in_progress' && a.status !== 'in_progress') return false;
+      if (statusFilter === 'disqualified' && a.validForPrize) return false;
+      if (statusFilter === 'invalidated' && a.status !== 'invalidated') return false;
+
+      if (!q) return true;
+      return (
+        a.name.toLowerCase().includes(q) ||
+        a.maskedId.toLowerCase().includes(q) ||
+        a.id.toLowerCase().includes(q) ||
+        (a.totalScore !== null && String(a.totalScore).includes(q)) ||
+        a.status.toLowerCase().includes(q)
+      );
+    });
+  }, [combinedAttempts, searchQuery, statusFilter]);
+
   async function patch(change: Partial<AdminSettings>, label: string) {
     setBusy(label);
     const res = await fetch('/api/admin/settings', {
@@ -102,7 +162,14 @@ export function AdminPanel({
     setAttempts((rows) =>
       action === 'toggle_prize'
         ? rows.map((r) => (r.id === id ? { ...r, validForPrize: res.data.validForPrize } : r))
-        : rows.map((r) => (r.id === id ? { ...r, status: 'invalidated' } : r)),
+        : rows.map((r) => (r.id === id ? { ...r, status: 'invalidated', validForPrize: false } : r)),
+    );
+    setRemoteResults((rows) =>
+      rows
+        ? action === 'toggle_prize'
+          ? rows.map((r) => (r.id === id ? { ...r, validForPrize: res.data.validForPrize } : r))
+          : rows.map((r) => (r.id === id ? { ...r, status: 'invalidated', validForPrize: false } : r))
+        : null,
     );
     setNote(`${action} done`);
     setTimeout(() => setNote(null), 2500);
@@ -282,19 +349,99 @@ export function AdminPanel({
 
         {/* ---- Attempts ---- */}
         <section className="mt-8 pb-12">
-          <h2 className="text-sm font-semibold tracking-wider text-[var(--color-muted)]">
-            RECENT ATTEMPTS
-          </h2>
-          <p className="mt-1 text-xs text-[var(--color-muted)]">
-            Reset marks an attempt invalid and lets the student play again. The original
-            is kept for audit, not deleted.
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-sm font-semibold tracking-wider text-[var(--color-muted)]">
+                PLAYER ATTEMPTS
+              </h2>
+              <p className="mt-1 text-xs text-[var(--color-muted)]">
+                Search by student name, ID suffix, attempt ID, or score. Reset marks an attempt invalid and lets the student play again.
+              </p>
+            </div>
+          </div>
 
+          {/* Search Bar & Filter Controls */}
+          <div className="mt-4 space-y-3">
+            <div className="relative">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-[var(--color-muted)]">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by student name, ID (e.g. 4821), attempt ID, score..."
+                className="w-full rounded-xl border border-[var(--color-edge)] bg-[var(--color-navy)] py-2.5 pl-9 pr-9 text-sm text-[var(--color-ink)] placeholder:text-[var(--color-muted)]/70 focus:border-[var(--color-cyan)] focus:outline-none"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setRemoteResults(null);
+                  }}
+                  className="absolute inset-y-0 right-3 flex items-center text-xs text-[var(--color-muted)] hover:text-white"
+                  aria-label="Clear search"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Filter Chips */}
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              {(
+                [
+                  { id: 'all', label: 'All' },
+                  { id: 'completed', label: 'Completed' },
+                  { id: 'in_progress', label: 'In Progress' },
+                  { id: 'disqualified', label: 'Disqualified' },
+                  { id: 'invalidated', label: 'Reset / Invalid' },
+                ] as const
+              ).map((chip) => {
+                const isSelected = statusFilter === chip.id;
+                return (
+                  <button
+                    key={chip.id}
+                    onClick={() => setStatusFilter(chip.id)}
+                    className={`rounded-lg px-3 py-1.5 font-medium transition-colors ${
+                      isSelected
+                        ? 'bg-[var(--color-cyan)] text-[var(--color-void)]'
+                        : 'border border-[var(--color-edge)] bg-[var(--color-navy)]/60 text-[var(--color-muted)] hover:border-[var(--color-muted)]'
+                    }`}
+                  >
+                    {chip.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Results Count & Status */}
+            <div className="flex items-center justify-between text-xs text-[var(--color-muted)]">
+              <span>
+                Showing {filteredAttempts.length} of {combinedAttempts.length} attempts
+                {searchQuery && ` matching "${searchQuery}"`}
+                {statusFilter !== 'all' && ` (${statusFilter})`}
+              </span>
+              {isSearchingRemote && (
+                <span className="text-[var(--color-cyan)] animate-pulse">Searching database...</span>
+              )}
+            </div>
+          </div>
+
+          {/* Attempts List */}
           <div className="mt-3 space-y-2">
-            {attempts.length === 0 && (
-              <p className="text-sm text-[var(--color-muted)]">No attempts yet.</p>
+            {filteredAttempts.length === 0 && (
+              <div className="rounded-xl border border-[var(--color-edge)] bg-[var(--color-navy)]/50 p-6 text-center text-sm text-[var(--color-muted)]">
+                {searchQuery ? (
+                  <p>No attempts found matching &ldquo;{searchQuery}&rdquo;.</p>
+                ) : (
+                  <p>No attempts match the selected filter.</p>
+                )}
+              </div>
             )}
-            {attempts.map((a) => (
+            {filteredAttempts.map((a) => (
               <div
                 key={a.id}
                 className="flex flex-wrap items-center gap-3 rounded-xl border border-[var(--color-edge)] bg-[var(--color-navy)] px-4 py-3"

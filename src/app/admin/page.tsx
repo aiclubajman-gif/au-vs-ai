@@ -40,7 +40,7 @@ export default async function AdminPage() {
       .from('attempts')
       .select('id, status, total_score, valid_for_prize, started_at, user_id, is_test')
       .order('started_at', { ascending: false })
-      .limit(40),
+      .limit(100),
     supabase.from('club_registrations').select('id', { count: 'exact', head: true }),
     supabase.from('dataset_responses').select('id', { count: 'exact', head: true }),
     supabase.from('round1_images').select('id', { count: 'exact', head: true }).eq('active', true),
