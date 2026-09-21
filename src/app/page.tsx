@@ -105,7 +105,7 @@ export default async function LandingPage() {
         <ClashBeam
           humanWins={humanWins}
           aiWins={aiWins}
-          className="mt-2 w-full max-w-[420px] sm:max-w-[640px] lg:mt-3 lg:max-w-[780px]"
+          className="mt-3 w-[88%] max-w-[440px] sm:max-w-[700px] lg:mt-5 lg:max-w-[960px]"
         />
 
         <TopChallengers

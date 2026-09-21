@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const WIDTH = 320;
 const HEIGHT = 96;
@@ -49,6 +49,7 @@ export interface ClashBeamProps {
   aiWins: number;
   className?: string;
   showLabels?: boolean;
+  fighters?: boolean;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -69,10 +70,12 @@ export function calculateImpactPosition(humanWins: number, aiWins: number): numb
   return clamp(MIN_IMPACT + humanRatio * (MAX_IMPACT - MIN_IMPACT), MIN_IMPACT, MAX_IMPACT);
 }
 
-export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, className = '', showLabels = true }: ClashBeamProps) {
+export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, className = '', showLabels = true, fighters = true }: ClashBeamProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const isVisibleRef = useRef(true);
+  const surgeRef = useRef(0);
+  const [surge, setSurge] = useState(0);
 
   // Allow live polling and URL override (?h=80&a=20) for easy visual testing
   const scoreRef = useRef({ humanWins: propHumanWins, aiWins: propAiWins });
@@ -148,6 +151,12 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
     let prevTime = 0;
     let currentImpactX = calculateImpactPosition(scoreRef.current.humanWins, scoreRef.current.aiWins);
     let sparkSpawnTimer = 0;
+    let surgeOffset = 0;
+    let surgePhase: 'idle' | 'push' | 'hold' | 'release' = 'idle';
+    let surgeSide = 1;
+    let surgeAmount = 0;
+    let surgeTimer = 0;
+    let surgeWait = 2200 + Math.random() * 2500;
 
     const reduceMotion = typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -174,8 +183,48 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
       prevTime = time;
 
       const scores = scoreRef.current;
-      const targetImpactX = calculateImpactPosition(scores.humanWins, scores.aiWins);
-      currentImpactX += (targetImpactX - currentImpactX) * (1 - Math.exp(-dt / 150));
+      const baseImpactX = calculateImpactPosition(scores.humanWins, scores.aiWins);
+
+      if (!reduceMotion) {
+        surgeTimer += dt;
+        if (surgePhase === 'idle' && surgeTimer >= surgeWait) {
+          surgePhase = 'push';
+          surgeTimer = 0;
+          surgeSide = Math.random() < 0.5 ? 1 : -1;
+          surgeAmount = 18 + Math.random() * 30;
+        } else if (surgePhase === 'push') {
+          const t = Math.min(1, surgeTimer / 380);
+          surgeOffset = surgeSide * surgeAmount * (1 - Math.pow(1 - t, 3));
+          if (t >= 1) {
+            surgePhase = 'hold';
+            surgeTimer = 0;
+          }
+        } else if (surgePhase === 'hold') {
+          surgeOffset = surgeSide * surgeAmount + Math.sin(surgeTimer / 40) * 1.5;
+          if (surgeTimer >= 500 + Math.random() * 400) {
+            surgePhase = 'release';
+            surgeTimer = 0;
+          }
+        } else if (surgePhase === 'release') {
+          const t = Math.min(1, surgeTimer / 650);
+          const spring = 1 - Math.exp(-6 * t) * Math.cos(9 * t);
+          surgeOffset = surgeSide * surgeAmount * (1 - spring);
+          if (t >= 1) {
+            surgePhase = 'idle';
+            surgeOffset = 0;
+            surgeTimer = 0;
+            surgeWait = 2200 + Math.random() * 3200;
+          }
+        }
+      }
+
+      const targetImpactX = clamp(baseImpactX + surgeOffset, 40, 280);
+      currentImpactX += (targetImpactX - currentImpactX) * (1 - Math.exp(-dt / 120));
+      const surgeNow = surgePhase === 'idle' ? 0 : surgeSide;
+      if (surgeNow !== surgeRef.current) {
+        surgeRef.current = surgeNow;
+        setSurge(surgeNow);
+      }
 
       const total = scores.humanWins + scores.aiWins;
       const humanRatio = total > 0 ? scores.humanWins / total : 0.5;
@@ -348,7 +397,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
 
   return (
     <div ref={containerRef} className={`relative mx-auto select-none ${className}`} style={{ containerType: 'inline-size' }}>
-      <div className="relative aspect-[10/3] w-full overflow-hidden">
+      <div className="relative aspect-[10/3] w-full overflow-visible">
         <canvas
           ref={canvasRef}
           width={WIDTH}
@@ -357,11 +406,36 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
         />
         {showLabels && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-between font-px text-[3.2cqw] text-white px-text-outline">
-            <span className="ml-[16%]">HUMANS</span>
-            <span className="mr-[12%]">AI</span>
+            <span className="ml-[22%]">HUMANS</span>
+            <span className="mr-[18%]">AI</span>
           </div>
         )}
+        {fighters && (
+          <>
+            <Fighter who="bird" surge={surge} />
+            <Fighter who="cell" surge={surge} />
+          </>
+        )}
       </div>
+    </div>
+  );
+}
+
+function Fighter({ who, surge }: { who: 'bird' | 'cell'; surge: number }) {
+  const [arrived, setArrived] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setArrived(true), who === 'bird' ? 500 : 900);
+    return () => clearTimeout(t);
+  }, [who]);
+  const mine = who === 'bird' ? 1 : -1;
+  const pose = !arrived ? 'charge' : surge === mine ? 'strain' : surge === -mine ? 'charge' : 'push';
+  return (
+    <div className={`px-fighter px-fighter--${who} ${arrived ? 'px-fighter--in' : ''} px-fighter--${pose}`} aria-hidden="true">
+      <span className="px-fighter__flash" />
+      <span className="px-fighter__ghost" />
+      <img src={`/sprites/beam/${who}-charge.png`} alt="" draggable={false} className="pixelated px-fighter__pose px-fighter__pose--charge" />
+      <img src={`/sprites/beam/${who}-push.png`} alt="" draggable={false} className="pixelated px-fighter__pose px-fighter__pose--push" />
+      <img src={`/sprites/beam/${who}-strain.png`} alt="" draggable={false} className="pixelated px-fighter__pose px-fighter__pose--strain" />
     </div>
   );
 }
