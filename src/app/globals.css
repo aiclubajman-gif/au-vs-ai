@@ -1285,12 +1285,14 @@ input.px-slider::-moz-range-thumb {
   opacity: 1;
 }
 
-.px-fighter--in .px-fighter__pose {
-  animation: px-teleport-in 420ms steps(6) both;
+.px-fighter__shadow,
+.px-fighter__aura {
+  visibility: hidden;
 }
 
-.px-fighter--cell.px-fighter--in .px-fighter__pose {
-  animation-name: px-teleport-in-r;
+.px-fighter--in .px-fighter__shadow,
+.px-fighter--in .px-fighter__aura {
+  visibility: visible;
 }
 
 @keyframes px-teleport-in {
@@ -1335,6 +1337,89 @@ input.px-slider::-moz-range-thumb {
   }
 }
 
+.px-fighter__body {
+  position: absolute;
+  inset: 0;
+  animation: px-hover 3.2s ease-in-out infinite;
+}
+
+.px-fighter--cell .px-fighter__body {
+  animation-delay: -1.6s;
+}
+
+@keyframes px-hover {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9%);
+  }
+}
+
+.px-fighter__shadow {
+  position: absolute;
+  bottom: -3%;
+  width: 70%;
+  height: 8%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(2, 10, 30, 0.55), rgba(2, 10, 30, 0) 70%);
+  animation: px-hover-shadow 3.2s ease-in-out infinite;
+}
+
+.px-fighter--bird .px-fighter__shadow {
+  right: 20%;
+}
+
+.px-fighter--cell .px-fighter__shadow {
+  left: 20%;
+  animation-delay: -1.6s;
+}
+
+@keyframes px-hover-shadow {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scaleX(0.72);
+    opacity: 0.45;
+  }
+}
+
+.px-fighter__aura {
+  position: absolute;
+  bottom: 2%;
+  width: 60%;
+  height: 22%;
+  border-radius: 50%;
+  filter: blur(6px);
+  opacity: 0;
+  animation: px-hover 3.2s ease-in-out infinite, px-aura 0.5s steps(2) infinite;
+}
+
+.px-fighter--bird .px-fighter__aura {
+  right: 22%;
+  background: radial-gradient(ellipse, rgba(255, 201, 40, 0.55), rgba(255, 140, 0, 0) 70%);
+}
+
+.px-fighter--cell .px-fighter__aura {
+  left: 22%;
+  background: radial-gradient(ellipse, rgba(98, 236, 255, 0.55), rgba(0, 121, 232, 0) 70%);
+  animation-delay: -1.6s, 0s;
+}
+
+@keyframes px-aura {
+  50% {
+    opacity: 0.35;
+  }
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+}
+
 .px-fighter__flash {
   position: absolute;
   inset: 10% -20%;
@@ -1343,7 +1428,90 @@ input.px-slider::-moz-range-thumb {
   opacity: 0;
 }
 
-.px-fighter--in .px-fighter__flash {
+.px-fighter--in .px-fighter__body {
+  position: absolute;
+  inset: 0;
+  animation: px-hover 3.2s ease-in-out infinite;
+}
+
+.px-fighter--cell .px-fighter__body {
+  animation-delay: -1.6s;
+}
+
+@keyframes px-hover {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9%);
+  }
+}
+
+.px-fighter__shadow {
+  position: absolute;
+  bottom: -3%;
+  width: 70%;
+  height: 8%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(2, 10, 30, 0.55), rgba(2, 10, 30, 0) 70%);
+  animation: px-hover-shadow 3.2s ease-in-out infinite;
+}
+
+.px-fighter--bird .px-fighter__shadow {
+  right: 20%;
+}
+
+.px-fighter--cell .px-fighter__shadow {
+  left: 20%;
+  animation-delay: -1.6s;
+}
+
+@keyframes px-hover-shadow {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scaleX(0.72);
+    opacity: 0.45;
+  }
+}
+
+.px-fighter__aura {
+  position: absolute;
+  bottom: 2%;
+  width: 60%;
+  height: 22%;
+  border-radius: 50%;
+  filter: blur(6px);
+  opacity: 0;
+  animation: px-hover 3.2s ease-in-out infinite, px-aura 0.5s steps(2) infinite;
+}
+
+.px-fighter--bird .px-fighter__aura {
+  right: 22%;
+  background: radial-gradient(ellipse, rgba(255, 201, 40, 0.55), rgba(255, 140, 0, 0) 70%);
+}
+
+.px-fighter--cell .px-fighter__aura {
+  left: 22%;
+  background: radial-gradient(ellipse, rgba(98, 236, 255, 0.55), rgba(0, 121, 232, 0) 70%);
+  animation-delay: -1.6s, 0s;
+}
+
+@keyframes px-aura {
+  50% {
+    opacity: 0.35;
+  }
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+}
+
+.px-fighter__flash {
   animation: px-teleport-flash 520ms steps(5) both;
 }
 

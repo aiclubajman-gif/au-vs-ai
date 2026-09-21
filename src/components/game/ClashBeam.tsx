@@ -460,9 +460,13 @@ function Fighter({ who, surge }: { who: 'bird' | 'cell'; surge: number }) {
   return (
     <div className={`px-fighter px-fighter--${who} ${arrived ? 'px-fighter--in' : ''} px-fighter--${pose}`} aria-hidden="true">
       <span className="px-fighter__flash" />
-      <img src={`/sprites/beam/${who}-charge.png`} alt="" draggable={false} className="pixelated px-fighter__pose px-fighter__pose--charge" />
-      <img src={`/sprites/beam/${who}-push.png`} alt="" draggable={false} className="pixelated px-fighter__pose px-fighter__pose--push" />
-      <img src={`/sprites/beam/${who}-strain.png`} alt="" draggable={false} className="pixelated px-fighter__pose px-fighter__pose--strain" />
+      <span className="px-fighter__shadow" />
+      <span className="px-fighter__aura" />
+      <span className="px-fighter__body">
+        <img src={`/sprites/beam/${who}-charge.png`} alt="" draggable={false} className="pixelated px-fighter__pose px-fighter__pose--charge" />
+        <img src={`/sprites/beam/${who}-push.png`} alt="" draggable={false} className="pixelated px-fighter__pose px-fighter__pose--push" />
+        <img src={`/sprites/beam/${who}-strain.png`} alt="" draggable={false} className="pixelated px-fighter__pose px-fighter__pose--strain" />
+      </span>
     </div>
   );
 }
