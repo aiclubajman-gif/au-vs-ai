@@ -29,6 +29,13 @@ const LIVE: Panel[] = [
   { id: 'video', seconds: 80 },
 ];
 
+const PANEL_LABEL: Record<PanelId, string> = {
+  video: 'Now showing · RegWiz, built by AIDA',
+  game: 'Humans vs AI · the 60 second challenge',
+  prizes: 'Two ChatGPT Plus subscriptions to win',
+  board: 'Live leaderboard',
+};
+
 const POLL_MS = 8000;
 const RELOAD_MS = 30 * 60 * 1000;
 const SPLASH_MS = 6500;
@@ -177,10 +184,12 @@ export function Kiosk({ siteUrl, qr, qrWhatsapp }: { siteUrl: string; qr: string
             </div>
           </div>
           <div className="kiosk__header-right">
-            <span>Club Fair 2026</span>
+            <span className="kiosk__now" key={panel.id}>
+              {PANEL_LABEL[panel.id]}
+            </span>
             <span className={`kiosk__pill ${live ? 'kiosk__pill--live' : ''}`}>
               <span className="kiosk__dot" />
-              {live ? `Live · ${data.totalPlayers} played` : 'Play at the booth'}
+              {live ? `Live · ${data.totalPlayers} played` : 'Club Fair 2026'}
             </span>
           </div>
         </header>
@@ -191,7 +200,7 @@ export function Kiosk({ siteUrl, qr, qrWhatsapp }: { siteUrl: string; qr: string
 
         <div className="kiosk__panels">
           <section key={`${modeKey}-${index}`} className="kiosk__panel kiosk__panel--active">
-            {panel.id === 'video' && <VideoPanel videoRef={videoRef} qr={qr} siteUrl={siteUrl} />}
+            {panel.id === 'video' && <VideoPanel videoRef={videoRef} />}
             {panel.id === 'game' && <GamePanel qr={qr} siteUrl={siteUrl} data={data} />}
             {panel.id === 'prizes' && <PrizesPanel qr={qr} qrWhatsapp={qrWhatsapp} siteUrl={siteUrl} />}
             {panel.id === 'board' && <BoardPanel data={data} qr={qr} />}
@@ -322,35 +331,11 @@ function Rows({ rows, mode }: { rows: KioskRow[]; mode: KioskData['mode'] }) {
   );
 }
 
-function VideoPanel({
-  videoRef,
-  qr,
-  siteUrl,
-}: {
-  videoRef: React.RefObject<HTMLVideoElement | null>;
-  qr: string;
-  siteUrl: string;
-}) {
+function VideoPanel({ videoRef }: { videoRef: React.RefObject<HTMLVideoElement | null> }) {
   return (
     <div className="k-panel k-video">
       <div className="k-video__frame">
         <video ref={videoRef} src="/kiosk/regwiz.mp4" muted playsInline preload="auto" loop={false} />
-      </div>
-      <div className="k-strip k-fade" style={{ ['--i' as string]: 2 }}>
-        <div className="k-strip__copy">
-          <span className="k-strip__title">
-            <Reveal text="RegWiz — course registration, without the headache." />
-          </span>
-          <span className="k-strip__sub">Built by AIDA students for AU students. Ask us for a demo at the booth.</span>
-        </div>
-        <div className="k-strip__qr">
-          <span>
-            Scan to play
-            <br />
-            Humans vs AI
-          </span>
-          <img src={qr} alt={`QR code for ${siteUrl}`} />
-        </div>
       </div>
     </div>
   );
