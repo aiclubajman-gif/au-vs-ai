@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { createAdminSupabase } from '@/lib/supabase/server';
 import { ClashBeam } from '@/components/game/ClashBeam';
 import { TopChallengers, type TopRow } from '@/components/home/TopChallengers';
-import { PxChip, PxLink, PxStar, Wordmark } from '@/components/px';
+import { AnimatedSprite, PxChip, PxLink, PxStar, Wordmark } from '@/components/px';
 import type { EventStats, LeaderboardDisplayMode } from '@/types';
 
 export const revalidate = 10;
@@ -98,8 +98,9 @@ export default async function LandingPage() {
           className="mx-auto w-[92%] max-w-[420px] drop-shadow-[0_6px_0_rgba(0,0,0,0.35)] sm:max-w-[560px] lg:-mt-2 lg:max-w-[640px]"
         />
 
-        <div className="mt-4 flex items-center gap-3 sm:mt-5">
-          <PxStar className="h-5 w-5 drop-shadow-[2px_2px_0_#041030]" />
+        <div className="mt-4 flex items-end gap-3 sm:mt-5">
+          <AnimatedSprite name="boy-cheer" speed="0.8s" className="h-20 lg:hidden" />
+          <PxStar className="mb-5 h-5 w-5 drop-shadow-[2px_2px_0_#041030]" />
           <PxLink
             href="/play"
             className="min-h-[60px] w-[200px] text-[16px] sm:w-[240px] sm:text-[18px]"
@@ -107,7 +108,8 @@ export default async function LandingPage() {
           >
             PLAY
           </PxLink>
-          <PxStar className="h-5 w-5 drop-shadow-[2px_2px_0_#041030]" />
+          <PxStar className="mb-5 h-5 w-5 drop-shadow-[2px_2px_0_#041030]" />
+          <AnimatedSprite name="robot-1" speed="1.2s" className="h-20 drop-shadow-[0_0_12px_rgba(0,187,252,0.6)] lg:hidden" />
         </div>
 
         <ClashBeam

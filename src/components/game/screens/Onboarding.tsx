@@ -103,6 +103,15 @@ function PixelIcon({ kind }: { kind: 'cap' | 'shield' | 'lock' | 'bulb' | 'user'
     star: 'M5 0h1v2h1v1h2v1h-1v1h-1v1h1v2h-1v-1h-1v-1h-1v1h-1v1h-1v-2h1v-1h-1v-1h-1v-1h2v-1h1z',
     clock: 'M3 0h5v1h1v1h1v5h-1v1h-1v1h-5v-1h-1v-1h-1v-5h1v-1h1zM5 2h1v3h2v1h-3z',
   };
+  if (kind === 'clock') {
+    return (
+      <svg viewBox="0 0 12 12" className="h-6 w-6 shrink-0" aria-hidden="true" shapeRendering="crispEdges">
+        <path fill="#7ffafe" d="M4 0h4v1h2v1h1v2h1v4h-1v2h-1v1h-2v1H4v-1H2v-1H1V8H0V4h1V2h1V1h2z" />
+        <path fill="#041030" d="M4 2h4v1h1v1h1v4H9v1H8v1H4V9H3V8H2V4h1V3h1z" />
+        <path fill="#7ffafe" d="M5 3h2v3h2v2H5z" />
+      </svg>
+    );
+  }
   return (
     <svg viewBox="0 0 12 10" className="h-7 w-7 shrink-0 text-[#7ffafe]" aria-hidden="true" shapeRendering="crispEdges">
       <path fill="currentColor" d={paths[kind]} />
