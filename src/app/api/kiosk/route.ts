@@ -21,8 +21,11 @@ export interface KioskData {
   topScore: number;
   mode: LeaderboardDisplayMode;
   rows: KioskRow[];
+  timings: { round1MsPerImage: number; round2DrawMs: number; round3Ms: number };
   updatedAt: string;
 }
+
+const DEFAULT_TIMINGS = { round1MsPerImage: 5000, round2DrawMs: 12000, round3Ms: 8000 };
 
 const EMPTY: KioskData = {
   live: false,
@@ -33,6 +36,7 @@ const EMPTY: KioskData = {
   topScore: 0,
   mode: 'name_only',
   rows: [],
+  timings: DEFAULT_TIMINGS,
   updatedAt: new Date(0).toISOString(),
 };
 
@@ -54,6 +58,7 @@ const SAMPLE: KioskData = {
     { rank: 7, display_name: 'NeuronNinja', masked_id_suffix: '5318', total_score: 620, human_win: true },
     { rank: 8, display_name: 'IdeaForge', masked_id_suffix: '2774', total_score: 580, human_win: false },
   ],
+  timings: DEFAULT_TIMINGS,
   updatedAt: new Date().toISOString(),
 };
 
@@ -66,7 +71,7 @@ export async function GET() {
     const [{ data: stats }, { data: rows }, { data: settings }] = await Promise.all([
       s.from('event_stats_public').select('*').single(),
       s.from('leaderboard_public').select('rank, display_name, masked_id_suffix, total_score, human_win').order('rank').limit(10),
-      s.from('event_settings').select('leaderboard_display').eq('id', 1).single(),
+      s.from('event_settings').select('leaderboard_display, round1_ms_per_image, round2_draw_ms, round3_ms').eq('id', 1).single(),
     ]);
     const totalPlayers = stats?.total_players ?? 0;
     const data: KioskData = {
@@ -78,6 +83,11 @@ export async function GET() {
       topScore: stats?.top_score ?? 0,
       mode: (settings?.leaderboard_display ?? 'name_only') as LeaderboardDisplayMode,
       rows: (rows ?? []) as KioskRow[],
+      timings: {
+        round1MsPerImage: settings?.round1_ms_per_image ?? DEFAULT_TIMINGS.round1MsPerImage,
+        round2DrawMs: settings?.round2_draw_ms ?? DEFAULT_TIMINGS.round2DrawMs,
+        round3Ms: settings?.round3_ms ?? DEFAULT_TIMINGS.round3Ms,
+      },
       updatedAt: new Date().toISOString(),
     };
     return NextResponse.json({ ok: true, data }, { headers: { 'Cache-Control': 'no-store' } });

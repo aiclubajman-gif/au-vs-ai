@@ -49,6 +49,7 @@ const EMPTY: KioskData = {
   topScore: 0,
   mode: 'name_only',
   rows: [],
+  timings: { round1MsPerImage: 5000, round2DrawMs: 12000, round3Ms: 8000 },
   updatedAt: '',
 };
 
@@ -386,7 +387,7 @@ function GamePanel({ qr, siteUrl, data }: { qr: string; siteUrl: string; data: K
               <span className="k-round__name">Spot the fake</span>
             </div>
             <p className="k-round__desc">Eight photos. Real, or AI-generated? You get seconds each.</p>
-            <span className="k-round__time">8 × 8 seconds</span>
+            <span className="k-round__time">8 × {Math.round(data.timings.round1MsPerImage / 1000)} seconds</span>
           </div>
           <div className="k-round">
             <div className="k-round__head">
@@ -394,7 +395,7 @@ function GamePanel({ qr, siteUrl, data }: { qr: string; siteUrl: string; data: K
               <span className="k-round__name">Draw vs AI</span>
             </div>
             <p className="k-round__desc">Sketch the word. Our on-device model guesses what you drew.</p>
-            <span className="k-round__time">20 seconds</span>
+            <span className="k-round__time">{Math.round(data.timings.round2DrawMs / 1000)} seconds</span>
           </div>
           <div className="k-round">
             <div className="k-round__head">
@@ -402,7 +403,7 @@ function GamePanel({ qr, siteUrl, data }: { qr: string; siteUrl: string; data: K
               <span className="k-round__name">AI knowledge</span>
             </div>
             <p className="k-round__desc">One question, one slider. The closer you get, the more you score.</p>
-            <span className="k-round__time">8 seconds</span>
+            <span className="k-round__time">{Math.round(data.timings.round3Ms / 1000)} seconds</span>
           </div>
         </div>
         <div className="k-qr-card k-fade" style={{ ['--i' as string]: 6 }}>

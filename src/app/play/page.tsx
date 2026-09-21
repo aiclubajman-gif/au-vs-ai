@@ -5,8 +5,8 @@ import type { College } from '@/types';
 export const dynamic = 'force-dynamic';
 
 const FALLBACK_TIMINGS = {
-  round1MsPerImage: 8000,
-  round2DrawMs: 20000,
+  round1MsPerImage: 5000,
+  round2DrawMs: 12000,
   round3Ms: 8000,
 };
 
