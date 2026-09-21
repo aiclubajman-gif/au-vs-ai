@@ -316,18 +316,27 @@ export function PlayFlow({
           setTimeout(() => !cancelled && setStep(data.resumed ? roundStep(data) : 'ready'), 600);
           return;
         }
-        if (res.error.code === 'ALREADY_COMPLETED') {
+        const code = res.error.code;
+        if (code === 'ALREADY_COMPLETED') {
           await loadResult();
           return;
         }
-        if (offline(res.error)) {
-          setAssignment(createLocalAssignment());
-          setDeviceProgress(100);
-          setTimeout(() => !cancelled && setStep('ready'), 600);
+        if (code === 'UNAUTHORIZED') {
+          setStep('email');
           return;
         }
-        setBlocked({ code: res.error.code, ref: res.error.ref, message: res.error.message });
-        setStep('blocked');
+        if (code === 'PROFILE_REQUIRED') {
+          setStep('profile');
+          return;
+        }
+        if (!offline(res.error)) {
+          setBlocked({ code, ref: res.error.ref, message: res.error.message });
+          setStep('blocked');
+          return;
+        }
+        setAssignment(createLocalAssignment());
+        setDeviceProgress(100);
+        setTimeout(() => !cancelled && setStep('ready'), 600);
       } catch {
         if (!cancelled) setDeviceState('failed');
       }
