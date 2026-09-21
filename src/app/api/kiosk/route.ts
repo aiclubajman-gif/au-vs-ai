@@ -13,7 +13,6 @@ export interface KioskRow {
 }
 
 export interface KioskData {
-  live: boolean;
   totalPlayers: number;
   humanWins: number;
   aiWins: number;
@@ -28,7 +27,6 @@ export interface KioskData {
 const DEFAULT_TIMINGS = { round1MsPerImage: 5000, round2DrawMs: 12000, round3Ms: 8000 };
 
 const EMPTY: KioskData = {
-  live: false,
   totalPlayers: 0,
   humanWins: 0,
   aiWins: 0,
@@ -41,7 +39,6 @@ const EMPTY: KioskData = {
 };
 
 const SAMPLE: KioskData = {
-  live: true,
   totalPlayers: 64,
   humanWins: 27,
   aiWins: 37,
@@ -75,7 +72,6 @@ export async function GET() {
     ]);
     const totalPlayers = stats?.total_players ?? 0;
     const data: KioskData = {
-      live: totalPlayers > 0,
       totalPlayers,
       humanWins: stats?.human_wins ?? 0,
       aiWins: stats?.ai_wins ?? 0,

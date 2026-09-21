@@ -41,7 +41,6 @@ const RELOAD_MS = 30 * 60 * 1000;
 const SPLASH_MS = 6500;
 
 const EMPTY: KioskData = {
-  live: false,
   totalPlayers: 0,
   humanWins: 0,
   aiWins: 0,
@@ -55,7 +54,7 @@ const EMPTY: KioskData = {
 
 export function Kiosk({ siteUrl, qr, qrClub, qrWhatsapp }: { siteUrl: string; qr: string; qrClub: string; qrWhatsapp: string }) {
   const [data, setData] = useState<KioskData>(EMPTY);
-  const [forced, setForced] = useState<'attract' | 'live' | null>(null);
+  const [mode, setMode] = useState<'attract' | 'live'>('attract');
   const [cursor, setCursor] = useState({ mode: 'attract', index: 0 });
   const [elapsed, setElapsed] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -66,7 +65,7 @@ export function Kiosk({ siteUrl, qr, qrClub, qrWhatsapp }: { siteUrl: string; qr
   const leaderRef = useRef<string | null>(null);
   const hideTimer = useRef<number | null>(null);
 
-  const live = forced ? forced === 'live' : data.live;
+  const live = mode === 'live';
   const playlist = live ? LIVE : ATTRACT;
   const modeKey = live ? 'live' : 'attract';
   const index = cursor.mode === modeKey ? cursor.index : 0;
@@ -158,8 +157,7 @@ export function Kiosk({ siteUrl, qr, qrClub, qrWhatsapp }: { siteUrl: string; qr
         setPaused((p) => !p);
       } else if (e.key === 'ArrowRight') next();
       else if (e.key === 'ArrowLeft') prev();
-      else if (e.key.toLowerCase() === 'l') setForced((f) => (f === 'live' ? 'attract' : 'live'));
-      else if (e.key.toLowerCase() === 'a') setForced(null);
+      else if (e.key.toLowerCase() === 'l') setMode((m) => (m === 'live' ? 'attract' : 'live'));
       else if (e.key.toLowerCase() === 'f') document.documentElement.requestFullscreen?.().catch(() => {});
       wake();
     };
@@ -230,13 +228,10 @@ export function Kiosk({ siteUrl, qr, qrClub, qrWhatsapp }: { siteUrl: string; qr
               {paused ? 'Resume' : 'Pause'}
             </button>
             <button onClick={next} aria-label="Next panel">›</button>
-            <button onClick={() => setForced(null)} className={forced === null ? 'is-on' : ''}>
-              Auto
-            </button>
-            <button onClick={() => setForced('attract')} className={forced === 'attract' ? 'is-on' : ''}>
+            <button onClick={() => setMode('attract')} className={mode === 'attract' ? 'is-on' : ''}>
               Attract
             </button>
-            <button onClick={() => setForced('live')} className={forced === 'live' ? 'is-on' : ''}>
+            <button onClick={() => setMode('live')} className={mode === 'live' ? 'is-on' : ''}>
               Live
             </button>
             <button onClick={() => document.documentElement.requestFullscreen?.().catch(() => {})}>Full</button>
