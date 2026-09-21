@@ -104,6 +104,8 @@ export function Round3({
   const progress = Math.max(0, Math.min(1, remaining / durationMs));
   const span = assignment.maxValue - assignment.minValue;
   const pct = span > 0 ? ((guess - assignment.minValue) / span) * 100 : 0;
+  const unit = (assignment.unit ?? '').trim();
+  const symbolUnit = unit.length <= 2;
 
   return (
     <Scene left="r3-left" right="r3-right" leftWidth="30vw" rightWidth="30vw">
@@ -129,9 +131,16 @@ export function Round3({
         </PxPanel>
 
         <div className="my-auto flex flex-col items-center py-4">
-          <output htmlFor="guess" className="px-num-cyan tabular text-[72px] sm:text-[88px] lg:text-[104px]" aria-live="polite">
-            {guess}
-            {assignment.unit}
+          <output htmlFor="guess" className="flex flex-col items-center" aria-live="polite">
+            <span className="px-num-cyan tabular text-[clamp(44px,16vw,104px)] leading-none">
+              {guess}
+              {symbolUnit ? unit : ''}
+            </span>
+            {!symbolUnit && (
+              <span className="mt-4 max-w-[80vw] text-center font-px text-[12px] uppercase leading-relaxed text-[#7ffafe] px-text-outline sm:text-[14px] lg:text-[18px]">
+                {unit}
+              </span>
+            )}
           </output>
         </div>
 
@@ -160,7 +169,7 @@ export function Round3({
               disabled={locked}
               onChange={(e) => setGuess(Number(e.target.value))}
               aria-label={assignment.prompt}
-              aria-valuetext={`${guess}${assignment.unit}`}
+              aria-valuetext={`${guess} ${unit}`}
             />
           </div>
           <div className="mt-2 flex justify-between px-1 font-px text-[12px] text-[#dff6ff] px-text-outline lg:hidden">

@@ -79,11 +79,11 @@ function createLocalAssignment(): AttemptAssignment {
     round1: images.map((img, i) => ({ slot: i + 1, imageId: img.id, storagePath: img.path, answered: false })),
     round2: { classKey: 'apple', displayName: 'Apple', submitted: false },
     round3: {
-      prompt: 'What % of internet traffic is bots?',
+      prompt: 'The AIDA board has 12 members. How many paid AI subscriptions do they have between them?',
       minValue: 0,
-      maxValue: 100,
+      maxValue: 40,
       step: 1,
-      unit: '%',
+      unit: 'subscriptions',
       answered: false,
     },
   };
