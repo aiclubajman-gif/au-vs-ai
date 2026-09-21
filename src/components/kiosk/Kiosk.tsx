@@ -200,7 +200,7 @@ export function Kiosk({ siteUrl, qr, qrWhatsapp }: { siteUrl: string; qr: string
 
         <div className="kiosk__panels">
           <section key={`${modeKey}-${index}`} className="kiosk__panel kiosk__panel--active">
-            {panel.id === 'video' && <VideoPanel videoRef={videoRef} />}
+            {panel.id === 'video' && <VideoPanel videoRef={videoRef} qrWhatsapp={qrWhatsapp} />}
             {panel.id === 'game' && <GamePanel qr={qr} siteUrl={siteUrl} data={data} />}
             {panel.id === 'prizes' && <PrizesPanel qr={qr} qrWhatsapp={qrWhatsapp} siteUrl={siteUrl} />}
             {panel.id === 'board' && <BoardPanel data={data} qr={qr} />}
@@ -331,11 +331,29 @@ function Rows({ rows, mode }: { rows: KioskRow[]; mode: KioskData['mode'] }) {
   );
 }
 
-function VideoPanel({ videoRef }: { videoRef: React.RefObject<HTMLVideoElement | null> }) {
+function VideoPanel({ videoRef, qrWhatsapp }: { videoRef: React.RefObject<HTMLVideoElement | null>; qrWhatsapp: string }) {
   return (
     <div className="k-panel k-video">
       <div className="k-video__frame">
         <video ref={videoRef} src="/kiosk/regwiz.mp4" muted playsInline preload="auto" loop={false} />
+      </div>
+      <div className="k-strip">
+        <div className="k-strip__copy">
+          <span className="k-strip__title">
+            <Reveal text="RegWiz — course registration, without the headache." />
+          </span>
+          <span className="k-strip__sub k-fade" style={{ ['--i' as string]: 3 }}>
+            Built by AIDA students for AU students. Ask us for a demo at the booth.
+          </span>
+        </div>
+        <div className="k-strip__qr k-fade" style={{ ['--i' as string]: 4 }}>
+          <span>
+            Want early access?
+            <br />
+            Join our WhatsApp
+          </span>
+          <img src={qrWhatsapp} alt="QR code for the AIDA WhatsApp group" />
+        </div>
       </div>
     </div>
   );
@@ -416,7 +434,7 @@ function PrizesPanel({ qr, qrWhatsapp, siteUrl }: { qr: string; qrWhatsapp: stri
           <header className="k-card__head">
             <span className="k-card__tag">Top score</span>
             <span className="k-card__value">
-              <small>worth</small> $20
+              <small>worth</small> AED 75
             </span>
           </header>
           <div className="k-card__product">
@@ -437,7 +455,7 @@ function PrizesPanel({ qr, qrWhatsapp, siteUrl }: { qr: string; qrWhatsapp: stri
           <header className="k-card__head">
             <span className="k-card__tag">Member raffle</span>
             <span className="k-card__value">
-              <small>worth</small> $20
+              <small>worth</small> AED 75
             </span>
           </header>
           <div className="k-card__product">
