@@ -64,14 +64,14 @@ export function Result({ result, returning = false }: { result: PublicAttemptRes
   const scorePanel = (
     <PxPanel tone="cyan" className="w-full px-5 py-5 sm:py-6">
       <div className="flex items-center justify-center gap-3 sm:gap-5">
-        {win && <Sprite src="/sprites/laurel-cleaned.png" className="px-pop h-16 w-auto sm:h-20" />}
+        {win && <Sprite src="/sprites/laurel-left.png" className="px-pop h-16 w-auto sm:h-20" />}
         <div className="flex flex-col items-center">
           <span className={`${win ? 'px-num-gold' : 'px-num-cyan'} tabular text-[64px] leading-none sm:text-[80px] lg:text-[88px]`} aria-live="polite">
             {shown}
           </span>
           <span className={`mt-3 font-px text-[16px] sm:text-[20px] ${win ? 'text-[#7ffafe]' : 'text-[#7ffafe]'} px-text-outline`}>/1000</span>
         </div>
-        {win && <Sprite src="/sprites/laurel-cleaned.png" className="px-pop h-16 w-auto -scale-x-100 sm:h-20" />}
+        {win && <Sprite src="/sprites/laurel-right.png" className="px-pop h-16 w-auto sm:h-20" />}
       </div>
     </PxPanel>
   );
@@ -96,7 +96,7 @@ export function Result({ result, returning = false }: { result: PublicAttemptRes
     >
       <div className={`px-confetti ${win ? '' : 'px-confetti--cyan'}`} aria-hidden="true" />
 
-      <div className="relative mx-auto flex w-full max-w-[520px] flex-1 flex-col px-4 pb-6 pt-5 sm:px-6 lg:max-w-[640px]">
+      <div className="relative mx-auto flex w-full max-w-[520px] flex-1 flex-col justify-center px-4 pb-6 pt-5 sm:px-6 lg:max-w-[640px]">
         {returning && (
           <div className="mb-3 flex justify-center">
             <PxChip tone="gold" className="text-[8px]">YOUR OFFICIAL RESULT</PxChip>
