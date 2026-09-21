@@ -10,10 +10,10 @@ const HUMAN_FRAME = { width: 200, height: 64, contactX: 190, contactY: 32 };
 const AI_FRAME = { width: 200, height: 64, contactX: 10, contactY: 32 };
 const IMPACT_FRAME = { width: 72, height: 72, centerX: 36, centerY: 36 };
 // Base anchors on the 320px canvas (matching original pixel art: Human base at x=25, AI base at x=295)
-const HUMAN_ORIGIN_X = 22;
-const AI_ORIGIN_X = 298;
+const HUMAN_ORIGIN_X = 24;
+const AI_ORIGIN_X = 296;
 const IGNITE_AT_MS = 1350;
-const IGNITE_MS = 240;
+const IGNITE_MS = 600;
 
 const HUMAN_SPARK_COLORS = ['#B83A00', '#F05A00', '#FF8C00', '#FFC928', '#FFF0A0'];
 const AI_SPARK_COLORS = ['#004A9F', '#0079E8', '#00C4FF', '#62ECFF', '#DFFFFF'];
@@ -208,7 +208,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
         ctx.clearRect(0, 0, WIDTH, HEIGHT);
         if (impactImg.complete && impactImg.naturalWidth > 0) {
           const f = Math.min(5, Math.floor(ignite * 6));
-          const sz = 28 + ignite * 20;
+          const sz = 44;
           for (const ox of [HUMAN_ORIGIN_X, AI_ORIGIN_X]) {
             ctx.drawImage(
               impactImg,
@@ -296,7 +296,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
           0,
           HUMAN_FRAME.width - 14,
           HUMAN_FRAME.height,
-          humanStart - 6,
+          humanStart - 14,
           CENTER_Y - HUMAN_FRAME.contactY,
           humanLen,
           HUMAN_FRAME.height,
@@ -317,7 +317,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
           0,
           AI_FRAME.width - 14,
           AI_FRAME.height,
-          aiEnd + 6 - aiLen,
+          aiEnd + 14 - aiLen,
           CENTER_Y - AI_FRAME.contactY,
           aiLen,
           AI_FRAME.height,
