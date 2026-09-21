@@ -9,13 +9,9 @@ const CENTER_Y = 48;
 const HUMAN_FRAME = { width: 200, height: 64, contactX: 190, contactY: 32 };
 const AI_FRAME = { width: 200, height: 64, contactX: 10, contactY: 32 };
 const IMPACT_FRAME = { width: 72, height: 72, centerX: 36, centerY: 36 };
-
-// Pre-allocated static spark palette arrays to avoid GC allocations in render loop
 const HUMAN_SPARK_COLORS = ['#B83A00', '#F05A00', '#FF8C00', '#FFC928', '#FFF0A0'];
 const AI_SPARK_COLORS = ['#004A9F', '#0079E8', '#00C4FF', '#62ECFF', '#DFFFFF'];
 const WHITE_COLOR = '#FFFFFF';
-
-// Pre-allocated particle pool for zero-allocation rendering
 const MAX_SPARKS = 32;
 interface Spark {
   active: boolean;
@@ -83,8 +79,6 @@ export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true
     if (!ctx) return;
 
     ctx.imageSmoothingEnabled = false;
-
-    // Load modular spritesheets
     let loaded = false;
     const humanImg = new Image();
     const aiImg = new Image();
@@ -103,8 +97,6 @@ export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true
     humanImg.onload = checkImages;
     aiImg.onload = checkImages;
     impactImg.onload = checkImages;
-
-    // Safe catch so image error won't crash
     humanImg.onerror = () => {};
     aiImg.onerror = () => {};
     impactImg.onerror = () => {};
@@ -116,8 +108,6 @@ export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true
 
     const reduceMotion = typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    // IntersectionObserver to pause rendering when offscreen
     const observer = new IntersectionObserver((entries) => {
       const entry = entries[0];
       isVisibleRef.current = entry ? entry.isIntersecting : true;
@@ -126,8 +116,6 @@ export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true
     if (containerRef.current) {
       observer.observe(containerRef.current);
     }
-
-    // Tab visibility handling
     const handleVisibilityChange = () => {
       isVisibleRef.current = !document.hidden;
     };
@@ -137,8 +125,6 @@ export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true
       if (!reduceMotion) {
         frameId = requestAnimationFrame(render);
       }
-
-      // If hidden or offscreen, skip draw work to save battery/perf
       if (!isVisibleRef.current) return;
 
       const dt = Math.min(time - prevTime || 16, 50);
@@ -146,9 +132,6 @@ export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true
 
       const scores = scoreRef.current;
       const targetImpactX = calculateImpactPosition(scores.humanWins, scores.aiWins);
-
-      // Smooth 600ms transition: exponential ease-out
-      // factor: 1 - exp(-dt / 150) reaches ~98% in 600ms without bounce
       currentImpactX += (targetImpactX - currentImpactX) * (1 - Math.exp(-dt / 150));
 
       const total = scores.humanWins + scores.aiWins;
@@ -164,8 +147,6 @@ export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true
       ctx.imageSmoothingEnabled = false;
 
       const roundedImpactX = Math.round(currentImpactX);
-
-      // 1. DRAW HUMAN BEAM with clipping [10 .. roundedImpactX]
       if (humanImg.complete && humanImg.naturalWidth > 0) {
         ctx.save();
         ctx.beginPath();
@@ -184,8 +165,6 @@ export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true
         );
         ctx.restore();
       }
-
-      // 2. DRAW AI BEAM with clipping [roundedImpactX .. 310]
       if (aiImg.complete && aiImg.naturalWidth > 0) {
         ctx.save();
         ctx.beginPath();
@@ -204,19 +183,14 @@ export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true
         );
         ctx.restore();
       }
-
-      // 3. DRAW SPARKS (procedural pixel sparks, drawn behind impact)
       if (!reduceMotion) {
         sparkSpawnTimer += dt;
-        if (sparkSpawnTimer >= 40) { // check every ~40ms
+        if (sparkSpawnTimer >= 40) {
           sparkSpawnTimer = 0;
           const humanSparkRate = 4 + 16 * humanRatio;
           const aiSparkRate = 4 + 16 * aiRatio;
-
-          // Try spawning 1-2 sparks per tick
           for (let s = 0; s < 2; s++) {
             const isHuman = Math.random() * (humanSparkRate + aiSparkRate) < humanSparkRate;
-            // Find inactive spark in pool
             for (let i = 0; i < MAX_SPARKS; i++) {
               const sp = sparkPool[i];
               if (!sp.active) {
@@ -229,13 +203,11 @@ export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true
 
                 const speed = 0.8 + Math.random() * 1.5;
                 if (isHuman) {
-                  // Human orange sparks travel left, upper-left, lower-left
                   sp.vx = -speed * (0.6 + Math.random() * 0.8);
                   sp.vy = (Math.random() - 0.5) * speed * 1.2;
                   const cIdx = Math.floor(Math.random() * HUMAN_SPARK_COLORS.length);
                   sp.color = Math.random() < 0.15 ? WHITE_COLOR : HUMAN_SPARK_COLORS[cIdx];
                 } else {
-                  // AI cyan sparks travel right, upper-right, lower-right
                   sp.vx = speed * (0.6 + Math.random() * 0.8);
                   sp.vy = (Math.random() - 0.5) * speed * 1.2;
                   const cIdx = Math.floor(Math.random() * AI_SPARK_COLORS.length);
@@ -250,8 +222,6 @@ export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true
             }
           }
         }
-
-        // Update and draw active sparks
         for (let i = 0; i < MAX_SPARKS; i++) {
           const sp = sparkPool[i];
           if (!sp.active) continue;
@@ -266,8 +236,6 @@ export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true
           ctx.fillRect(Math.round(sp.x), Math.round(sp.y), sp.w, sp.h);
         }
       }
-
-      // 4. DRAW IMPACT SPRITE (always on top)
       if (impactImg.complete && impactImg.naturalWidth > 0) {
         ctx.drawImage(
           impactImg,
@@ -282,8 +250,6 @@ export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true
         );
       }
     };
-
-    // Kick off loop
     frameId = requestAnimationFrame(render);
 
     return () => {
@@ -293,30 +259,19 @@ export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true
     };
   }, []);
 
-  const total = humanWins + aiWins;
-  const humanPercent = total > 0 ? Math.round((humanWins / total) * 100) : 50;
-  const aiPercent = 100 - humanPercent;
-
   return (
-    <div ref={containerRef} className={`relative mx-auto flex flex-col items-center select-none ${className}`}>
-      {/* 2D Pixel-art canvas rendered at native 320x96 and scaled via CSS integer scaling */}
-      <div className="relative overflow-hidden w-[320px] h-[96px] sm:w-[480px] sm:h-[144px] md:w-[640px] md:h-[192px]">
+    <div ref={containerRef} className={`relative mx-auto select-none ${className}`} style={{ containerType: 'inline-size' }}>
+      <div className="relative aspect-[10/3] w-full overflow-hidden">
         <canvas
           ref={canvasRef}
           width={WIDTH}
           height={HEIGHT}
-          className="w-full h-full pixelated block"
-          style={{ imageRendering: 'pixelated' }}
+          className="pixelated block h-full w-full"
         />
-        {/* Optional HUD beam overlay labels inside the beam container */}
         {showLabels && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-6 font-px text-[10px] tracking-widest sm:text-xs">
-            <span className="text-[#ff9d1b] drop-shadow-[0_2px_0_#070c26]">
-              HUMANS {humanPercent}%
-            </span>
-            <span className="text-[#35e0ff] drop-shadow-[0_2px_0_#070c26]">
-              {aiPercent}% AI
-            </span>
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-between font-px text-[3.2cqw] text-white px-text-outline">
+            <span className="ml-[16%]">HUMANS</span>
+            <span className="mr-[12%]">AI</span>
           </div>
         )}
       </div>
