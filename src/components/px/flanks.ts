@@ -92,8 +92,8 @@ export const FLANKS = {
     aspect: 460 / 944,
     plate: `${P}hw-right.webp`,
     actors: [
-      { name: 'mascot-boy-shrug', x: 8, y: 25, h: 36, motion: 'slump', speed: '4.2s' },
-      { name: 'mascot-girl-idk', x: 54, y: 23, h: 27, motion: 'slump', speed: '5.1s' },
+      { name: 'mascot-boy-cheer', x: 6, y: 25, h: 38, motion: 'cheer', speed: '1.3s' },
+      { name: 'mascot-girl-cheer', x: 52, y: 23, h: 28, motion: 'cheer', speed: '1.4s', hop: '1.8s' },
     ],
   },
   'aw-left': {
