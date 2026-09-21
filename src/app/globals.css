@@ -115,7 +115,7 @@
 @layer components {
 .px-scene {
   position: relative;
-  min-height: 100dvh;
+  height: 100dvh;
   overflow: hidden;
   background-color: var(--color-navy);
   background-image:
@@ -131,6 +131,53 @@
       radial-gradient(70% 60% at 50% 0%, rgba(30, 78, 168, 0.35), transparent 70%),
       url("/backgrounds/circuit-16x9.png");
     background-size: auto, 1400px auto;
+  }
+}
+
+.px-scene__body {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.px-scene__body::-webkit-scrollbar {
+  display: none;
+}
+
+.px-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.px-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.px-water {
+  position: absolute;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background-image: repeating-linear-gradient(
+    172deg,
+    transparent 0 14px,
+    rgba(180, 235, 255, 0.22) 14px 17px,
+    transparent 17px 30px
+  );
+  mask-image: radial-gradient(ellipse at 40% 60%, #000 0%, transparent 62%);
+  animation: px-water 9s linear infinite;
+}
+
+@keyframes px-water {
+  to {
+    background-position: 0 -120px;
   }
 }
 
@@ -405,20 +452,33 @@
 .px-anim.px-actor {
   position: absolute;
   transform-origin: 50% 100%;
+  filter: drop-shadow(0 2px 0 rgba(2, 10, 30, 0.35));
+}
+
+.px-anim.px-actor::before {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: -2.5%;
+  height: 7%;
+  border-radius: 50%;
+  background: rgba(3, 14, 6, 0.42);
+  z-index: -1;
 }
 
 .px-actor--cheer {
-  animation: px-actor-cheer var(--hop, 0.9s) steps(2) infinite;
+  animation: px-actor-cheer var(--hop, 1.4s) steps(2) infinite;
 }
 
 @keyframes px-actor-cheer {
   50% {
-    transform: translateY(-3%);
+    transform: translateY(-1.5%);
   }
 }
 
 .px-actor--bob {
-  animation: px-bob 1.6s steps(2) infinite;
+  animation: px-bob 2.4s steps(2) infinite;
 }
 
 .px-actor--sway {

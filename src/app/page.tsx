@@ -58,7 +58,7 @@ export default async function LandingPage() {
   const rows = board.rows.length > 0 ? board.rows : FALLBACK_ROWS;
 
   return (
-    <main className="relative flex min-h-dvh flex-col overflow-hidden bg-[#01174d]">
+    <main className="relative flex h-dvh flex-col overflow-hidden bg-[#01174d]">
       <div
         className="pixelated absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: "url('/backgrounds/homepage-clean.png')" }}
@@ -81,7 +81,7 @@ export default async function LandingPage() {
         </nav>
       </header>
 
-      <div className="relative z-20 mx-auto flex w-full max-w-[1100px] flex-1 flex-col items-center px-4 pb-6 pt-2 sm:px-8 lg:pt-0">
+      <div className="px-scroll relative z-20 mx-auto flex w-full max-w-[1100px] flex-1 flex-col items-center px-4 pb-6 pt-2 sm:px-8 lg:pt-0">
         <Wordmark
           name="humans-vs-ai"
           priority
@@ -105,7 +105,7 @@ export default async function LandingPage() {
         <ClashBeam
           humanWins={humanWins}
           aiWins={aiWins}
-          className="mt-2 w-full max-w-[420px] sm:max-w-[640px] lg:mt-4 lg:max-w-[900px]"
+          className="mt-2 w-full max-w-[420px] sm:max-w-[640px] lg:mt-3 lg:max-w-[780px]"
         />
 
         <TopChallengers

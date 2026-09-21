@@ -58,7 +58,7 @@ export default async function LeaderboardPage() {
 
   return (
     <Scene left="lb-left" right="lb-right" leftWidth="30vw" rightWidth="30vw">
-      <div className="mx-auto flex w-full max-w-[560px] flex-1 flex-col px-4 pb-8 pt-5 sm:px-6 lg:max-w-[640px]">
+      <div className="mx-auto flex min-h-0 w-full max-w-[560px] flex-1 flex-col px-4 pb-5 pt-5 sm:px-6 lg:max-w-[640px]">
         <header className="flex items-center justify-between gap-3">
           <div className="flex-1">
             <Wordmark name="humans-vs-ai" as="div" className="w-[86%] max-w-[300px]" />
@@ -74,7 +74,7 @@ export default async function LeaderboardPage() {
           </div>
         </header>
 
-        <PxPanel tone="cyan" className="mt-5 px-3 py-4 sm:px-4">
+        <PxPanel tone="cyan" className="mt-5 flex min-h-0 flex-1 flex-col px-3 py-4 sm:px-4">
           <div className="grid grid-cols-[3rem_1fr_4.5rem] items-center px-2 font-px text-[7px] text-[#7ffafe] sm:text-[8px]">
             <span>RANK</span>
             <span className="pl-11">PLAYER</span>
@@ -84,7 +84,7 @@ export default async function LeaderboardPage() {
           {rows.length === 0 ? (
             <p className="px-2 py-10 text-center text-[16px] text-[#dff6ff]">No scores yet. Be the first challenger!</p>
           ) : (
-            <ol className="mt-3 space-y-2">
+            <ol className="px-scroll mt-3 flex-1 space-y-2">
               {rows.map((row) => {
                 const podium = PODIUM[row.rank as 1 | 2 | 3];
                 const inner = (
@@ -126,7 +126,7 @@ export default async function LeaderboardPage() {
           <p className="mt-3 text-center font-px text-[7px] text-[#9fb3e6]">SAMPLE DATA · LIVE SCORES APPEAR DURING THE EVENT</p>
         )}
 
-        <div className="mt-5 flex flex-col gap-3">
+        <div className="mt-4 flex flex-col gap-3">
           <PxLink href="/play" className="min-h-[64px] w-full text-[14px]">
             PLAY THE CHALLENGE →
           </PxLink>
@@ -135,7 +135,7 @@ export default async function LeaderboardPage() {
           </PxLink>
         </div>
 
-        <p className="px-footer-note mt-6 text-center">HUMAN CREATIVITY ∞ AI POSSIBILITIES</p>
+        <p className="px-footer-note mt-4 text-center">HUMAN CREATIVITY ∞ AI POSSIBILITIES</p>
       </div>
     </Scene>
   );

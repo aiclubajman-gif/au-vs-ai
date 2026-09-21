@@ -279,7 +279,11 @@ export function Flank({ name, side, cap = '30vw' }: { name: FlankName; side: 'le
   return (
     <div className={`px-flank px-flank--${side}`} style={{ width: `min(${width}, ${cap})` }} aria-hidden="true">
       <div className="px-flank__art" style={{ width, backgroundImage: `url(${art})` }}>
-        {spec.plate && spec.actors?.map((a, i) => <ActorSprite key={i} actor={a} />)}
+        {spec.plate &&
+          spec.actors
+            ?.map((a, i) => ({ a, i }))
+            .sort((p, q) => q.a.y - p.a.y)
+            .map(({ a, i }) => <ActorSprite key={i} actor={a} />)}
       </div>
     </div>
   );
@@ -318,6 +322,7 @@ export function Backdrop({ leaves }: { leaves?: boolean }) {
       {leaves && (
         <>
           <div className="px-leaves absolute inset-0 w-[46%]" />
+          <div className="px-water" style={{ left: 0, top: '68%', width: '26%', height: '32%' }} />
           <span className="px-twinkle" style={{ left: '7%', top: '78%' }} />
           <span className="px-twinkle" style={{ left: '13%', top: '88%', ['--delay' as string]: '-0.9s' }} />
           <span className="px-twinkle" style={{ left: '4%', top: '92%', ['--delay' as string]: '-1.5s' }} />
@@ -347,7 +352,7 @@ export function Scene({
       {left && <Flank name={left} side="left" cap={leftWidth} />}
       {right && <Flank name={right} side="right" cap={rightWidth} />}
       <Backdrop />
-      <div className="relative z-10 flex flex-1 flex-col">{children}</div>
+      <div className="px-scene__body">{children}</div>
     </main>
   );
 }
