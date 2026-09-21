@@ -120,7 +120,35 @@ export function AiFighter() {
         <img className={`${styles.neon} ${styles.bloom}`} src="/arena-tv/ai-glow.webp" alt="" draggable={false} />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className={styles.neon} src="/arena-tv/ai-glow.webp" alt="" draggable={false} />
+        <Veins />
       </div>
+    </div>
+  );
+}
+
+/**
+ * Current running through the AI's channels.
+ *
+ * Three travelling fronts, each cut to the emissive layer so only the orange
+ * channels can take any of it — the artwork underneath is never touched, never
+ * recoloured and never flashed as a whole. Each front crosses the figure at
+ * its own angle, on its own clock, so at any moment some channels are being
+ * lit, some are still carrying the last front and none of them are dark: the
+ * base glow is always underneath. Where two fronts cross, that stretch reads
+ * as fully charged.
+ *
+ * Three rather than one because a single band is a wipe, and a wipe reads as a
+ * light passing OVER the robot rather than current moving THROUGH it. The
+ * periods share no useful factor, so the pattern does not repeat for the
+ * length of a booth day. Everything else — the angles, the bands and the
+ * clocks — is in Characters.module.css.
+ */
+function Veins() {
+  return (
+    <div className={styles.veins}>
+      <i />
+      <i />
+      <i />
     </div>
   );
 }

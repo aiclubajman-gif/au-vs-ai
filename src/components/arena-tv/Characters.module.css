@@ -200,6 +200,132 @@
   filter: blur(9px) saturate(1.3);
 }
 
+/* ---- Current running through the AI's channels ---------------------------
+
+   The whole effect is cut to ai-glow.webp — the emissive layer the asset build
+   derives, holding the armour's lit seams and nothing else. It is the MASK
+   here, not the picture: each layer is a sheet of travelling light with the
+   glow image cut out of it, so light can only ever land where a channel
+   already exists. That is what keeps this from being a flash: the artwork
+   underneath is untouched, no global opacity moves, and a channel's own colour
+   is never replaced -- it only gets hotter as a front passes through it.
+
+   The mask is fixed and the light moves inside it. That is deliberate: a mask
+   that moves every frame repaints the whole figure every frame, while a fixed
+   one is rasterised once and the front inside it rides the compositor on a
+   transform. On a screen that runs for hours those are not the same thing.
+
+   Each front is one <i>, picked out below by position -- three of them, in
+   this order. */
+
+.veins {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* How much current is running. The lead moves this, and only this: the
+     fronts themselves never stop, speed up or start again (see below). */
+  --charge: 0.62;
+}
+
+.veins i {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  opacity: var(--charge);
+  transition: opacity var(--t-lighting, 2.4s) ease-in-out;
+  /* Only the lit seams, exactly where the art has them. */
+  -webkit-mask-image: url('/arena-tv/ai-glow.webp');
+  mask-image: url('/arena-tv/ai-glow.webp');
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  /* Added as light, like the neon it is brightening. */
+  mix-blend-mode: plus-lighter;
+}
+
+/*
+ * The front itself: a few soft bands repeating every 300px, rotated to cross
+ * the figure at an angle and slid along their own axis by exactly one period,
+ * so the loop has no seam to see. Oversized because a rotated rectangle has
+ * to stay over the figure at every angle.
+ */
+.veins i::before {
+  content: '';
+  position: absolute;
+  inset: -75%;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0 114px,
+    rgb(255 168 78 / 0.34) 134px,
+    rgb(255 250 236 / 0.98) 150px,
+    rgb(255 168 78 / 0.34) 166px,
+    transparent 186px 300px
+  );
+  animation: vein-flow 7.3s linear infinite;
+}
+
+/* Up through the body, the quickest and the one that reads as the pulse. */
+.veins i:nth-child(1)::before {
+  --vein-tilt: 14deg;
+  animation-duration: 7.3s;
+}
+
+/* Across it the other way and slower, so the two cross rather than stack. */
+.veins i:nth-child(2)::before {
+  --vein-tilt: -68deg;
+  animation-duration: 9.7s;
+  animation-delay: -3.1s;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0 126px,
+    rgb(255 146 56 / 0.3) 146px,
+    rgb(255 240 210 / 0.86) 162px,
+    rgb(255 146 56 / 0.3) 178px,
+    transparent 198px 300px
+  );
+}
+
+/* A slow, wide swell: the one that decides how charged the whole figure
+   looks, and the reason the channels settle rather than strobe. */
+.veins i:nth-child(3)::before {
+  --vein-tilt: 38deg;
+  animation-duration: 13.1s;
+  animation-delay: -5.7s;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0 60px,
+    rgb(255 132 40 / 0.26) 118px,
+    rgb(255 214 148 / 0.6) 150px,
+    rgb(255 132 40 / 0.26) 182px,
+    transparent 240px 300px
+  );
+}
+
+/* One period of the gradient, along the band's own axis: transform only, so
+   the front moves on the compositor and the masked figure is never repainted
+   for it. */
+@keyframes vein-flow {
+  from {
+    transform: rotate(var(--vein-tilt, 0deg)) translateY(0);
+  }
+  to {
+    transform: rotate(var(--vein-tilt, 0deg)) translateY(-300px);
+  }
+}
+
+/* How much current is running, by who is winning. This moves the intensity
+   and nothing else -- the fronts keep their own clocks straight through a
+   lead change, so the machine never looks like it rebooted because a score
+   moved. */
+[data-lead='ai'] .veins {
+  --charge: 1;
+}
+
+[data-lead='human'] .veins {
+  --charge: 0.4;
+}
+
 /* The light each side casts on the haze behind it; stronger for the leader. */
 .aura {
   position: absolute;
