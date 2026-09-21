@@ -219,7 +219,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
           surgeSide = Math.random() < 0.5 ? 1 : -1;
           surgeAmount = 18 + Math.random() * 30;
         } else if (surgePhase === 'push') {
-          const t = Math.min(1, surgeTimer / 450);
+          const t = Math.min(1, surgeTimer / 320);
           surgeOffset = surgeSide * surgeAmount * (1 - Math.pow(1 - t, 3));
           if (t >= 1) {
             surgePhase = 'hold';
@@ -227,14 +227,13 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
           }
         } else if (surgePhase === 'hold') {
           surgeOffset = surgeSide * surgeAmount + Math.sin(surgeTimer / 40) * 1.5;
-          if (surgeTimer >= 600) {
+          if (surgeTimer >= 350) {
             surgePhase = 'release';
             surgeTimer = 0;
           }
         } else if (surgePhase === 'release') {
-          const t = Math.min(1, surgeTimer / 650);
-          const spring = 1 - Math.exp(-6 * t) * Math.cos(9 * t);
-          surgeOffset = surgeSide * surgeAmount * (1 - spring);
+          const t = Math.min(1, surgeTimer / 280);
+          surgeOffset = surgeSide * surgeAmount * Math.pow(1 - t, 2);
           if (t >= 1) {
             surgePhase = 'idle';
             surgeOffset = 0;
@@ -245,7 +244,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
       }
 
       const targetImpactX = clamp(baseImpactX + surgeOffset, 40, 280);
-      currentImpactX += (targetImpactX - currentImpactX) * (1 - Math.exp(-dt / 120));
+      currentImpactX += (targetImpactX - currentImpactX) * (1 - Math.exp(-dt / 60));
       const surgeNow = surgePhase === 'idle' ? 0 : surgeSide;
       if (surgeNow !== surgeRef.current) {
         surgeRef.current = surgeNow;
