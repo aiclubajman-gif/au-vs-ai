@@ -1250,11 +1250,11 @@ input.px-slider::-moz-range-thumb {
 }
 
 .px-fighter--bird {
-  left: -8%;
+  left: -3%;
 }
 
 .px-fighter--cell {
-  right: -8%;
+  right: -3%;
 }
 
 .px-fighter--in {
@@ -1335,13 +1335,6 @@ input.px-slider::-moz-range-thumb {
   }
 }
 
-.px-fighter__ghost {
-  position: absolute;
-  inset: 0;
-  background: inherit;
-  opacity: 0;
-}
-
 .px-fighter__pose {
   position: absolute;
   bottom: 0;
@@ -1366,7 +1359,7 @@ input.px-slider::-moz-range-thumb {
 }
 
 .px-fighter--push .px-fighter__pose--push {
-  animation: px-fighter-push 0.9s steps(2) infinite;
+  animation: px-fighter-push 0.7s steps(2) infinite;
 }
 
 .px-fighter--strain .px-fighter__pose--strain {
@@ -1379,7 +1372,17 @@ input.px-slider::-moz-range-thumb {
 
 @keyframes px-fighter-push {
   50% {
-    transform: translateY(-2%);
+    transform: translate(1.5%, -2.5%);
+  }
+}
+
+.px-fighter--cell.px-fighter--push .px-fighter__pose--push {
+  animation-name: px-fighter-push-r;
+}
+
+@keyframes px-fighter-push-r {
+  50% {
+    transform: translate(-1.5%, -2.5%);
   }
 }
 
@@ -1413,11 +1416,11 @@ input.px-slider::-moz-range-thumb {
   }
 
   .px-fighter--bird {
-    left: -9%;
+    left: -5%;
   }
 
   .px-fighter--cell {
-    right: -9%;
+    right: -5%;
   }
 }
 

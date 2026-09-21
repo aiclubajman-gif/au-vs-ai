@@ -12,6 +12,25 @@ const IMPACT_FRAME = { width: 72, height: 72, centerX: 36, centerY: 36 };
 // Base anchors on the 320px canvas (matching original pixel art: Human base at x=25, AI base at x=295)
 const HUMAN_SPRITE_BASE_X = 17; // 25 - 8
 const AI_SPRITE_BASE_X = 103;   // 295 - 192
+
+const HUMAN_CORE = ['#B83A00', '#FF8C00', '#FFC928', '#FFF0A0'];
+const AI_CORE = ['#004A9F', '#0079E8', '#62ECFF', '#DFFFFF'];
+
+function drawCore(ctx: CanvasRenderingContext2D, x0: number, x1: number, palette: string[], t: number) {
+  const w = x1 - x0;
+  if (w <= 0) return;
+  const wobble = Math.round(Math.sin(t / 90) * 1);
+  const bands = [
+    [14 + wobble, palette[0]],
+    [10, palette[1]],
+    [6, palette[2]],
+    [2, palette[3]],
+  ] as const;
+  for (const [half, color] of bands) {
+    ctx.fillStyle = color;
+    ctx.fillRect(x0, CENTER_Y - half, w, half * 2);
+  }
+}
 const HUMAN_SPARK_COLORS = ['#B83A00', '#F05A00', '#FF8C00', '#FFC928', '#FFF0A0'];
 const AI_SPARK_COLORS = ['#004A9F', '#0079E8', '#00C4FF', '#62ECFF', '#DFFFFF'];
 const WHITE_COLOR = '#FFFFFF';
@@ -156,7 +175,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
     let surgeSide = 1;
     let surgeAmount = 0;
     let surgeTimer = 0;
-    let surgeWait = 2200 + Math.random() * 2500;
+    let surgeWait = 9000 + Math.random() * 9000;
 
     const reduceMotion = typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -193,7 +212,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
           surgeSide = Math.random() < 0.5 ? 1 : -1;
           surgeAmount = 18 + Math.random() * 30;
         } else if (surgePhase === 'push') {
-          const t = Math.min(1, surgeTimer / 380);
+          const t = Math.min(1, surgeTimer / 450);
           surgeOffset = surgeSide * surgeAmount * (1 - Math.pow(1 - t, 3));
           if (t >= 1) {
             surgePhase = 'hold';
@@ -201,7 +220,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
           }
         } else if (surgePhase === 'hold') {
           surgeOffset = surgeSide * surgeAmount + Math.sin(surgeTimer / 40) * 1.5;
-          if (surgeTimer >= 500 + Math.random() * 400) {
+          if (surgeTimer >= 600) {
             surgePhase = 'release';
             surgeTimer = 0;
           }
@@ -213,7 +232,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
             surgePhase = 'idle';
             surgeOffset = 0;
             surgeTimer = 0;
-            surgeWait = 2200 + Math.random() * 3200;
+            surgeWait = 12000 + Math.random() * 13000;
           }
         }
       }
@@ -246,6 +265,8 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
         ctx.beginPath();
         ctx.rect(0, 0, Math.max(0, roundedImpactX), HEIGHT);
         ctx.clip();
+
+        drawCore(ctx, 0, HUMAN_SPRITE_BASE_X + 26, HUMAN_CORE, elapsed);
 
         // Always draw the base anchored at the left origin so natural flame base shows
         ctx.drawImage(
@@ -284,6 +305,8 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
         ctx.beginPath();
         ctx.rect(roundedImpactX, 0, Math.max(0, WIDTH - roundedImpactX), HEIGHT);
         ctx.clip();
+
+        drawCore(ctx, AI_SPRITE_BASE_X + AI_FRAME.width - 26, WIDTH, AI_CORE, elapsed);
 
         // Always draw the base anchored at the right origin so natural flame base shows
         ctx.drawImage(
@@ -423,16 +446,32 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
 
 function Fighter({ who, surge }: { who: 'bird' | 'cell'; surge: number }) {
   const [arrived, setArrived] = useState(false);
+  const [beat, setBeat] = useState(0);
   useEffect(() => {
     const t = setTimeout(() => setArrived(true), who === 'bird' ? 500 : 900);
     return () => clearTimeout(t);
   }, [who]);
+  useEffect(() => {
+    if (!arrived) return;
+    let alive = true;
+    let handle = 0;
+    const tick = () => {
+      if (!alive) return;
+      setBeat((b) => b + 1);
+      handle = window.setTimeout(tick, 1400 + Math.random() * 1600);
+    };
+    handle = window.setTimeout(tick, who === 'bird' ? 900 : 1600);
+    return () => {
+      alive = false;
+      clearTimeout(handle);
+    };
+  }, [arrived, who]);
   const mine = who === 'bird' ? 1 : -1;
-  const pose = !arrived ? 'charge' : surge === mine ? 'strain' : surge === -mine ? 'charge' : 'push';
+  const idle = beat % 3 === 2 ? 'strain' : 'push';
+  const pose = !arrived ? 'charge' : surge === mine ? 'strain' : surge === -mine ? 'charge' : idle;
   return (
     <div className={`px-fighter px-fighter--${who} ${arrived ? 'px-fighter--in' : ''} px-fighter--${pose}`} aria-hidden="true">
       <span className="px-fighter__flash" />
-      <span className="px-fighter__ghost" />
       <img src={`/sprites/beam/${who}-charge.png`} alt="" draggable={false} className="pixelated px-fighter__pose px-fighter__pose--charge" />
       <img src={`/sprites/beam/${who}-push.png`} alt="" draggable={false} className="pixelated px-fighter__pose px-fighter__pose--push" />
       <img src={`/sprites/beam/${who}-strain.png`} alt="" draggable={false} className="pixelated px-fighter__pose px-fighter__pose--strain" />
