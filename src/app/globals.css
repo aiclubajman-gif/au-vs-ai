@@ -53,33 +53,34 @@
   );
 }
 
-html {
-  -webkit-text-size-adjust: 100%;
-  background: var(--color-navy);
-}
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    background: var(--color-navy);
+  }
 
-body {
-  font-family: var(--font-body);
-  background: var(--color-navy);
-  color: var(--color-paper);
-  overscroll-behavior-y: none;
-  -webkit-font-smoothing: antialiased;
-}
+  body {
+    font-family: var(--font-body);
+    background: var(--color-navy);
+    color: var(--color-paper);
+    overscroll-behavior-y: none;
+    -webkit-font-smoothing: antialiased;
+  }
 
-* {
-  -webkit-tap-highlight-color: transparent;
-}
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
 
-:focus-visible {
-  outline: 3px solid var(--color-cyan-light);
-  outline-offset: 3px;
-}
+  :focus-visible {
+    outline: 3px solid var(--color-cyan-light);
+    outline-offset: 3px;
+  }
 
-input,
-select,
-textarea,
-button {
-  font-size: 16px;
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 .font-px {
@@ -775,5 +776,20 @@ input.px-slider::-moz-range-thumb {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+.px-scanline {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 6px;
+  background: #7ffafe;
+  box-shadow: 0 0 18px 4px rgba(127, 250, 254, 0.8);
+  animation: px-scan 1.2s steps(24) infinite alternate;
+}
+
+@keyframes px-scan {
+  to {
+    top: calc(100% - 6px);
   }
 }

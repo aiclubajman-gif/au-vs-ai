@@ -87,7 +87,7 @@ export function OtpInput({
   }
 
   return (
-    <div className="mt-8 flex justify-between gap-2" role="group" aria-label="Verification code">
+    <div className="px-otp" role="group" aria-label="Verification code">
       {digits.map((digit, i) => (
         <input
           key={i}
@@ -106,7 +106,7 @@ export function OtpInput({
           autoComplete={i === 0 ? 'one-time-code' : 'off'}
           maxLength={1}
           aria-label={`Digit ${i + 1}`}
-          className="tabular h-16 w-full rounded-xl border border-[var(--color-edge)] bg-[var(--color-navy)] text-center text-2xl font-bold text-[var(--color-ink)] transition-colors focus:border-[var(--color-cyan)] disabled:opacity-40"
+          className="tabular disabled:opacity-40"
         />
       ))}
     </div>

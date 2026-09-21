@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { RetryNotice } from '@/components/ui';
-import { submitWithRetry, isRetryable, describeSaveFailure, type SubmitFailure } from '@/lib/client/submit';
+import { PxButton, PxPanel, PxStar, PxTimer, RetryNotice, Scene, Sprite, Wordmark } from '@/components/px';
+import { submitWithRetry, isRetryable, describeSaveFailure, localSave, type SubmitFailure } from '@/lib/client/submit';
 import { resolveClassifier, type Prediction } from '@/lib/ml/classifier';
 import type { Round2Assignment } from '@/types';
 
@@ -70,8 +70,6 @@ export function Round2({
       unmounted.current = true;
     };
   }, []);
-
-  // Redraw strokes onto canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -94,8 +92,6 @@ export function Round2({
       ctx.stroke();
     }
   }, [strokes]);
-
-  // Convert drawn strokes to 28x28 normalized grayscale float array for ML
   const toBitmap28 = useCallback(() => {
     const out = new Float32Array(784);
     if (strokes.length === 0) return out;
@@ -164,10 +160,12 @@ export function Round2({
       setSaving(true);
       setFailure(null);
 
-      const result = await submitWithRetry('/api/round2/submit', body, {
-        isCancelled: () => unmounted.current,
-        onRetry: () => setReconnecting(true),
-      });
+      const result = await (attemptId.startsWith('local-')
+        ? localSave()
+        : submitWithRetry('/api/round2/submit', body, {
+            isCancelled: () => unmounted.current,
+            onRetry: () => setReconnecting(true),
+          }));
 
       inFlight.current = false;
       if (unmounted.current) return;
@@ -184,7 +182,7 @@ export function Round2({
         if (!unmounted.current) onComplete();
       }, wait);
     },
-    [onComplete]
+    [attemptId, onComplete]
   );
 
   const analyse = useCallback(async () => {
@@ -284,223 +282,177 @@ export function Round2({
     drawing.current = false;
   }
 
-  const seconds = Math.max(0, Math.ceil(remaining/1000));
+  const seconds = Math.max(0, Math.ceil(remaining / 1000));
   const progress = Math.max(0, Math.min(1, remaining / drawMs));
+  const drawingPhase = phase === 'drawing';
 
   return (
-    <main className="relative flex min-h-dvh flex-col overflow-hidden bg-[var(--color-px-bg)] text-[var(--color-ink)]">
-      {/* Background with circuit glow */}
-      <div
-        className="absolute inset-0 z-0 bg-cover bg-center opacity-30 pointer-events-none"
-        style={{ backgroundImage: "url('/backgrounds/circuit-9x16.png')" }}
-        aria-hidden="true"
-      />
-      <div className="arena-bg z-0 opacity-70" aria-hidden="true" />
-
-      <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-between px-4 py-5 sm:px-6">
-        {/* Top Header & Timer */}
-        <div>
-          <div className="flex items-center justify-between gap-3">
-            <span className="px-chip text-[9px]">ROUND 2 · DRAW VS AI</span>
-            {phase === 'drawing' && (
-              <span
-                className="tabular font-px text-xl text-[var(--color-px-yellow)]"
-                style={{ textShadow: '3px 3px 0 #070c26' }}
-              >
-                {seconds}s
-              </span>
-            )}
-          </div>
-
-          <div
-            className="px-timer mt-2.5"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round((phase === 'drawing' ? progress : 0) * 100)}
-          >
-            <div
-              className={`fill ${phase === 'drawing' && seconds <= 5 ? 'low' : ''}`}
-              style={{ width: `${phase === 'drawing' ? progress * 100 : 0}%` }}
-            />
-          </div>
-
-          <div className="mt-3 text-center">
-            <h1 className="px-title-yellow text-2xl leading-tight">
-              DRAW VS AI
-            </h1>
-            {/* Target Card */}
-            <div className="px-panel mx-auto mt-2.5 inline-flex items-center gap-2 px-5 py-2.5 bg-[#0d1440]/90">
-              <span className="font-px text-[9px] text-slate-400">DRAW A:</span>
-              <span
-                className="font-px text-base text-[var(--color-px-yellow)] tracking-wider"
-                style={{ textShadow: '2px 2px 0 #070c26' }}
-              >
-                {assignment.displayName.toUpperCase()}
-              </span>
-            </div>
-          </div>
+    <Scene left="/art/flanks/r2-left.webp" right="/art/flanks/r2-right.webp" leftWidth="26vw" rightWidth="24vw">
+      <div className="mx-auto flex w-full max-w-[560px] flex-1 flex-col px-4 pb-5 pt-4 sm:px-6 lg:max-w-[600px]">
+        <div className="flex items-center justify-center gap-3">
+          <TickMarks />
+          <Wordmark name="draw-vs-ai" priority className="w-[68%] max-w-[380px]" />
+          <TickMarks flip />
         </div>
 
-        {/* Center Drawing Canvas with Grid & Peeking Robot */}
-        <div className="relative my-auto w-full">
-          {/* Peeking robot sprite on right edge matching Proposed mock/mround2.png */}
-          <div className="absolute -right-5 -top-10 z-20 pointer-events-none select-none">
-            <img
-              src="/sprites/robot-peeking.png"
-              alt="AI watching"
-              className="pixelated h-20 w-auto drop-shadow-[0_0_12px_rgba(53,224,255,0.7)]"
-            />
+        <PxPanel tone="gold" className="mt-3 py-2.5">
+          <div className="flex items-center justify-center gap-4">
+            <PxStar className="h-4 w-4" color="#7ffafe" />
+            <h2 className="px-num-gold text-[24px] uppercase sm:text-[28px]">{assignment.displayName}</h2>
+            <PxStar className="h-4 w-4" color="#7ffafe" />
           </div>
+        </PxPanel>
 
-          <div className="px-frame mx-auto w-full">
-            <div className="px-gridpaper relative aspect-square w-full overflow-hidden">
+        <div className="mt-3 flex items-center gap-3">
+          <ClockIcon />
+          <span className="px-num-gold tabular w-[3.2em] text-[20px]" aria-live="off">
+            {seconds}s
+          </span>
+          <PxTimer progress={drawingPhase ? progress : 0} low={drawingPhase && seconds <= 5} className="flex-1" />
+        </div>
+
+        <div className="relative my-auto py-5 lg:py-4">
+          <div className="px-frame px-frame--gold mx-auto w-full max-w-[420px] lg:max-w-[440px]">
+            <div className="relative aspect-square w-full overflow-hidden px-gridpaper">
               <canvas
                 ref={canvasRef}
                 width={CANVAS_SIZE}
                 height={CANVAS_SIZE}
+                className="canvas-surface block h-full w-full cursor-crosshair"
                 onPointerDown={start}
                 onPointerMove={move}
                 onPointerUp={end}
                 onPointerCancel={end}
-                className="canvas-surface h-full w-full cursor-crosshair"
+                onPointerLeave={end}
+                role="img"
                 aria-label={`Drawing canvas. Draw a ${assignment.displayName}.`}
               />
 
-              {/* Scanning Phase matching Site Pages/09 round 2 scan and result 2.png */}
               {phase === 'analysing' && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#070c26]/90 px-4 text-center">
-                  <div className="relative w-full h-1 bg-[var(--color-px-cyan)] animate-pulse shadow-[0_0_12px_var(--color-px-cyan)] mb-4" />
-                  <div className="px-spinner" />
-                  <p className="mt-4 font-px text-xs text-[var(--color-px-cyan)] tracking-wider">
-                    SCANNING...
-                  </p>
-                  <p className="mt-2 text-xs text-slate-300">
-                    AI ANALYSING YOUR DRAWING...
-                  </p>
-                  <p className="mt-1 font-mono text-[9px] text-slate-400">
-                    ANALYSING SHAPES... PATTERNS... OBJECTS...
-                  </p>
+                <div className="absolute inset-0 overflow-hidden bg-[#010f38]/70">
+                  <div className="px-scanline" aria-hidden="true" />
+                  <div className="absolute inset-x-0 bottom-4 flex flex-col items-center">
+                    <p className="font-px text-[11px] text-[#7ffafe] px-text-outline">AI ANALYSING…</p>
+                    <p className="mt-2 font-px text-[7px] text-[#dff6ff]">SHAPES · PATTERNS · OBJECTS</p>
+                  </div>
                 </div>
               )}
 
-              {/* Revealed AI predictions matching mock */}
               {phase === 'revealed' && (
-                <div className="absolute inset-0 flex flex-col justify-center gap-2.5 bg-[#070c26]/95 px-5 py-4 overflow-y-auto">
-                  <p className="font-px text-[10px] text-[#ffd23e] tracking-wider text-center border-b border-[#2c4ba8]/60 pb-2">
-                    AI THINKS:
-                  </p>
-                  {predictions.slice(0, 4).map((p) => {
+                <div className="absolute inset-0 flex flex-col justify-center gap-2 overflow-y-auto bg-[#010f38]/95 px-4 py-4">
+                  <p className="text-center font-px text-[10px] text-[#ffe66a] px-text-outline">AI THINKS:</p>
+                  {predictions.slice(0, 5).map((p, i) => {
                     const isTarget = p.label.toLowerCase() === assignment.classKey.toLowerCase();
                     const pct = Math.round(p.confidence * 100);
                     return (
-                      <div key={p.label} className="w-full">
-                        <div className="flex justify-between items-center text-xs">
-                          <span
-                            className={`font-px text-[9px] ${
-                              isTarget ? 'text-[var(--color-win)]' : 'text-slate-300'
-                            }`}
-                          >
-                            {p.label.toUpperCase()} {isTarget && '✓'}
-                          </span>
-                          <span className="tabular font-px text-[10px] text-slate-100">
-                            {pct}%
-                          </span>
-                        </div>
-                        <div className="mt-1 h-3 border-2 border-[var(--color-px-ink)] bg-[#0b1236]">
+                      <div
+                        key={p.label}
+                        className={`px-rise flex items-center gap-2 px-2.5 py-1.5 ${isTarget ? 'bg-[#0b73bd]/50 shadow-[inset_0_0_0_2px_#7ffafe]' : 'bg-[#01285a] shadow-[inset_0_0_0_2px_#1e4ea8]'}`}
+                        style={{ clipPath: 'var(--px-corner)', animationDelay: `${i * 90}ms` }}
+                      >
+                        <span className={`w-[38%] truncate font-px text-[8px] ${isTarget ? 'text-[#7dff6a]' : 'text-[#dff6ff]'}`}>
+                          {p.label.toUpperCase()}
+                        </span>
+                        <div className="h-3 flex-1 bg-[#010f38] shadow-[inset_0_0_0_2px_#1e4ea8]">
                           <div
                             className="h-full transition-[width] duration-700"
-                            style={{
-                              width: `${pct}%`,
-                              background: isTarget
-                                ? 'linear-gradient(180deg,#b0ff9e,var(--color-win))'
-                                : 'linear-gradient(180deg,#8ff4ff,var(--color-px-cyan-deep))',
-                            }}
+                            style={{ width: `${pct}%`, background: isTarget ? 'linear-gradient(180deg,#b0ff9e,#7dff6a)' : 'linear-gradient(180deg,#8ae9ff,#02a6f9)' }}
                           />
                         </div>
+                        <span className="tabular w-[3em] text-right font-px text-[9px] text-[#ffe66a]">{pct}%</span>
                       </div>
                     );
                   })}
-                  {reconnecting && (
-                    <p className="text-center font-px text-[8px] text-slate-300 mt-2">
-                      Saving… reconnecting
-                    </p>
-                  )}
+                  {reconnecting && <p className="mt-1 text-center font-px text-[7px] text-[#c7d6ff]">SAVING… RECONNECTING</p>}
                 </div>
               )}
 
               {phase === 'analysisFailed' && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#070c26]/92 px-6 text-center">
-                  <p className="font-px text-[11px] text-[var(--color-px-red)]">
-                    The AI couldn&apos;t analyse your drawing.
-                  </p>
-                  <p className="mt-3 text-xs leading-relaxed text-slate-300">
-                    Your drawing is preserved. Try submitting again.
-                  </p>
-                  <button
-                    onClick={analyse}
-                    className="px-btn px-btn-gray mt-4 px-4 py-2.5 text-[9px]"
-                  >
-                    Try again
-                  </button>
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#010f38]/92 px-6 text-center">
+                  <p className="font-px text-[11px] text-[#ff8a96]">THE AI COULDN&apos;T ANALYSE YOUR DRAWING.</p>
+                  <p className="mt-3 text-[15px] text-[#dff6ff]">Your drawing is preserved. Try submitting again.</p>
+                  <PxButton variant="gray" onClick={analyse} className="mt-4 min-h-[44px] px-4 text-[9px]">
+                    TRY AGAIN
+                  </PxButton>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Bottom right cheering human boy matching Proposed mock/mround2.png */}
-          <div className="mt-2 flex justify-end px-2 pointer-events-none select-none">
-            <img
-              src="/sprites/boy-cheer.png"
-              alt="Cheering Human"
-              className="pixelated h-14 w-auto drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+          <Sprite
+            src="/sprites/robot-peek.png"
+            className="px-bob absolute -right-4 top-[14%] h-[120px] w-auto drop-shadow-[0_0_14px_rgba(0,187,252,0.6)] sm:h-[136px] lg:hidden"
+          />
+        </div>
+
+        {failure && (
+          <div className="mb-3">
+            <RetryNotice
+              message={describeSaveFailure(failure, 'drawing')}
+              refCode={failure.ref}
+              retryable={isRetryable(failure)}
+              busy={saving}
+              onRetry={() => {
+                if (submission.current) save(submission.current);
+              }}
             />
           </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-[1fr_1fr_1.6fr]">
+          <PxButton variant="gray" onClick={() => setStrokes((s) => s.slice(0, -1))} disabled={!drawingPhase || strokes.length === 0} className="min-h-[56px] text-[11px]">
+            <UndoIcon />
+            UNDO
+          </PxButton>
+          <PxButton variant="gray" onClick={() => setStrokes([])} disabled={!drawingPhase || strokes.length === 0} className="min-h-[56px] text-[11px]">
+            <TrashIcon />
+            CLEAR
+          </PxButton>
+          <PxButton onClick={submit} disabled={!drawingPhase || strokes.length === 0} className="col-span-2 min-h-[64px] text-[18px] lg:col-span-1">
+            SUBMIT
+          </PxButton>
         </div>
 
-        {/* Action Controls: Undo, Clear, SUBMIT */}
-        <div className="w-full">
-          {failure && (
-            <div className="mb-3">
-              <RetryNotice
-                message={describeSaveFailure(failure, 'drawing')}
-                refCode={failure.ref}
-                retryable={isRetryable(failure)}
-                busy={saving}
-                onRetry={() => {
-                  if (submission.current) save(submission.current);
-                }}
-              />
-            </div>
-          )}
-
-          {phase === 'drawing' && (
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setStrokes((s) => s.slice(0, -1))}
-                disabled={strokes.length === 0}
-                className="px-btn px-btn-gray min-h-[50px] py-2.5 text-[10px]"
-              >
-                ↩ UNDO
-              </button>
-              <button
-                onClick={() => setStrokes([])}
-                disabled={strokes.length === 0}
-                className="px-btn px-btn-gray min-h-[50px] py-2.5 text-[10px]"
-              >
-                ▱ CLEAR
-              </button>
-              <button
-                onClick={submit}
-                disabled={strokes.length === 0}
-                className="px-btn px-btn-yellow col-span-2 min-h-[60px] py-3.5 text-xs tracking-wider"
-              >
-                SUBMIT DRAWING →
-              </button>
-            </div>
-          )}
-        </div>
+        <Sprite
+          src="/sprites/boy-cheer.png"
+          className="px-cheer pointer-events-none absolute bottom-2 right-3 h-[84px] w-auto lg:hidden"
+        />
       </div>
-    </main>
+    </Scene>
+  );
+}
+
+function TickMarks({ flip }: { flip?: boolean }) {
+  return (
+    <svg viewBox="0 0 12 14" className={`h-7 w-6 shrink-0 ${flip ? '-scale-x-100' : ''}`} aria-hidden="true" shapeRendering="crispEdges">
+      <path fill="#ffe66a" d="M0 8h2v2H0zM2 6h2v2H2zM4 4h2v2H4zM4 11h2v2H4zM6 9h2v2H6zM8 7h2v2H8zM2 1h2v2H2zM4 0h2v1H4z" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 12 12" className="h-6 w-6 shrink-0" aria-hidden="true" shapeRendering="crispEdges">
+      <path fill="#ffe66a" d="M4 0h4v1h2v1h1v2h1v4h-1v2h-1v1h-2v1H4v-1H2v-1H1V8H0V4h1V2h1V1h2z" />
+      <path fill="#041030" d="M4 2h4v1h1v1h1v4H9v1H8v1H4V9H3V8H2V4h1V3h1z" />
+      <path fill="#ffe66a" d="M5 3h2v3h2v2H5z" />
+    </svg>
+  );
+}
+
+function UndoIcon() {
+  return (
+    <svg viewBox="0 0 12 10" className="h-5 w-6" aria-hidden="true" shapeRendering="crispEdges">
+      <path fill="currentColor" d="M4 0h1v1H4zM3 1h1v1H3zM2 2h1v1H2zM1 3h1v1H1zM2 4h1v1H2zM3 5h1v1H3zM4 6h1v1H4zM2 3h7v1H2zM9 4h1v1H9zM10 5h1v3h-1zM9 8h1v1H9zM4 8h5v1H4z" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 10 12" className="h-5 w-5" aria-hidden="true" shapeRendering="crispEdges">
+      <path fill="currentColor" d="M4 0h2v1H4zM1 1h8v2H1zM2 3h6v9H2zM3 5h1v5H3zM6 5h1v5H6z" />
+      <path fill="#dfe5f3" d="M3 5h1v5H3zM6 5h1v5H6z" />
+    </svg>
   );
 }

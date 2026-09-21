@@ -156,3 +156,7 @@ export async function submitWithRetry<T = unknown>(
 
   return last as SubmitFailure;
 }
+
+export function localSave(): Promise<SubmitResult<null>> {
+  return new Promise((resolve) => setTimeout(() => resolve({ ok: true, data: null }), 350));
+}

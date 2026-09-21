@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { RetryNotice } from '@/components/ui';
-import { submitWithRetry, isRetryable, describeSaveFailure, type SubmitFailure } from '@/lib/client/submit';
+import { PxButton, PxChip, PxPanel, PxTimer, RetryNotice, Scene, Sprite, Wordmark } from '@/components/px';
+import { submitWithRetry, isRetryable, describeSaveFailure, localSave, type SubmitFailure } from '@/lib/client/submit';
 import type { Round3Assignment } from '@/types';
 
 interface Round3AnswerBody {
@@ -54,10 +54,12 @@ export function Round3({
       setSaving(true);
       setFailure(null);
 
-      const result = await submitWithRetry('/api/round3/answer', body, {
-        isCancelled: () => unmounted.current,
-        onRetry: () => setReconnecting(true),
-      });
+      const result = await (attemptId.startsWith('local-')
+        ? localSave()
+        : submitWithRetry('/api/round3/answer', body, {
+            isCancelled: () => unmounted.current,
+            onRetry: () => setReconnecting(true),
+          }));
 
       inFlight.current = false;
       if (unmounted.current) return;
@@ -74,7 +76,7 @@ export function Round3({
         if (!unmounted.current) onComplete();
       }, wait);
     },
-    [onComplete]
+    [attemptId, onComplete]
   );
 
   const submit = useCallback(() => {
@@ -108,74 +110,52 @@ export function Round3({
   const pct = span > 0 ? ((guess - assignment.minValue) / span) * 100 : 0;
 
   return (
-    <main className="relative flex min-h-dvh flex-col overflow-hidden bg-[var(--color-px-bg)] text-[var(--color-ink)]">
-      {/* Background with circuit glow */}
-      <div
-        className="absolute inset-0 z-0 bg-cover bg-center opacity-30 pointer-events-none"
-        style={{ backgroundImage: "url('/backgrounds/circuit-9x16.png')" }}
-        aria-hidden="true"
-      />
-      <div className="arena-bg z-0 opacity-70" aria-hidden="true" />
-
-      <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-between px-4 py-5 sm:px-6">
-        {/* Header & Timer Bar */}
-        <div>
-          <div className="flex items-center justify-between gap-3">
-            <span className="px-chip text-[9px]">ROUND 3 · AI KNOWLEDGE</span>
-            <span
-              className="tabular font-px text-xl text-[var(--color-px-yellow)]"
-              style={{ textShadow: '3px 3px 0 #070c26' }}
-            >
-              {seconds}s
-            </span>
-          </div>
-
-          <div className="px-timer mt-2.5">
-            <div
-              className={`fill ${seconds <= 3 && !locked ? 'low' : ''}`}
-              style={{ width: `${progress * 100}%` }}
-            />
-          </div>
-
-          <h1 className="mt-4 text-center text-xl leading-tight sm:text-2xl">
-            <span className="px-title-cyan">AI</span>{' '}
-            <span className="px-title-yellow">KNOWLEDGE</span>
-          </h1>
+    <Scene left="/art/flanks/r3-left.webp" right="/art/flanks/r3-right.webp" leftWidth="18vw" rightWidth="18vw">
+      <div className="mx-auto flex w-full max-w-[560px] flex-1 flex-col px-4 pb-5 pt-4 sm:px-6 lg:max-w-[680px]">
+        <div className="flex lg:justify-center">
+          <PxChip className="text-[9px]">ROUND 3</PxChip>
         </div>
 
-        {/* Question Panel & Giant Numeric Display */}
-        <div className="my-auto flex flex-col justify-center w-full">
-          <div className="px-panel px-5 py-4 text-center text-xs sm:text-sm font-semibold leading-relaxed text-slate-100 bg-[#0d1440]/90">
-            {assignment.prompt}
+        <div className="mt-2 flex items-end gap-4 lg:flex-col lg:items-center lg:gap-2">
+          <Wordmark name="ai-knowledge" priority className="min-w-0 flex-1 lg:w-[62%] lg:flex-none" />
+          <div className="flex w-[34%] shrink-0 flex-col items-center gap-1 lg:w-[80%]">
+            <span className="px-num-gold tabular text-[16px] lg:text-[20px]" aria-live="off">
+              {seconds}s
+            </span>
+            <PxTimer progress={progress} low={seconds <= 3 && !locked} className="w-full" />
           </div>
+        </div>
 
-          <p
-            className="tabular mt-8 text-center font-px text-5xl sm:text-6xl text-[var(--color-px-cyan)] tracking-wider"
-            style={{
-              textShadow: '4px 4px 0 #070c26, 0 0 28px rgba(53,224,255,.45)',
-            }}
-          >
-            {guess}
-            {assignment.unit ?? ''}
+        <PxPanel tone="cyan" className="mt-4 px-4 py-4 lg:mt-5">
+          <p className="text-center font-px text-[11px] leading-loose text-[#f4f6ff] px-text-outline sm:text-[12px] lg:text-[14px]">
+            {assignment.prompt.toUpperCase()}
           </p>
+        </PxPanel>
 
-          {/* Characters on top of slider matching Proposed mock/mround3.png */}
-          <div className="mt-6 flex items-end justify-between px-3 select-none pointer-events-none">
-            <img
-              src="/sprites/boy-confused.png"
-              alt="Puzzled student"
-              className="pixelated h-16 w-auto drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
-            />
-            <img
-              src="/sprites/robot-smirking.png"
-              alt="Smug robot"
-              className="pixelated h-16 w-auto drop-shadow-[0_0_12px_rgba(53,224,255,0.6)]"
-            />
+        <div className="my-auto flex flex-col items-center py-4">
+          <output htmlFor="guess" className="px-num-cyan tabular text-[72px] sm:text-[88px] lg:text-[104px]" aria-live="polite">
+            {guess}
+            {assignment.unit}
+          </output>
+        </div>
+
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-x-0 -top-[84px] flex items-end justify-between px-1 lg:hidden">
+            <Sprite src="/sprites/boy-confused.png" className="px-bob h-[84px] w-auto" />
+            <Sprite src="/sprites/robot-smirking.png" className="px-bob px-bob--delay h-[84px] w-auto drop-shadow-[0_0_12px_rgba(0,187,252,0.5)]" />
           </div>
 
-          {/* Approved Custom Slider Component exactly as built in pixel-redesign */}
-          <div className="relative mt-2 w-full">
+          <div className="hidden justify-between px-1 font-px text-[12px] text-[#dff6ff] px-text-outline lg:flex">
+            <span>{assignment.minValue}</span>
+            <span>{assignment.maxValue}</span>
+          </div>
+          <div className="px-slider-wrap lg:mt-1">
+            <div className="px-slider-track">
+              <div className="px-slider-fill" style={{ width: `calc(${pct}% - 3px)` }} />
+            </div>
             <input
+              id="guess"
+              className="px-slider"
               type="range"
               min={assignment.minValue}
               max={assignment.maxValue}
@@ -183,28 +163,28 @@ export function Round3({
               value={guess}
               disabled={locked}
               onChange={(e) => setGuess(Number(e.target.value))}
-              aria-label="Your guess"
-              className="px-slider w-full"
-              style={{
-                backgroundImage: `repeating-linear-gradient(90deg,transparent 0 14px,rgba(7,12,38,.45) 14px 17px),linear-gradient(90deg,var(--color-px-cyan-deep) ${pct}%,var(--color-px-deep) ${pct}%)`,
-              }}
+              aria-label={assignment.prompt}
+              aria-valuetext={`${guess}${assignment.unit}`}
             />
-            <div className="mt-2 flex justify-between font-px text-[9px] text-slate-400 px-1">
-              <span>{assignment.minValue}</span>
-              <span>{assignment.maxValue}</span>
-            </div>
+          </div>
+          <div className="mt-2 flex justify-between px-1 font-px text-[12px] text-[#dff6ff] px-text-outline lg:hidden">
+            <span>{assignment.minValue}</span>
+            <span>{assignment.maxValue}</span>
           </div>
         </div>
 
-        {/* Lock In Button */}
-        <div className="w-full">
-          {reconnecting && (
-            <p className="mb-2 text-center font-px text-[8px] text-slate-300">
-              Saving… reconnecting
-            </p>
-          )}
+        <div className="mt-6 lg:mt-5">
+          <PxButton
+            onClick={submit}
+            disabled={locked}
+            whiteText
+            className="min-h-[84px] w-full text-[26px] sm:text-[28px] lg:min-h-[76px]"
+          >
+            {locked ? 'LOCKED' : 'LOCK IN'}
+          </PxButton>
+          {locked && reconnecting && <p className="mt-2 text-center font-px text-[8px] text-[#c7d6ff]">SAVING… RECONNECTING</p>}
           {failure && (
-            <div className="mb-3">
+            <div className="mt-3">
               <RetryNotice
                 message={describeSaveFailure(failure, 'answer')}
                 refCode={failure.ref}
@@ -216,19 +196,8 @@ export function Round3({
               />
             </div>
           )}
-          <button
-            onClick={submit}
-            disabled={locked}
-            className="px-btn px-btn-yellow min-h-[64px] w-full py-4 text-xs tracking-wider flex items-center justify-center gap-2"
-          >
-            <span>🔒</span>
-            {locked ? 'ANSWER LOCKED' : 'LOCK IN'}
-          </button>
-          <p className="mt-2 text-center text-[10px] text-slate-400">
-            Answers remain locked until results screen.
-          </p>
         </div>
       </div>
-    </main>
+    </Scene>
   );
 }

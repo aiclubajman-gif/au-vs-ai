@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { RetryNotice } from '@/components/ui';
-import { submitWithRetry, isRetryable, describeSaveFailure, type SubmitFailure } from '@/lib/client/submit';
+import { PxButton, PxChip, PxTimer, RetryNotice, Scene, Sprite, Wordmark } from '@/components/px';
+import { submitWithRetry, isRetryable, describeSaveFailure, localSave, type SubmitFailure } from '@/lib/client/submit';
 import { answerTimeRemaining } from '@/lib/client/answer-window';
 import type { Round1Slot } from '@/types';
 
@@ -82,10 +82,12 @@ export function Round1({
       setSaving(true);
       setFailure(null);
 
-      const result = await submitWithRetry('/api/round1/answer', body, {
-        isCancelled: () => unmounted.current,
-        onRetry: () => setReconnecting(true),
-      });
+      const result = await (attemptId.startsWith('local-')
+        ? localSave()
+        : submitWithRetry('/api/round1/answer', body, {
+            isCancelled: () => unmounted.current,
+            onRetry: () => setReconnecting(true),
+          }));
 
       inFlight.current = false;
       if (unmounted.current) return;
@@ -102,7 +104,7 @@ export function Round1({
         if (!unmounted.current) advance();
       }, wait);
     },
-    [advance]
+    [attemptId, advance]
   );
 
   const answer = useCallback(
@@ -149,8 +151,6 @@ export function Round1({
         readyAt.current = Date.now();
         setRemaining(msPerImage);
         setImageState('ready');
-
-        // Preload next image
         const next = pending[index + 1];
         if (next) {
           const preload = new Image();
@@ -176,57 +176,36 @@ export function Round1({
 
   const progress = Math.max(0, Math.min(1, remaining / msPerImage));
   const seconds = Math.max(0, Math.ceil(remaining / 1000));
+  const active = imageState === 'ready' && !locked;
 
   return (
-    <main className="relative flex min-h-dvh flex-col overflow-hidden bg-[var(--color-px-bg)] text-[var(--color-ink)]">
-      {/* Background with circuit glow */}
-      <div
-        className="absolute inset-0 z-0 bg-cover bg-center opacity-30 pointer-events-none"
-        style={{ backgroundImage: "url('/backgrounds/circuit-9x16.png')" }}
-        aria-hidden="true"
-      />
-      <div className="arena-bg z-0 opacity-70" aria-hidden="true" />
-
-      <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-between px-4 py-5 sm:px-6">
-        {/* Top Header & Timer Bar */}
-        <div>
-          <div className="flex items-center justify-between gap-3">
-            <span className="px-chip text-[9px]">ROUND 1</span>
-            <span
-              className="tabular font-px text-xl text-[var(--color-px-yellow)]"
-              style={{ textShadow: '3px 3px 0 #070c26' }}
-            >
-              {seconds}s
-            </span>
-          </div>
-
-          <div
-            className="px-timer mt-2.5"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(progress * 100)}
-          >
-            <div
-              className={`fill ${seconds <= 3 && !locked ? 'low' : ''}`}
-              style={{ width: `${progress * 100}%` }}
-            />
-          </div>
-
-          <div className="mt-4 text-center">
-            <h1 className="px-title-yellow text-2xl leading-tight sm:text-3xl">
-              REAL OR AI?
-            </h1>
-            <p className="mt-1 font-px text-[9px] tracking-wider text-slate-300">
-              IMAGE {index + 1} OF {pending.length}
-            </p>
-          </div>
+    <Scene left="/sprites/round1-left-flank.png" right="/art/flanks/r1-right.webp" leftWidth="26vw" rightWidth="20vw">
+      <div className="mx-auto flex w-full max-w-[560px] flex-1 flex-col px-4 pb-5 pt-4 sm:px-6 lg:max-w-[640px]">
+        <div className="flex justify-center lg:hidden">
+          <PxChip className="text-[9px]">ROUND 1</PxChip>
         </div>
 
-        {/* Center Frame with Image and Bottom Characters */}
-        <div className="my-auto w-full">
-          <div className="px-frame mx-auto w-full">
-            <div className="relative aspect-square w-full overflow-hidden bg-black">
+        <div className="mt-3 flex items-center gap-3 lg:mt-0 lg:flex-col lg:gap-1">
+          <Wordmark name="real-or-ai" priority className="min-w-0 flex-1 lg:w-[70%] lg:flex-none" />
+          <span className="px-num-gold tabular shrink-0 text-[30px] sm:text-[34px] lg:hidden" aria-live="off">
+            {seconds}s
+          </span>
+        </div>
+
+        <div className="mt-2 flex items-center justify-between lg:mt-3 lg:px-2">
+          <p className="font-px text-[10px] text-[#dff6ff] px-text-outline sm:text-[11px]">
+            IMAGE {index + 1} OF {pending.length}
+          </p>
+          <span className="px-num-gold tabular hidden text-[28px] lg:block" aria-live="off">
+            {seconds}s
+          </span>
+        </div>
+
+        <PxTimer progress={progress} low={seconds <= 3 && active} className="mt-2" />
+
+        <div className="relative my-auto py-6 lg:py-4">
+          <div className={`px-frame mx-auto w-full max-w-[420px] lg:max-w-[440px] ${active ? 'px-glow-pulse' : ''}`}>
+            <div className="relative aspect-square w-full overflow-hidden bg-[#010f38]">
               <img
                 key={`${current.slot}-${loadTry}`}
                 src={current.storagePath}
@@ -238,112 +217,81 @@ export function Round1({
               />
 
               {imageState === 'loading' && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 px-6 text-center">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#010f38]/80 px-6 text-center">
                   <div className="px-spinner" />
-                  <p className="mt-4 text-xs leading-relaxed text-slate-300 font-medium">
-                    Loading image… your time hasn&apos;t started.
-                  </p>
+                  <p className="mt-4 text-[15px] leading-snug text-[#dff6ff]">Loading image… your time hasn&apos;t started.</p>
                   {slowLoad && (
-                    <button
-                      onClick={retryImage}
-                      className="px-btn px-btn-gray mt-4 px-4 py-2 text-[9px]"
-                    >
-                      Try loading again
-                    </button>
+                    <PxButton variant="gray" onClick={retryImage} className="mt-4 min-h-[44px] px-4 text-[9px]">
+                      TRY LOADING AGAIN
+                    </PxButton>
                   )}
                 </div>
               )}
 
               {imageState === 'error' && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 px-6 text-center">
-                  <p className="font-px text-[11px] text-[var(--color-px-red)]">
-                    This image didn&apos;t load.
-                  </p>
-                  <p className="mt-3 text-xs leading-relaxed text-slate-300">
-                    Your time hasn&apos;t started.
-                  </p>
-                  <button
-                    onClick={retryImage}
-                    className="px-btn px-btn-gray mt-4 px-4 py-2 text-[9px]"
-                  >
-                    Try again
-                  </button>
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#010f38]/90 px-6 text-center">
+                  <p className="font-px text-[11px] text-[#ff8a96]">THIS IMAGE DIDN&apos;T LOAD.</p>
+                  <p className="mt-3 text-[15px] text-[#dff6ff]">Your time hasn&apos;t started.</p>
+                  <PxButton variant="gray" onClick={retryImage} className="mt-4 min-h-[44px] px-4 text-[9px]">
+                    TRY AGAIN
+                  </PxButton>
                 </div>
               )}
 
               {locked && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#070c26]/85">
-                  <p
-                    className="font-px text-base uppercase tracking-wider text-[var(--color-px-cyan)]"
-                    style={{ textShadow: '2px 2px 0 #070c26' }}
-                  >
-                    Answer locked
-                  </p>
-                  {reconnecting && (
-                    <p className="mt-3 font-px text-[8px] text-slate-300">
-                      Saving… reconnecting
-                    </p>
-                  )}
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#010f38]/85">
+                  <p className="px-pop font-px text-[16px] uppercase text-[#7ffafe] px-text-outline">Answer locked</p>
+                  {reconnecting && <p className="mt-3 font-px text-[8px] text-[#c7d6ff]">SAVING… RECONNECTING</p>}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Flanking characters under frame matching Proposed mock/mround1.png */}
-          <div className="mt-2 flex items-end justify-between px-2 pointer-events-none select-none">
-            <img
-              src="/sprites/boy.png"
-              alt="Human"
-              className="pixelated h-14 sm:h-16 w-auto drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
-            />
-            <img
-              src="/sprites/robot-1.png"
-              alt="Robot"
-              className="pixelated h-14 sm:h-16 w-auto drop-shadow-[0_0_12px_rgba(53,224,255,0.6)]"
-            />
-          </div>
+          <Sprite
+            src="/sprites/boy.png"
+            className="px-bob absolute bottom-2 left-0 h-[88px] w-auto drop-shadow-[0_4px_0_rgba(0,0,0,0.5)] sm:h-[100px] lg:hidden"
+          />
+          <Sprite
+            src="/sprites/robot-1.png"
+            className="px-bob px-bob--delay absolute bottom-2 right-0 h-[84px] w-auto drop-shadow-[0_0_14px_rgba(0,187,252,0.6)] sm:h-[96px] lg:hidden"
+          />
         </div>
 
-        {/* Action Buttons: REAL vs AI GENERATED */}
-        <div className="w-full">
-          <div className="grid grid-cols-2 gap-3.5">
-            <button
-              onClick={() => answer('real')}
-              disabled={locked || imageState !== 'ready'}
-              className="px-btn px-btn-yellow min-h-[64px] sm:min-h-[72px] py-3 text-sm tracking-wider flex items-center justify-center gap-2"
-            >
-              <span className="text-base">●</span>
-              REAL
-            </button>
-            <button
-              onClick={() => answer('ai_generated')}
-              disabled={locked || imageState !== 'ready'}
-              className="px-btn px-btn-cyan min-h-[64px] sm:min-h-[72px] py-3 text-[11px] sm:text-xs leading-tight flex items-center justify-center gap-1.5"
-            >
-              <span className="text-base">✦</span>
-              <span>AI<br/>GENERATED</span>
-            </button>
-          </div>
-
-          {failure && (
-            <div className="mt-3">
-              <RetryNotice
-                message={describeSaveFailure(failure, 'answer')}
-                refCode={failure.ref}
-                retryable={isRetryable(failure)}
-                busy={saving}
-                onRetry={() => {
-                  if (submission.current) save(submission.current);
-                }}
-              />
-            </div>
-          )}
-
-          <p className="mt-3 text-center text-[10px] text-slate-400">
-            Answers remain locked until results screen.
-          </p>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <PxButton
+            onClick={() => answer('real')}
+            disabled={!active}
+            className="min-h-[96px] text-[20px] sm:min-h-[104px] sm:text-[22px] lg:min-h-[76px]"
+            labelClassName="text-[#1b1a5c]"
+          >
+            REAL
+          </PxButton>
+          <PxButton
+            variant="cyan"
+            onClick={() => answer('ai_generated')}
+            disabled={!active}
+            className="min-h-[96px] text-[14px] sm:min-h-[104px] sm:text-[16px] lg:min-h-[76px]"
+            labelClassName="flex-col gap-1 leading-relaxed text-[#032846]"
+          >
+            <span>AI</span>
+            <span>GENERATED</span>
+          </PxButton>
         </div>
+
+        {failure && (
+          <div className="mt-3">
+            <RetryNotice
+              message={describeSaveFailure(failure, 'answer')}
+              refCode={failure.ref}
+              retryable={isRetryable(failure)}
+              busy={saving}
+              onRetry={() => {
+                if (submission.current) save(submission.current);
+              }}
+            />
+          </div>
+        )}
       </div>
-    </main>
+    </Scene>
   );
 }

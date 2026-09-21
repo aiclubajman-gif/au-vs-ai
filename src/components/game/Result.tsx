@@ -1,368 +1,169 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { PxChip, PxLink, PxPanel, Scene, Sprite, Wordmark } from '@/components/px';
 import type { PublicAttemptResult } from '@/types';
 
-export function Result({
-  result,
-  returning = false,
-}: {
-  result: PublicAttemptResult;
-  returning?: boolean;
-}) {
-  const [shown, setShown] = useState(returning ? result.totalScore : 0);
-
+function useCountUp(target: number, skip: boolean) {
+  const [shown, setShown] = useState(skip ? target : 0);
   useEffect(() => {
-    if (returning) return;
-    const reduce =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (skip) return;
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduce) {
-      setShown(result.totalScore);
+      setShown(target);
       return;
     }
-
     const duration = 1400;
     const start = performance.now();
     let frame = 0;
-
     const step = (now: number) => {
       const t = Math.min(1, (now - start) / duration);
       const eased = 1 - Math.pow(1 - t, 3);
-      setShown(Math.round(result.totalScore * eased));
+      setShown(Math.round(target * eased));
       if (t < 1) frame = requestAnimationFrame(step);
     };
-
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
-  }, [result.totalScore, returning]);
+  }, [target, skip]);
+  return shown;
+}
 
-  const isHumanWin = result.humanWin;
+function TrophyIcon({ silver }: { silver?: boolean }) {
+  return <Sprite src="/sprites/trophy.png" className={`h-8 w-8 ${silver ? 'grayscale brightness-125' : ''}`} />;
+}
 
-  // Returning player screen matching Site Pages/14 you already played.png
-  if (returning) {
-    return (
-      <main className="relative flex min-h-dvh flex-col overflow-hidden bg-[var(--color-px-bg)] text-[var(--color-ink)]">
-        <div
-          className="absolute inset-0 z-0 bg-cover bg-center opacity-30 pointer-events-none"
-          style={{ backgroundImage: "url('/backgrounds/circuit-9x16.png')" }}
-          aria-hidden="true"
-        />
-        <div className="arena-bg z-0 opacity-70" aria-hidden="true" />
-
-        <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-between px-5 py-6 sm:py-8 text-center">
-          <div className="flex items-center justify-between">
-            <span className="px-chip text-[9px]">AU vs AI</span>
-            <span className="font-px text-[9px] text-[#ffd23e]">OFFICIAL ATTEMPT</span>
-          </div>
-
-          <div className="my-auto flex flex-col items-center">
-            {/* Mascot with You Already Played speech bubble */}
-            <div className="relative mb-2 flex items-center justify-center">
-              <img
-                src="/sprites/mascot-girl-cheer.png"
-                alt="AIDA Mascot"
-                className="pixelated h-32 w-auto drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]"
-              />
-            </div>
-
-            <h1 className="px-title-yellow text-2xl sm:text-3xl leading-tight">
-              YOU&apos;VE ALREADY PLAYED
-            </h1>
-            <p className="mt-2 text-xs sm:text-sm text-slate-300 max-w-xs leading-relaxed">
-              Your official attempt is complete. Thank you for being part of AU vs AI.
-            </p>
-
-            {/* Score & Rank Card */}
-            <div className="px-panel mt-5 w-full p-4 bg-[#0d1440]/90 border-[3px] border-[#070c26]">
-              <p className="font-px text-[9px] text-[#ffd23e] tracking-wider border-b border-[#2c4ba8]/60 pb-2">
-                YOUR RESULT
-              </p>
-              <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-                <div className="bg-[#131c4e] p-2 border border-[#2c4ba8]">
-                  <p className="font-px text-[8px] text-slate-400">SCORE</p>
-                  <p className="tabular font-px text-sm sm:text-base text-[#ffd23e] mt-1">
-                    {result.totalScore}
-                  </p>
-                </div>
-                <div className="bg-[#131c4e] p-2 border border-[#2c4ba8]">
-                  <p className="font-px text-[8px] text-slate-400">RANK</p>
-                  <p className="tabular font-px text-sm sm:text-base text-[#35e0ff] mt-1">
-                    #{result.rank}
-                  </p>
-                </div>
-                <div className="bg-[#131c4e] p-2 border border-[#2c4ba8]">
-                  <p className="font-px text-[8px] text-slate-400">BEAT</p>
-                  <p className="tabular font-px text-sm sm:text-base text-[var(--color-win)] mt-1">
-                    {result.percentileBeaten}%
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="w-full space-y-3 pt-4">
-            <Link
-              href="/leaderboard"
-              className="px-btn px-btn-cyan block w-full py-3.5 text-center text-xs tracking-wider"
-            >
-              VIEW LEADERBOARD →
-            </Link>
-            <Link
-              href="/club"
-              className="px-btn px-btn-yellow block w-full py-3.5 text-center text-xs tracking-wider"
-            >
-              JOIN AIDA →
-            </Link>
-            <Link
-              href="/"
-              className="block text-center font-px text-[9px] text-slate-400 hover:text-slate-200 pt-1"
-            >
-              &lt; Back to Home
-            </Link>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  // HUMAN WIN Screen
-  if (isHumanWin) {
-    return (
-      <main className="relative flex min-h-dvh flex-col overflow-hidden bg-[var(--color-px-bg)] text-[var(--color-ink)]">
-        <div
-          className="absolute inset-0 z-0 bg-cover bg-center opacity-30 pointer-events-none"
-          style={{ backgroundImage: "url('/backgrounds/circuit-9x16.png')" }}
-          aria-hidden="true"
-        />
-        <div className="arena-bg z-0 opacity-70" aria-hidden="true" />
-        <div className="px-confetti" aria-hidden="true" />
-
-        <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-between px-5 py-6 sm:py-8 text-center">
-          <div className="flex items-center justify-between">
-            <span className="px-chip text-[9px]">AU vs AI</span>
-            <span className="font-px text-[9px] text-[var(--color-win)]">VICTORY</span>
-          </div>
-
-          <div className="my-auto flex flex-col items-center">
-            {/* Top Crown and Title */}
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <img
-                src="/sprites/badge-crown-gold.png"
-                alt="Crown"
-                className="h-6 w-6 pixelated"
-              />
-            </div>
-            <h1 className="px-title-yellow text-3xl sm:text-4xl leading-tight tracking-wider">
-              HUMAN WIN
-            </h1>
-            <p className="mt-1 font-px text-[9px] sm:text-[10px] text-[#ffd23e] tracking-wider">
-              HUMANITY +1 YOU BEAT THE AI!
-            </p>
-
-            {/* Score box flanked by cheering mascots matching Proposed mock/mhumanWin.png */}
-            <div className="relative mt-6 w-full flex items-center justify-center">
-              {/* Left Cheer Mascot */}
-              <div className="absolute -left-3 bottom-0 select-none pointer-events-none">
-                <img
-                  src="/sprites/mascot-boy-cheer.png"
-                  alt="Cheering Mascot"
-                  className="pixelated h-24 sm:h-28 w-auto drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]"
-                />
-              </div>
-
-              {/* Center Score Frame */}
-              <div className="px-frame z-10 px-8 py-5 bg-[#0d1440]/95 border-[3px] border-[#070c26] shadow-[0_6px_0_#070c26] min-w-[200px]">
-                <p className="font-px text-[9px] text-slate-400">YOUR SCORE</p>
-                <p
-                  className="tabular mt-2 font-px text-4xl sm:text-5xl text-[#ffd23e]"
-                  style={{ textShadow: '4px 4px 0 #070c26' }}
-                >
-                  {shown}
-                </p>
-                <p className="font-px text-[10px] text-slate-400 mt-1">/1000</p>
-              </div>
-
-              {/* Right Cheer Mascot */}
-              <div className="absolute -right-3 bottom-0 select-none pointer-events-none">
-                <img
-                  src="/sprites/mascot-girl-cheer.png"
-                  alt="Cheering Mascot"
-                  className="pixelated h-24 sm:h-28 w-auto drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]"
-                />
-              </div>
-            </div>
-
-            {/* Rank and Percentile Badges */}
-            <div className="mt-6 grid grid-cols-2 gap-3 w-full">
-              <div className="px-panel px-3 py-3.5 bg-[#0d1440]/90 border-2 border-[#ffd23e]/50 flex flex-col items-center">
-                <span className="font-px text-[8px] text-slate-400">YOUR RANK</span>
-                <span
-                  className="tabular mt-1 font-px text-base sm:text-lg text-[#ffd23e]"
-                  style={{ textShadow: '2px 2px 0 #070c26' }}
-                >
-                  #{result.rank}
-                </span>
-              </div>
-              <div className="px-panel px-3 py-3.5 bg-[#0d1440]/90 border-2 border-[var(--color-px-cyan)]/50 flex flex-col items-center">
-                <span className="font-px text-[8px] text-slate-400">YOU BEAT</span>
-                <span
-                  className="tabular mt-1 font-px text-base sm:text-lg text-[var(--color-px-cyan)]"
-                  style={{ textShadow: '2px 2px 0 #070c26' }}
-                >
-                  {result.percentileBeaten}%
-                </span>
-              </div>
-            </div>
-
-            {/* Motivational Quote */}
-            <p className="mt-4 font-mono text-[10px] text-slate-300 italic">
-              &ldquo;A brighter tomorrow still belongs to human minds.&rdquo;
-            </p>
-          </div>
-
-          {/* Action CTAs */}
-          <div className="w-full space-y-3 pt-4">
-            <Link
-              href="/leaderboard"
-              className="px-btn px-btn-yellow block w-full py-3.5 text-center text-xs tracking-wider"
-            >
-              VIEW LEADERBOARD →
-            </Link>
-            <Link
-              href="/club"
-              className="px-btn px-btn-cyan block w-full py-3.5 text-center text-xs tracking-wider"
-            >
-              JOIN AIDA →
-            </Link>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  // AI WIN Screen matching Proposed mock/M_Ai_win.jpeg
+function PeopleIcon() {
   return (
-    <main className="relative flex min-h-dvh flex-col overflow-hidden bg-[var(--color-px-bg)] text-[var(--color-ink)]">
-      <div
-        className="absolute inset-0 z-0 bg-cover bg-center opacity-30 pointer-events-none"
-        style={{ backgroundImage: "url('/backgrounds/circuit-9x16.png')" }}
-        aria-hidden="true"
-      />
-      <div className="arena-bg z-0 opacity-70" aria-hidden="true" />
+    <svg viewBox="0 0 12 8" className="h-7 w-9 shrink-0" aria-hidden="true" shapeRendering="crispEdges">
+      <path fill="#7ffafe" d="M1 1h2v2H1zM5 0h2v2H5zM9 1h2v2H9zM0 4h4v3H0zM4 3h4v4H4zM8 4h4v3H8z" />
+    </svg>
+  );
+}
 
-      <div className="relative z-10 mx-auto flex w-full max-w-md flex-1 flex-col justify-between px-5 py-6 sm:py-8 text-center">
-        <div className="flex items-center justify-between">
-          <span className="px-chip text-[9px]">AU vs AI</span>
-          <span className="font-px text-[9px] text-[var(--color-px-cyan)]">AI DEFEAT</span>
-        </div>
+export function Result({ result, returning = false }: { result: PublicAttemptResult; returning?: boolean }) {
+  const shown = useCountUp(result.totalScore, returning);
+  const win = result.humanWin;
 
-        <div className="my-auto flex flex-col items-center">
-          {/* Cheering robot sprite above title */}
-          <div className="mb-2 flex items-center justify-center select-none pointer-events-none">
-            <img
-              src="/sprites/robot-arms-raised.png"
-              alt="Victor Robot"
-              className="pixelated h-20 w-auto drop-shadow-[0_0_16px_rgba(53,224,255,0.8)]"
-            />
-          </div>
-
-          <h1 className="px-title-cyan text-3xl sm:text-4xl leading-tight tracking-wider">
-            AI WIN
-          </h1>
-          <p className="mt-1 font-px text-[9px] sm:text-[10px] text-[#35e0ff] tracking-wider">
-            AI TAKES THIS ONE
-          </p>
-
-          {/* Score Box flanked by shrugging mascots */}
-          <div className="relative mt-6 w-full flex items-center justify-center">
-            {/* Left Shrug Mascot */}
-            <div className="absolute -left-3 bottom-0 select-none pointer-events-none">
-              <img
-                src="/sprites/mascot-boy-shrug.png"
-                alt="Shrug Mascot"
-                className="pixelated h-24 sm:h-28 w-auto drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]"
-              />
-            </div>
-
-            {/* Center Score Frame */}
-            <div className="px-frame z-10 px-8 py-5 bg-[#0d1440]/95 border-[3px] border-[#070c26] shadow-[0_6px_0_#070c26] min-w-[200px]">
-              <p className="font-px text-[9px] text-slate-400">YOUR SCORE</p>
-              <p
-                className="tabular mt-2 font-px text-4xl sm:text-5xl text-[var(--color-px-cyan)]"
-                style={{ textShadow: '4px 4px 0 #070c26' }}
-              >
-                {shown}
-              </p>
-              <p className="font-px text-[10px] text-slate-400 mt-1">/1000</p>
-            </div>
-
-            {/* Right Shrug Mascot */}
-            <div className="absolute -right-3 bottom-0 select-none pointer-events-none">
-              <img
-                src="/sprites/mascot-girl-idk.png"
-                alt="Shrug Mascot"
-                className="pixelated h-24 sm:h-28 w-auto drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]"
-              />
-            </div>
-          </div>
-
-          {/* Badges */}
-          <div className="mt-6 grid grid-cols-2 gap-3 w-full">
-            <div className="px-panel px-3 py-3.5 bg-[#0d1440]/90 border-2 border-slate-600 flex flex-col items-center">
-              <span className="font-px text-[8px] text-slate-400">YOUR RANK</span>
-              <span
-                className="tabular mt-1 font-px text-base sm:text-lg text-slate-200"
-                style={{ textShadow: '2px 2px 0 #070c26' }}
-              >
-                #{result.rank}
-              </span>
-            </div>
-            <div className="px-panel px-3 py-3.5 bg-[#0d1440]/90 border-2 border-[var(--color-px-cyan)]/50 flex flex-col items-center">
-              <span className="font-px text-[8px] text-slate-400">YOU BEAT</span>
-              <span
-                className="tabular mt-1 font-px text-base sm:text-lg text-[var(--color-px-cyan)]"
-                style={{ textShadow: '2px 2px 0 #070c26' }}
-              >
-                {result.percentileBeaten}%
-              </span>
-            </div>
-          </div>
-
-          {/* Sad human on floating island */}
-          <div className="mt-4 flex flex-col items-center select-none pointer-events-none">
-            <div className="relative">
-              <img
-                src="/sprites/ai-win-island.png"
-                alt=""
-                className="pixelated h-14 w-auto drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)]"
-              />
-              <img
-                src="/sprites/boy-sad-sitting.png"
-                alt="Sad Student"
-                className="pixelated h-12 w-auto absolute bottom-5 left-1/2 -translate-x-1/2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Action CTAs */}
-        <div className="w-full space-y-3 pt-3">
-          <Link
-            href="/leaderboard"
-            className="px-btn px-btn-cyan block w-full py-3.5 text-center text-xs tracking-wider"
-          >
-            VIEW LEADERBOARD →
-          </Link>
-          <Link
-            href="/club"
-            className="px-btn px-btn-yellow block w-full py-3.5 text-center text-xs tracking-wider"
-          >
-            JOIN AIDA →
-          </Link>
-        </div>
+  const rankPanel = (
+    <PxPanel tone={win ? 'gold-fill' : 'gray'} className="flex-1 px-4 py-3">
+      <div className="flex items-center justify-center gap-3">
+        <TrophyIcon silver={!win} />
+        <span className={`font-px text-[14px] px-text-outline sm:text-[16px] ${win ? 'text-[#fff4c2]' : 'text-[#eef2ff]'}`}>
+          RANK #{result.rank}
+        </span>
       </div>
-    </main>
+    </PxPanel>
+  );
+
+  const beatPanel = (
+    <PxPanel tone={win ? 'cyan' : 'cyan-fill'} className="flex-1 px-4 py-3">
+      <div className="flex items-center justify-center gap-3">
+        <PeopleIcon />
+        <span className={`font-px text-[10px] leading-relaxed sm:text-[11px] ${win ? 'text-[#7ffafe]' : 'text-[#032846]'}`}>
+          BEAT {result.percentileBeaten}%
+          <br />
+          OF PLAYERS
+        </span>
+      </div>
+    </PxPanel>
+  );
+
+  const scorePanel = (
+    <PxPanel tone="cyan" className="w-full px-5 py-5 sm:py-6">
+      <div className="flex items-center justify-center gap-3 sm:gap-5">
+        {win && <Sprite src="/sprites/laurel-cleaned.png" className="px-pop h-16 w-auto sm:h-20" />}
+        <div className="flex flex-col items-center">
+          <span className={`${win ? 'px-num-gold' : 'px-num-cyan'} tabular text-[64px] leading-none sm:text-[80px] lg:text-[88px]`} aria-live="polite">
+            {shown}
+          </span>
+          <span className={`mt-3 font-px text-[16px] sm:text-[20px] ${win ? 'text-[#7ffafe]' : 'text-[#7ffafe]'} px-text-outline`}>/1000</span>
+        </div>
+        {win && <Sprite src="/sprites/laurel-cleaned.png" className="px-pop h-16 w-auto -scale-x-100 sm:h-20" />}
+      </div>
+    </PxPanel>
+  );
+
+  const cta = (
+    <div className="flex flex-col items-center gap-3">
+      <PxLink href="/leaderboard" className="min-h-[72px] w-full text-[18px] sm:text-[20px]" labelClassName="text-[#4a2100]">
+        VIEW LEADERBOARD →
+      </PxLink>
+      <PxLink href="/club" variant="navy" className="min-h-[48px] w-full text-[10px]">
+        JOIN AIDA
+      </PxLink>
+    </div>
+  );
+
+  return (
+    <Scene
+      left={win ? '/art/flanks/hw-left.webp' : '/art/flanks/aw-left.webp'}
+      right={win ? '/art/flanks/hw-right.webp' : '/art/flanks/aw-right.webp'}
+      leftWidth={win ? '24vw' : '22vw'}
+      rightWidth={win ? '26vw' : '20vw'}
+    >
+      <div className={`px-confetti ${win ? '' : 'px-confetti--cyan'}`} aria-hidden="true" />
+
+      <div className="relative mx-auto flex w-full max-w-[520px] flex-1 flex-col px-4 pb-6 pt-5 sm:px-6 lg:max-w-[640px]">
+        {returning && (
+          <div className="mb-3 flex justify-center">
+            <PxChip tone="gold" className="text-[8px]">YOUR OFFICIAL RESULT</PxChip>
+          </div>
+        )}
+
+        <div className="relative flex justify-center">
+          <div className={`px-rays ${win ? '' : 'px-rays--cyan'}`} aria-hidden="true" />
+          {win ? (
+            <>
+              <Wordmark name="human-win-stacked" priority className="relative w-[64%] max-w-[300px] lg:hidden" />
+              <Wordmark name="human-win" priority className="relative hidden w-[88%] lg:block" />
+            </>
+          ) : (
+            <Wordmark name="ai-win" priority className="relative w-[70%] max-w-[300px] lg:w-[60%] lg:max-w-none" />
+          )}
+        </div>
+
+        {!win && (
+          <div className="mt-2 flex justify-center lg:hidden">
+            <Sprite src="/sprites/robot-arms-raised.png" className="px-cheer h-28 w-auto drop-shadow-[0_0_16px_rgba(0,187,252,0.6)]" />
+          </div>
+        )}
+
+        <div className="relative mt-3 lg:mt-4">
+          {!win && (
+            <>
+              <Sprite src="/sprites/mascot-boy-shrug.png" className="px-slump absolute -left-2 bottom-0 z-10 h-28 w-auto sm:h-32 lg:-left-36 lg:h-44" />
+              <Sprite src="/sprites/mascot-girl-idk.png" className="px-slump absolute -right-2 bottom-0 z-10 h-28 w-auto sm:h-32 lg:-right-36 lg:h-44" />
+            </>
+          )}
+          <div className={!win ? 'px-16 sm:px-20 lg:px-0' : ''}>{scorePanel}</div>
+        </div>
+
+        {win && (
+          <div className="relative mt-3 flex justify-center lg:hidden">
+            <Sprite src="/art/island-human-win.webp" className="px-float h-44 w-auto sm:h-52" />
+          </div>
+        )}
+
+        <div className="mt-4 flex flex-col gap-3 lg:flex-row">
+          {rankPanel}
+          {beatPanel}
+        </div>
+
+        {win && (
+          <div className="mt-3 flex items-end justify-center gap-4 lg:hidden">
+            <Sprite src="/sprites/mascot-boy-cheer.png" className="px-cheer h-28 w-auto" />
+            <Sprite src="/sprites/mascot-girl-cheer.png" className="px-cheer h-24 w-auto" style={{ animationDelay: '-0.35s' }} />
+          </div>
+        )}
+
+        {!win && (
+          <div className="mt-3 flex justify-center lg:hidden">
+            <Sprite src="/sprites/ai-win-island.png" className="px-float h-40 w-auto" />
+          </div>
+        )}
+
+        <div className="mt-5 lg:mt-6">{cta}</div>
+      </div>
+    </Scene>
   );
 }
