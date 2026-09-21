@@ -237,7 +237,7 @@ export const ANIMATED = [
 
 export type AnimatedName = (typeof ANIMATED)[number];
 
-const ANIM_VERSION = '3';
+const ANIM_VERSION = '4';
 
 export function AnimatedSprite({
   name,

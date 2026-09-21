@@ -804,6 +804,30 @@
   clip-path: var(--px-corner);
 }
 
+a.px-chip {
+  transition: transform 80ms steps(2), box-shadow 80ms steps(2), filter 80ms steps(2);
+}
+
+a.px-chip:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.2);
+  box-shadow:
+    inset 0 0 0 3px #7ffafe,
+    0 0 18px rgba(127, 250, 254, 0.7),
+    0 3px 0 #041030;
+}
+
+a.px-chip.px-chip--gold:hover {
+  box-shadow:
+    inset 0 0 0 3px #ffe66a,
+    0 0 18px rgba(253, 197, 42, 0.7),
+    0 3px 0 #041030;
+}
+
+a.px-chip:active {
+  transform: translateY(1px);
+}
+
 .px-chip--gold {
   color: #ffe66a;
   box-shadow:
