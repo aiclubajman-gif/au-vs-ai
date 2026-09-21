@@ -324,6 +324,30 @@ input.px-slider::-moz-range-thumb {
   box-shadow: 10vw 5vh var(--color-px-cyan), 25vw 1vh var(--color-px-yellow), 44vw 9vh var(--color-px-green), 58vw 2vh var(--color-px-yellow), 74vw 7vh var(--color-px-cyan), 86vw 12vh var(--color-px-yellow), 5vw 11vh var(--color-px-yellow), 52vw 15vh var(--color-px-cyan), 80vw 15vh var(--color-px-yellow);
 }
 
+@keyframes sprite-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.sprite-float {
+  animation: sprite-float 3s ease-in-out infinite;
+}
+
+.sprite-float-delay-1 { animation-delay: 0.4s; }
+.sprite-float-delay-2 { animation-delay: 0.8s; }
+.sprite-float-delay-3 { animation-delay: 1.2s; }
+.sprite-float-delay-4 { animation-delay: 1.6s; }
+.sprite-float-delay-5 { animation-delay: 2.0s; }
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: inset -4px -6px 0 rgba(0,0,0,.22), inset 4px 4px 0 rgba(255,255,255,.28), 0 6px 0 var(--color-px-ink), 0 0 20px rgba(255,194,27,.4); }
+  50% { box-shadow: inset -4px -6px 0 rgba(0,0,0,.22), inset 4px 4px 0 rgba(255,255,255,.28), 0 6px 0 var(--color-px-ink), 0 0 36px rgba(255,194,27,.7), 0 0 60px rgba(255,194,27,.3); }
+}
+
+.px-btn-glow {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
 
   *,

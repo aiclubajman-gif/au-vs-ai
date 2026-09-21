@@ -310,11 +310,27 @@ export function ClashBeam({ humanWins, aiWins, className = '', showLabels = true
         />
         {/* Optional HUD beam overlay labels inside the beam container */}
         {showLabels && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-6 font-px text-[10px] tracking-widest sm:text-xs">
-            <span className="text-[#ff9d1b] drop-shadow-[0_2px_0_#070c26]">
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-2 sm:px-4 font-px text-[10px] tracking-widest sm:text-xs md:text-sm">
+            <span
+              className="rounded-sm px-2 py-1 sm:px-3 sm:py-1.5"
+              style={{
+                color: '#ffffff',
+                backgroundColor: 'rgba(184, 58, 0, 0.75)',
+                textShadow: '0 2px 0 #070c26, 1px 1px 0 #070c26, -1px 1px 0 #070c26, 1px -1px 0 #070c26, -1px -1px 0 #070c26',
+                border: '2px solid #070c26',
+              }}
+            >
               HUMANS {humanPercent}%
             </span>
-            <span className="text-[#35e0ff] drop-shadow-[0_2px_0_#070c26]">
+            <span
+              className="rounded-sm px-2 py-1 sm:px-3 sm:py-1.5"
+              style={{
+                color: '#ffffff',
+                backgroundColor: 'rgba(0, 74, 159, 0.75)',
+                textShadow: '0 2px 0 #070c26, 1px 1px 0 #070c26, -1px 1px 0 #070c26, 1px -1px 0 #070c26, -1px -1px 0 #070c26',
+                border: '2px solid #070c26',
+              }}
+            >
               {aiPercent}% AI
             </span>
           </div>

@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { createAdminSupabase } from '@/lib/supabase/server';
 import { ClashBeam } from '@/components/game/ClashBeam';
 import type { EventStats, LeaderboardDisplayMode } from '@/types';
@@ -66,15 +65,17 @@ export default async function LandingPage() {
   const displayRows = board.rows.length > 0
     ? board.rows
     : [
-      { rank: 1, display_name: 'PixelRanger', masked_id_suffix: '4821', total_score: 950 },
-      { rank: 2, display_name: 'StarGazer', masked_id_suffix: '1903', total_score: 890 },
-      { rank: 3, display_name: 'LeafWalker', masked_id_suffix: '7724', total_score: 840 },
-      { rank: 4, display_name: 'OceanDream', masked_id_suffix: '3310', total_score: 790 },
+      { rank: 1, display_name: 'PixelRanger', masked_id_suffix: '4821', total_score: 125430 },
+      { rank: 2, display_name: 'StarGazer', masked_id_suffix: '1903', total_score: 98120 },
+      { rank: 3, display_name: 'LeafWalker', masked_id_suffix: '7724', total_score: 76430 },
+      { rank: 4, display_name: 'OceanDream', masked_id_suffix: '3310', total_score: 64210 },
     ];
 
   return (
-    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[var(--color-px-bg)] text-[var(--color-ink)] flex flex-col justify-between">
-      {/* Background with clean meadow on left and circuit on right */}
+    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[var(--color-px-bg)] text-[var(--color-ink)] flex flex-col">
+      {/* ================================================================ */}
+      {/* BACKGROUND LAYERS                                                */}
+      {/* ================================================================ */}
       <div
         className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none"
         style={{ backgroundImage: "url('/backgrounds/homepage-clean.png')" }}
@@ -82,76 +83,141 @@ export default async function LandingPage() {
       />
       <div className="arena-bg z-0 opacity-60" aria-hidden="true" />
 
-      {/* =================================================================== */}
-      {/* DESKTOP FLANKS (Humans on left, Robots on right)                    */}
-      {/* =================================================================== */}
+      {/* ================================================================ */}
+      {/* DESKTOP FLANKS — Humans on left, Robots on right                 */}
+      {/* ================================================================ */}
+
+      {/* LEFT FLANK — Human Sprites (6 characters including Abaya/Emarati) */}
       <aside
-        className="pointer-events-none absolute bottom-8 left-4 z-10 hidden select-none lg:flex flex-col items-start gap-4 xl:left-12 2xl:left-20"
+        className="pointer-events-none absolute bottom-0 left-0 z-10 hidden select-none lg:flex flex-col items-start pb-6 pl-4 xl:pl-10 2xl:pl-16"
         aria-hidden="true"
       >
-        <div className="flex items-end gap-3">
+        {/* Top row */}
+        <div className="flex items-end gap-2 mb-1">
           <img
             src="/sprites/boy.png"
             alt=""
-            className="pixelated h-28 w-auto drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] xl:h-36"
+            className="pixelated h-24 w-auto drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] xl:h-28 sprite-float"
           />
           <img
-            src="/sprites/girl-strawhat.png"
+            src="/sprites/char-girl-strawhat.png"
             alt=""
-            className="pixelated h-24 w-auto drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] xl:h-32"
+            className="pixelated h-20 w-auto drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] xl:h-24 sprite-float sprite-float-delay-1"
           />
         </div>
-        <div className="flex items-end gap-4 ml-6">
+        {/* Middle row — includes Abaya and Emarati */}
+        <div className="flex items-end gap-2 ml-4 mb-1">
+          <img
+            src="/sprites/abaya.png"
+            alt=""
+            className="pixelated h-24 w-auto drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] xl:h-28 sprite-float sprite-float-delay-2"
+          />
+          <img
+            src="/sprites/emarati.png"
+            alt=""
+            className="pixelated h-24 w-auto drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] xl:h-28 sprite-float sprite-float-delay-3"
+          />
+        </div>
+        {/* Bottom row */}
+        <div className="flex items-end gap-3 ml-2">
           <img
             src="/sprites/boy-cheer.png"
             alt=""
-            className="pixelated h-32 w-auto drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] xl:h-40"
+            className="pixelated h-28 w-auto drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] xl:h-32 sprite-float sprite-float-delay-4"
           />
           <img
             src="/sprites/girl-cheering.png"
             alt=""
-            className="pixelated h-28 w-auto drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] xl:h-36"
+            className="pixelated h-24 w-auto drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] xl:h-28 sprite-float sprite-float-delay-5"
           />
         </div>
       </aside>
 
+      {/* RIGHT FLANK — Robot Sprites (6 robots) */}
       <aside
-        className="pointer-events-none absolute bottom-8 right-4 z-10 hidden select-none lg:flex flex-col items-end gap-4 xl:right-12 2xl:right-20"
+        className="pointer-events-none absolute bottom-0 right-0 z-10 hidden select-none lg:flex flex-col items-end pb-6 pr-4 xl:pr-10 2xl:pr-16"
         aria-hidden="true"
       >
-        <div className="flex items-end gap-4">
-          <img
-            src="/sprites/robot-cat.png"
-            alt=""
-            className="pixelated h-24 w-auto drop-shadow-[0_0_16px_rgba(53,224,255,0.6)] xl:h-32"
-          />
+        {/* Top row */}
+        <div className="flex items-end gap-2 mb-1">
           <img
             src="/sprites/robot-1.png"
             alt=""
-            className="pixelated h-28 w-auto drop-shadow-[0_0_16px_rgba(53,224,255,0.6)] xl:h-36"
+            className="pixelated h-24 w-auto drop-shadow-[0_0_16px_rgba(53,224,255,0.6)] xl:h-28 sprite-float"
+          />
+          <img
+            src="/sprites/robot-cat.png"
+            alt=""
+            className="pixelated h-20 w-auto drop-shadow-[0_0_16px_rgba(53,224,255,0.6)] xl:h-24 sprite-float sprite-float-delay-1"
           />
         </div>
-        <div className="flex items-end gap-4 mr-6">
+        {/* Middle row */}
+        <div className="flex items-end gap-2 mr-4 mb-1">
+          <img
+            src="/sprites/robot-smirking.png"
+            alt=""
+            className="pixelated h-24 w-auto drop-shadow-[0_0_16px_rgba(53,224,255,0.6)] xl:h-28 sprite-float sprite-float-delay-2"
+          />
           <img
             src="/sprites/robot-arms-raised.png"
             alt=""
-            className="pixelated h-32 w-auto drop-shadow-[0_0_16px_rgba(53,224,255,0.7)] xl:h-40"
+            className="pixelated h-24 w-auto drop-shadow-[0_0_16px_rgba(53,224,255,0.6)] xl:h-28 sprite-float sprite-float-delay-3"
           />
+        </div>
+        {/* Bottom row */}
+        <div className="flex items-end gap-3 mr-2">
           <img
             src="/sprites/robot-happy-cheering.png"
             alt=""
-            className="pixelated h-28 w-auto drop-shadow-[0_0_16px_rgba(53,224,255,0.6)] xl:h-36"
+            className="pixelated h-28 w-auto drop-shadow-[0_0_16px_rgba(53,224,255,0.6)] xl:h-32 sprite-float sprite-float-delay-4"
+          />
+          <img
+            src="/sprites/robot-chunky.png"
+            alt=""
+            className="pixelated h-24 w-auto drop-shadow-[0_0_16px_rgba(53,224,255,0.6)] xl:h-28 sprite-float sprite-float-delay-5"
           />
         </div>
       </aside>
 
-      {/* =================================================================== */}
-      {/* HEADER BAR                                                          */}
-      {/* =================================================================== */}
-      <header className="relative z-20 flex w-full items-center justify-between px-4 py-4 sm:px-8">
+      {/* ================================================================ */}
+      {/* MOBILE SPRITE STRIP (visible below lg)                           */}
+      {/* ================================================================ */}
+      <div
+        className="absolute bottom-0 left-0 right-0 z-10 flex items-end justify-between px-2 pb-2 lg:hidden pointer-events-none select-none"
+        aria-hidden="true"
+      >
+        {/* Left mini-group */}
+        <div className="flex items-end gap-1">
+          <img src="/sprites/abaya.png" alt="" className="pixelated h-16 w-auto drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] sprite-float" />
+          <img src="/sprites/emarati.png" alt="" className="pixelated h-16 w-auto drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] sprite-float sprite-float-delay-1" />
+          <img src="/sprites/boy.png" alt="" className="pixelated h-14 w-auto drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] sprite-float sprite-float-delay-2" />
+        </div>
+        {/* Right mini-group */}
+        <div className="flex items-end gap-1">
+          <img src="/sprites/robot-1.png" alt="" className="pixelated h-14 w-auto drop-shadow-[0_0_8px_rgba(53,224,255,0.5)] sprite-float sprite-float-delay-3" />
+          <img src="/sprites/robot-cat.png" alt="" className="pixelated h-14 w-auto drop-shadow-[0_0_8px_rgba(53,224,255,0.5)] sprite-float sprite-float-delay-4" />
+          <img src="/sprites/robot-arms-raised.png" alt="" className="pixelated h-16 w-auto drop-shadow-[0_0_8px_rgba(53,224,255,0.5)] sprite-float sprite-float-delay-5" />
+        </div>
+      </div>
+
+      {/* ================================================================ */}
+      {/* HEADER BAR                                                       */}
+      {/* ================================================================ */}
+      <header className="relative z-20 flex w-full items-center justify-between px-4 py-3 sm:px-8">
+        {/* AIDA Plaque with mascot avatars */}
         <div className="flex items-center gap-2">
+          <img
+            src="/sprites/f-mascot-avatar.png"
+            alt="AIDA Mascot"
+            className="pixelated h-8 w-8 sm:h-10 sm:w-10 rounded-sm border-2 border-[#2c4ba8] shadow-[2px_2px_0_#070c26]"
+          />
           <span className="px-chip text-[9px] sm:text-[10px]">AIDA</span>
-          <span className="text-[11px] font-medium text-slate-300 tracking-wide hidden sm:inline">
+          <img
+            src="/sprites/m-mascot-avatar.png"
+            alt="AIDA Mascot"
+            className="pixelated h-8 w-8 sm:h-10 sm:w-10 rounded-sm border-2 border-[#2c4ba8] shadow-[2px_2px_0_#070c26]"
+          />
+          <span className="text-[11px] font-medium text-slate-300 tracking-wide hidden sm:inline ml-1">
             AJMAN UNIVERSITY
           </span>
         </div>
@@ -171,9 +237,9 @@ export default async function LandingPage() {
         </div>
       </header>
 
-      {/* =================================================================== */}
-      {/* CENTER STAGE: TITLE, PLAY BUTTON, DYNAMIC BEAM, LEADERBOARD         */}
-      {/* =================================================================== */}
+      {/* ================================================================ */}
+      {/* CENTER STAGE                                                     */}
+      {/* ================================================================ */}
       <div className="relative z-20 mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-center px-4 py-2">
         {/* Title */}
         <div className="text-center">
@@ -189,9 +255,9 @@ export default async function LandingPage() {
         <div className="mt-5 w-full max-w-xs sm:max-w-sm">
           <Link
             href="/play"
-            className="px-btn px-btn-yellow block w-full py-4 text-center font-px text-sm sm:text-base tracking-widest shadow-[0_6px_0_#070c26] hover:brightness-110 active:translate-y-1 transition-all"
+            className="px-btn px-btn-yellow px-btn-glow block w-full py-4 text-center font-px text-sm sm:text-base tracking-widest shadow-[0_6px_0_#070c26] hover:brightness-110 active:translate-y-1 transition-all"
           >
-            PLAY
+            ✦ PLAY ✦
           </Link>
         </div>
 
@@ -230,7 +296,7 @@ export default async function LandingPage() {
           </div>
 
           <div className="mt-3 space-y-2">
-            {displayRows.map((row, idx) => {
+            {displayRows.map((row) => {
               const isRank1 = row.rank === 1;
               return (
                 <div
@@ -257,7 +323,7 @@ export default async function LandingPage() {
                     </span>
                   </div>
                   <span className={`font-px tabular text-xs shrink-0 ${isRank1 ? 'text-[#472200]' : 'text-[var(--color-px-yellow)]'}`}>
-                    {row.total_score}
+                    {row.total_score.toLocaleString()}
                   </span>
                 </div>
               );
@@ -266,9 +332,9 @@ export default async function LandingPage() {
         </section>
       </div>
 
-      {/* =================================================================== */}
-      {/* FOOTER                                                              */}
-      {/* =================================================================== */}
+      {/* ================================================================ */}
+      {/* FOOTER                                                           */}
+      {/* ================================================================ */}
       <footer className="relative z-20 w-full px-4 py-3 text-center text-[10px] text-slate-400">
         <p>AIDA Club Fair Challenge · Ajman University</p>
       </footer>
