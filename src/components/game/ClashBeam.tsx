@@ -13,24 +13,6 @@ const IMPACT_FRAME = { width: 72, height: 72, centerX: 36, centerY: 36 };
 const HUMAN_SPRITE_BASE_X = 17; // 25 - 8
 const AI_SPRITE_BASE_X = 103;   // 295 - 192
 
-const HUMAN_CORE = ['#B83A00', '#FF8C00', '#FFC928', '#FFF0A0'];
-const AI_CORE = ['#004A9F', '#0079E8', '#62ECFF', '#DFFFFF'];
-
-function drawCore(ctx: CanvasRenderingContext2D, x0: number, x1: number, palette: string[], t: number) {
-  const w = x1 - x0;
-  if (w <= 0) return;
-  const wobble = Math.round(Math.sin(t / 90) * 1);
-  const bands = [
-    [14 + wobble, palette[0]],
-    [10, palette[1]],
-    [6, palette[2]],
-    [2, palette[3]],
-  ] as const;
-  for (const [half, color] of bands) {
-    ctx.fillStyle = color;
-    ctx.fillRect(x0, CENTER_Y - half, w, half * 2);
-  }
-}
 const HUMAN_SPARK_COLORS = ['#B83A00', '#F05A00', '#FF8C00', '#FFC928', '#FFF0A0'];
 const AI_SPARK_COLORS = ['#004A9F', '#0079E8', '#00C4FF', '#62ECFF', '#DFFFFF'];
 const WHITE_COLOR = '#FFFFFF';
@@ -272,7 +254,19 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
         ctx.rect(0, 0, Math.max(0, roundedImpactX), HEIGHT);
         ctx.clip();
 
-        drawCore(ctx, 0, HUMAN_SPRITE_BASE_X + 26, HUMAN_CORE, elapsed);
+        for (let k = 1; k <= 3; k++) {
+          ctx.drawImage(
+            humanImg,
+            humanFrame * HUMAN_FRAME.width + 24,
+            0,
+            40,
+            HUMAN_FRAME.height,
+            HUMAN_SPRITE_BASE_X + 24 - k * 34,
+            CENTER_Y - HUMAN_FRAME.contactY,
+            40,
+            HUMAN_FRAME.height,
+          );
+        }
 
         // Always draw the base anchored at the left origin so natural flame base shows
         ctx.drawImage(
@@ -312,7 +306,19 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
         ctx.rect(roundedImpactX, 0, Math.max(0, WIDTH - roundedImpactX), HEIGHT);
         ctx.clip();
 
-        drawCore(ctx, AI_SPRITE_BASE_X + AI_FRAME.width - 26, WIDTH, AI_CORE, elapsed);
+        for (let k = 1; k <= 3; k++) {
+          ctx.drawImage(
+            aiImg,
+            aiFrame * AI_FRAME.width + AI_FRAME.width - 64,
+            0,
+            40,
+            AI_FRAME.height,
+            AI_SPRITE_BASE_X + AI_FRAME.width - 64 + k * 34,
+            CENTER_Y - AI_FRAME.contactY,
+            40,
+            AI_FRAME.height,
+          );
+        }
 
         // Always draw the base anchored at the right origin so natural flame base shows
         ctx.drawImage(

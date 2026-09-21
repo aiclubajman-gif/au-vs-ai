@@ -1242,7 +1242,7 @@ input.px-slider::-moz-range-thumb {
 .px-fighter {
   position: absolute;
   bottom: -4%;
-  height: 92%;
+  height: min(92%, 250px);
   aspect-ratio: 0.78;
   opacity: 0;
   z-index: 3;
