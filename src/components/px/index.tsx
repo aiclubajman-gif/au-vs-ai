@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { CSSProperties, ReactNode } from 'react';
+import { FLANKS, type Actor, type FlankName, type FlankSpec } from '@/components/px/flanks';
 
 type Variant = 'gold' | 'cyan' | 'gray' | 'navy';
 
@@ -218,6 +219,20 @@ export const ANIMATED = [
   'robot-peek',
   'boy-cheer',
   'robot-arms-raised',
+  'girl-strawhat',
+  'robot-cat',
+  'robot-cheering',
+  'robot-happy-cheering',
+  'robot-chunky',
+  'robot-marching',
+  'robot-evil-1',
+  'robot-evil-2',
+  'boy-sad-sitting',
+  'girl-sad',
+  'robot-confetti',
+  'mascot-boy-shrug',
+  'mascot-girl-idk',
+  'boy-sad',
 ] as const;
 
 export type AnimatedName = (typeof ANIMATED)[number];
@@ -245,48 +260,93 @@ export function AnimatedSprite({
   );
 }
 
-const FLANK_ASPECT: Record<string, number> = {
-  '/sprites/round1-left-flank.png': 1,
-  '/art/flanks/r1-right.webp': 380 / 944,
-  '/art/flanks/r2-left.webp': 520 / 944,
-  '/art/flanks/r2-right.webp': 470 / 944,
-  '/art/flanks/r3-left.webp': 300 / 944,
-  '/art/flanks/r3-right.webp': 300 / 944,
-  '/art/flanks/hw-left.webp': 430 / 944,
-  '/art/flanks/hw-right.webp': 460 / 944,
-  '/art/flanks/aw-left.webp': 400 / 944,
-  '/art/flanks/aw-right.webp': 350 / 944,
-  '/art/flanks/lb-left.webp': 430 / 714,
-  '/art/flanks/lb-right.webp': 460 / 714,
-};
+function ActorSprite({ actor }: { actor: Actor }) {
+  const motion = actor.motion && actor.motion !== 'none' ? `px-actor--${actor.motion}` : '';
+  return (
+    <AnimatedSprite
+      name={actor.name}
+      speed={actor.speed}
+      className={`px-actor ${motion} ${actor.flip ? '-scale-x-100' : ''}`}
+      style={{ left: `${actor.x}%`, bottom: `${actor.y}%`, height: `${actor.h}%`, ['--hop' as string]: actor.hop }}
+    />
+  );
+}
 
-function flankStyle(src: string, cap: string): CSSProperties {
-  const aspect = FLANK_ASPECT[src] ?? 0.45;
-  return { width: `min(calc(100dvh * ${aspect.toFixed(3)}), ${cap})`, backgroundImage: `url(${src})` };
+export function Flank({ name, side, cap = '30vw' }: { name: FlankName; side: 'left' | 'right'; cap?: string }) {
+  const spec: FlankSpec = FLANKS[name];
+  const width = `calc(100dvh * ${spec.aspect.toFixed(4)})`;
+  const art = spec.plate && spec.actors?.length ? spec.plate : spec.src;
+  return (
+    <div className={`px-flank px-flank--${side}`} style={{ width: `min(${width}, ${cap})` }} aria-hidden="true">
+      <div className="px-flank__art" style={{ width, backgroundImage: `url(${art})` }}>
+        {spec.plate && spec.actors?.map((a, i) => <ActorSprite key={i} actor={a} />)}
+      </div>
+    </div>
+  );
+}
+
+const PULSES = [
+  { x0: '-2%', y0: '18%', x1: '31%', y1: '62%', dur: '7s', delay: '0s' },
+  { x0: '102%', y0: '74%', x1: '68%', y1: '28%', dur: '8s', delay: '-3s' },
+  { x0: '-2%', y0: '86%', x1: '22%', y1: '40%', dur: '9s', delay: '-5s' },
+  { x0: '102%', y0: '10%', x1: '80%', y1: '58%', dur: '6.5s', delay: '-1.5s' },
+  { x0: '40%', y0: '-2%', x1: '55%', y1: '48%', dur: '7.5s', delay: '-4s' },
+  { x0: '60%', y0: '102%', x1: '46%', y1: '70%', dur: '8.5s', delay: '-6s' },
+];
+
+export function Backdrop({ leaves }: { leaves?: boolean }) {
+  return (
+    <div className="px-ambient" aria-hidden="true">
+      <div className="px-sweep" />
+      <div className={`absolute inset-y-0 ${leaves ? 'left-[48%] right-0' : 'inset-x-0'}`}>
+        <div className="px-nodes absolute inset-0" />
+        {PULSES.map((p, i) => (
+          <span
+            key={i}
+            className="px-pulse"
+            style={{
+              ['--x0' as string]: p.x0,
+              ['--y0' as string]: p.y0,
+              ['--x1' as string]: p.x1,
+              ['--y1' as string]: p.y1,
+              ['--dur' as string]: p.dur,
+              ['--delay' as string]: p.delay,
+            }}
+          />
+        ))}
+      </div>
+      {leaves && (
+        <>
+          <div className="px-leaves absolute inset-0 w-[46%]" />
+          <span className="px-twinkle" style={{ left: '7%', top: '78%' }} />
+          <span className="px-twinkle" style={{ left: '13%', top: '88%', ['--delay' as string]: '-0.9s' }} />
+          <span className="px-twinkle" style={{ left: '4%', top: '92%', ['--delay' as string]: '-1.5s' }} />
+        </>
+      )}
+    </div>
+  );
 }
 
 export function Scene({
   children,
   left,
   right,
-  leftWidth = '26vw',
-  rightWidth = '26vw',
+  leftWidth = '30vw',
+  rightWidth = '30vw',
   className = '',
 }: {
   children: ReactNode;
-  left?: string;
-  right?: string;
+  left?: FlankName;
+  right?: FlankName;
   leftWidth?: string;
   rightWidth?: string;
   className?: string;
 }) {
   return (
     <main className={`px-scene flex flex-col ${className}`}>
-      {left && <div className="px-flank px-flank--left" style={flankStyle(left, leftWidth)} aria-hidden="true" />}
-      {right && <div className="px-flank px-flank--right" style={flankStyle(right, rightWidth)} aria-hidden="true" />}
-      <div className="px-ambient" aria-hidden="true">
-        <div className="px-sweep" />
-      </div>
+      {left && <Flank name={left} side="left" cap={leftWidth} />}
+      {right && <Flank name={right} side="right" cap={rightWidth} />}
+      <Backdrop />
       <div className="relative z-10 flex flex-1 flex-col">{children}</div>
     </main>
   );

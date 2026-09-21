@@ -58,7 +58,7 @@ export function OnboardingShell({
   wide?: boolean;
 }) {
   return (
-    <Scene left="/art/flanks/r2-left.webp" right="/art/flanks/r2-right.webp" leftWidth="30vw" rightWidth="30vw">
+    <Scene left="r2-left" right="r2-right" leftWidth="30vw" rightWidth="30vw">
       <div
         className={`mx-auto flex w-full flex-1 flex-col px-4 pb-6 pt-5 sm:px-6 ${wide ? 'max-w-[560px]' : 'max-w-[480px]'}`}
       >
@@ -608,7 +608,7 @@ export function LoadingScreen({ label = 'LOADING GAME…' }: { label?: string })
 
 export function ScoringScreen({ retrying }: { retrying: boolean }) {
   return (
-    <Scene left="/art/flanks/r2-left.webp" right="/art/flanks/r2-right.webp" leftWidth="30vw" rightWidth="30vw">
+    <Scene left="r2-left" right="r2-right" leftWidth="30vw" rightWidth="30vw">
       <div className="mx-auto flex w-full max-w-[480px] flex-1 flex-col items-center justify-center px-5 text-center">
         <div className="flex items-end gap-2">
           <AnimatedSprite name="mascot-boy-cheer" speed="0.8s" className="h-28" />

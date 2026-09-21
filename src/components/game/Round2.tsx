@@ -287,7 +287,7 @@ export function Round2({
   const drawingPhase = phase === 'drawing';
 
   return (
-    <Scene left="/art/flanks/r2-left.webp" right="/art/flanks/r2-right.webp" leftWidth="30vw" rightWidth="30vw">
+    <Scene left="r2-left" right="r2-right" leftWidth="30vw" rightWidth="30vw">
       <div className="mx-auto flex w-full max-w-[560px] flex-1 flex-col px-4 pb-5 pt-4 sm:px-6 lg:max-w-[600px]">
         <div className="flex items-center justify-center gap-3">
           <TickMarks />

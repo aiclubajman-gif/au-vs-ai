@@ -187,6 +187,170 @@
   }
 }
 
+.px-scene {
+  animation: px-drift 80s linear infinite alternate;
+}
+
+@keyframes px-drift {
+  to {
+    background-position: center top, center 120px;
+  }
+}
+
+.px-pulse {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #b9fdff;
+  box-shadow:
+    0 0 6px 2px rgba(127, 250, 254, 0.9),
+    0 0 18px 6px rgba(0, 187, 252, 0.45);
+  opacity: 0;
+  left: var(--x0);
+  top: var(--y0);
+  animation: px-pulse-path var(--dur, 6s) steps(48) infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes px-pulse-path {
+  0% {
+    left: var(--x0);
+    top: var(--y0);
+    opacity: 0;
+  }
+  6% {
+    opacity: 1;
+  }
+  48% {
+    left: var(--x1);
+    top: var(--y0);
+  }
+  52% {
+    left: var(--x1);
+    top: var(--y0);
+  }
+  92% {
+    left: var(--x1);
+    top: var(--y1);
+    opacity: 1;
+  }
+  100% {
+    left: var(--x1);
+    top: var(--y1);
+    opacity: 0;
+  }
+}
+
+.px-nodes::before,
+.px-nodes::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 5px;
+  height: 5px;
+  background: transparent;
+  box-shadow:
+    8vw 14vh #7ffafe, 22vw 68vh #7ffafe, 37vw 22vh #7ffafe, 51vw 81vh #7ffafe,
+    64vw 12vh #7ffafe, 78vw 47vh #7ffafe, 91vw 76vh #7ffafe, 15vw 88vh #7ffafe,
+    45vw 52vh #7ffafe, 86vw 26vh #7ffafe;
+  filter: drop-shadow(0 0 4px #7ffafe);
+  animation: px-node-blink 3.6s steps(1) infinite;
+}
+
+.px-nodes::after {
+  box-shadow:
+    4vw 44vh #7ffafe, 28vw 8vh #7ffafe, 33vw 92vh #7ffafe, 58vw 35vh #7ffafe,
+    70vw 64vh #7ffafe, 83vw 5vh #7ffafe, 95vw 58vh #7ffafe, 12vw 30vh #7ffafe,
+    49vw 18vh #7ffafe, 74vw 90vh #7ffafe;
+  animation-delay: -1.8s;
+  animation-duration: 4.4s;
+}
+
+@keyframes px-node-blink {
+  0%,
+  70% {
+    opacity: 0;
+  }
+  70.1%,
+  100% {
+    opacity: 0.9;
+  }
+}
+
+.px-leaves::before,
+.px-leaves::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -12vh;
+  width: 6px;
+  height: 6px;
+  background: #7dff6a;
+  box-shadow:
+    3vw 0 #7dff6a, 9vw -30vh #ffb3d9, 14vw -62vh #7dff6a, 20vw -18vh #ffe66a,
+    26vw -84vh #7dff6a, 31vw -44vh #ffb3d9, 36vw -8vh #7dff6a, 41vw -70vh #ffe66a;
+  animation: px-leaf-fall 11s linear infinite;
+}
+
+.px-leaves::after {
+  width: 8px;
+  height: 5px;
+  box-shadow:
+    6vw -52vh #ffb3d9, 12vw -6vh #7dff6a, 18vw -76vh #7dff6a, 24vw -36vh #ffe66a,
+    29vw -14vh #ffb3d9, 34vw -90vh #7dff6a, 39vw -58vh #ffb3d9;
+  animation-duration: 15s;
+  animation-delay: -6s;
+}
+
+@keyframes px-leaf-fall {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(14px, 30vh);
+  }
+  50% {
+    transform: translate(-10px, 60vh);
+  }
+  75% {
+    transform: translate(12px, 90vh);
+  }
+  100% {
+    transform: translate(-6px, 122vh);
+  }
+}
+
+.px-twinkle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #fff;
+  box-shadow:
+    -8px 0 #fff, 8px 0 #fff, 0 -8px #fff, 0 8px #fff,
+    0 0 10px 3px rgba(255, 255, 255, 0.8);
+  animation: px-twinkle 2.2s steps(1) infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes px-twinkle {
+  0%,
+  55% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  55.1%,
+  80% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  80.1%,
+  100% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+}
+
 .px-sweep {
   position: absolute;
   inset: -20% -40%;
@@ -210,12 +374,69 @@
   top: 0;
   height: 100dvh;
   z-index: 1;
+  overflow: hidden;
   pointer-events: none;
   user-select: none;
   image-rendering: pixelated;
   background-repeat: no-repeat;
   background-size: auto 100%;
   animation: px-flank-float 7s ease-in-out infinite;
+}
+
+.px-flank__art {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background-repeat: no-repeat;
+  background-size: auto 100%;
+  image-rendering: pixelated;
+}
+
+.px-flank--left .px-flank__art {
+  left: 0;
+  background-position: left bottom;
+}
+
+.px-flank--right .px-flank__art {
+  right: 0;
+  background-position: right bottom;
+}
+
+.px-anim.px-actor {
+  position: absolute;
+  transform-origin: 50% 100%;
+}
+
+.px-actor--cheer {
+  animation: px-actor-cheer var(--hop, 0.9s) steps(2) infinite;
+}
+
+@keyframes px-actor-cheer {
+  50% {
+    transform: translateY(-3%);
+  }
+}
+
+.px-actor--bob {
+  animation: px-bob 1.6s steps(2) infinite;
+}
+
+.px-actor--sway {
+  animation: px-actor-sway 2.4s ease-in-out infinite;
+}
+
+@keyframes px-actor-sway {
+  50% {
+    transform: translateX(3%);
+  }
+}
+
+.px-actor--slump {
+  animation: px-slump 2.6s steps(2) infinite;
+}
+
+.px-actor--hover {
+  animation: px-float 3s ease-in-out infinite;
 }
 
 @keyframes px-flank-float {

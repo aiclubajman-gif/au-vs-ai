@@ -179,7 +179,7 @@ export function Round1({
   const active = imageState === 'ready' && !locked;
 
   return (
-    <Scene left="/sprites/round1-left-flank.png" right="/art/flanks/r1-right.webp" leftWidth="30vw" rightWidth="30vw">
+    <Scene left="r1-left" right="r1-right" leftWidth="30vw" rightWidth="30vw">
       <div className="mx-auto flex w-full max-w-[560px] flex-1 flex-col px-4 pb-5 pt-4 sm:px-6 lg:max-w-[640px]">
         <div className="flex justify-center lg:hidden">
           <PxChip className="text-[9px]">ROUND 1</PxChip>

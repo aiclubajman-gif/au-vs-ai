@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { createAdminSupabase } from '@/lib/supabase/server';
 import { ClashBeam } from '@/components/game/ClashBeam';
 import { TopChallengers, type TopRow } from '@/components/home/TopChallengers';
-import { AnimatedSprite, PxChip, PxLink, PxStar, Wordmark } from '@/components/px';
+import { AnimatedSprite, Backdrop, Flank, PxChip, PxLink, PxStar, Wordmark } from '@/components/px';
 import type { EventStats, LeaderboardDisplayMode } from '@/types';
 
 export const revalidate = 10;
@@ -64,20 +64,10 @@ export default async function LandingPage() {
         style={{ backgroundImage: "url('/backgrounds/homepage-clean.png')" }}
         aria-hidden="true"
       />
-      <div
-        className="pixelated absolute inset-y-0 left-0 hidden w-[36%] bg-left bg-no-repeat lg:block"
-        style={{ backgroundImage: "url('/art/flanks/home-humans.webp')", backgroundSize: 'auto 100%' }}
-        aria-hidden="true"
-      />
-      <div
-        className="pixelated absolute inset-y-0 right-0 hidden w-[34%] bg-right bg-no-repeat lg:block"
-        style={{ backgroundImage: "url('/art/flanks/home-robots.webp')", backgroundSize: 'auto 100%' }}
-        aria-hidden="true"
-      />
+      <Flank name="home-humans" side="left" cap="36vw" />
+      <Flank name="home-robots" side="right" cap="34vw" />
 
-      <div className="px-ambient" aria-hidden="true">
-        <div className="px-sweep" />
-      </div>
+      <Backdrop leaves />
 
       <header className="relative z-20 flex items-center justify-between px-4 pt-4 sm:px-6">
         <PxChip className="text-[9px] sm:text-[10px]">AIDA</PxChip>

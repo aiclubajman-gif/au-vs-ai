@@ -159,7 +159,7 @@ const ROUND_BY_TITLE: Record<string, 1 | 2 | 3> = { 'Spot the Fake': 1, 'Draw vs
 const ROUND_BY_EYEBROW: Record<string, 1 | 2 | 3> = { 'ROUND 1 COMPLETE': 1, 'ROUND 2 COMPLETE': 2, 'ALL ROUNDS COMPLETE': 3 };
 
 const ROUND_ART = {
-  1: { wordmark: 'real-or-ai', left: '/sprites/round1-left-flank.png', right: '/art/flanks/r1-right.webp', human: 'boy', robot: 'robot-1' },
-  2: { wordmark: 'draw-vs-ai', left: '/art/flanks/r2-left.webp', right: '/art/flanks/r2-right.webp', human: 'girl-cheering', robot: 'robot-arms-raised' },
-  3: { wordmark: 'ai-knowledge', left: '/art/flanks/r3-left.webp', right: '/art/flanks/r3-right.webp', human: 'boy-confused', robot: 'robot-smirking' },
+  1: { wordmark: 'real-or-ai', left: 'r1-left', right: 'r1-right', human: 'boy', robot: 'robot-1' },
+  2: { wordmark: 'draw-vs-ai', left: 'r2-left', right: 'r2-right', human: 'girl-cheering', robot: 'robot-arms-raised' },
+  3: { wordmark: 'ai-knowledge', left: 'r3-left', right: 'r3-right', human: 'boy-confused', robot: 'robot-smirking' },
 } as const;

@@ -57,7 +57,7 @@ export default async function LeaderboardPage() {
   const { rows, mode, isLive } = await getData();
 
   return (
-    <Scene left="/art/flanks/lb-left.webp" right="/art/flanks/lb-right.webp" leftWidth="30vw" rightWidth="30vw">
+    <Scene left="lb-left" right="lb-right" leftWidth="30vw" rightWidth="30vw">
       <div className="mx-auto flex w-full max-w-[560px] flex-1 flex-col px-4 pb-8 pt-5 sm:px-6 lg:max-w-[640px]">
         <header className="flex items-center justify-between gap-3">
           <div className="flex-1">

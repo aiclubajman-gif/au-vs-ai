@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function ClubPage() {
   return (
-    <Scene left="/art/flanks/r2-left.webp" right="/art/flanks/lb-right.webp" leftWidth="30vw" rightWidth="30vw">
+    <Scene left="r2-left" right="lb-right" leftWidth="30vw" rightWidth="30vw">
       <div className="mx-auto flex w-full max-w-[560px] flex-1 flex-col px-4 pb-8 pt-5 sm:px-6">
         <header className="flex flex-col items-center text-center">
           <Wordmark name="humans-vs-ai" as="div" className="w-[72%] max-w-[300px]" />

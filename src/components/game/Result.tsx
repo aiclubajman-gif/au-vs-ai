@@ -93,8 +93,8 @@ export function Result({ result, returning = false }: { result: PublicAttemptRes
 
   return (
     <Scene
-      left={win ? '/art/flanks/hw-left.webp' : '/art/flanks/aw-left.webp'}
-      right={win ? '/art/flanks/hw-right.webp' : '/art/flanks/aw-right.webp'}
+      left={win ? 'hw-left' : 'aw-left'}
+      right={win ? 'hw-right' : 'aw-right'}
       leftWidth="30vw"
       rightWidth="30vw"
     >

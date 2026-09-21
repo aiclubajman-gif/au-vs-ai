@@ -106,7 +106,7 @@ export function Round3({
   const pct = span > 0 ? ((guess - assignment.minValue) / span) * 100 : 0;
 
   return (
-    <Scene left="/art/flanks/r3-left.webp" right="/art/flanks/r3-right.webp" leftWidth="30vw" rightWidth="30vw">
+    <Scene left="r3-left" right="r3-right" leftWidth="30vw" rightWidth="30vw">
       <div className="mx-auto flex w-full max-w-[560px] flex-1 flex-col px-4 pb-5 pt-4 sm:px-6 lg:max-w-[680px]">
         <div className="flex lg:justify-center">
           <PxChip className="text-[9px]">ROUND 3</PxChip>
