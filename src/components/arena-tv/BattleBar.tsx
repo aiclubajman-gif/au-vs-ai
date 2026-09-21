@@ -1,13 +1,12 @@
 import { useCallback, useRef, type CSSProperties } from 'react';
-import type { BattleShare } from '@/lib/arena/types';
+import type { ArenaLead, BattleShare } from '@/lib/arena/types';
+import { ClashFX } from './ClashFX';
 import { ARENA_TIMING } from './config';
 import { useRollingNumber } from './hooks';
 import styles from './BattleBar.module.css';
 
-/** Spark directions around the clash point (dx, dy in px). */
-const SPARKS = [
-  [-44, -22], [-54, 8], [-34, 27], [42, -24], [52, 6], [32, 29],
-] as const;
+/** The lane's design height; the collision layer is drawn against it. */
+const LANE_H = 54;
 
 const clamp = (v: number) => Math.max(0, Math.min(100, v));
 
@@ -44,9 +43,11 @@ const ARENA_INTRO = { from: 50, delayMs: ARENA_TIMING.introDelayMs };
  */
 export function BattleBar({
   share,
+  lead,
   intro = ARENA_INTRO,
 }: {
   share: BattleShare;
+  lead: ArenaLead;
   intro?: { from: number; delayMs: number } | null;
 }) {
   const opening = battleBarView(intro ? intro.from : share.humanPct);
@@ -54,13 +55,19 @@ export function BattleBar({
   const rootRef = useRef<HTMLElement>(null);
   const humanRef = useRef<HTMLSpanElement>(null);
   const aiRef = useRef<HTMLSpanElement>(null);
+  /*
+   * The one live share, and the only one. The roll writes it here, the lane
+   * fills to it through --human, the two percentages are read off it, and the
+   * collision layer takes the very same number — so nothing on the bar can
+   * ever be drawing one figure while the numbers beside it read another.
+   */
+  const liveShare = useRef(opening.fill);
 
-  // One write per frame of the roll, straight to the DOM. The lane's --human
-  // and both percentages are the same number, written three times.
   useRollingNumber(
     share.humanPct,
     useCallback((value: number) => {
       const view = battleBarView(value);
+      liveShare.current = view.fill;
       rootRef.current?.style.setProperty('--human', String(view.fill));
       if (humanRef.current) humanRef.current.textContent = String(view.human);
       if (aiRef.current) aiRef.current.textContent = String(view.ai);
@@ -115,21 +122,17 @@ export function BattleBar({
             <Silhouette />
           </div>
 
+          {/* The hard dark gap the two colours never cross. Everything else at
+              the contact point — the core, its bloom and the sparks — is drawn
+              by the collision layer over the top. */}
           <div className={styles.clash}>
             <span className={styles.gap} />
-            <span className={styles.seam} />
-            <span className={styles.flare} />
-            {/* Re-mounted on every new share, so each one sets off its own burst. */}
-            <span key={share.humanPct} className={styles.burst} />
-            {SPARKS.map(([dx, dy], i) => (
-              <span
-                key={i}
-                className={styles.spark}
-                data-side={dx < 0 ? 'human' : 'ai'}
-                style={{ '--dx': `${dx}px`, '--dy': `${dy}px`, '--delay': `${i * 0.27}s` } as CSSProperties}
-              />
-            ))}
           </div>
+
+          {/* Mounted once and never re-keyed: score changes and lead changes
+              are read from refs inside it, so neither can restart the canvas
+              or lose the particles already in the air. */}
+          <ClashFX shareRef={liveShare} lead={lead} laneHeight={LANE_H} />
         </div>
       </div>
 

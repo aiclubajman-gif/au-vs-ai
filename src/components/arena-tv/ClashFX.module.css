@@ -1,0 +1,36 @@
+/*
+ * The collision canvas: a narrow window that RIDES THE SEAM.
+ *
+ * It is carried along the lane by --human — the same value the fills are
+ * driven to — so the contact point is always at its centre and it only has to
+ * be as wide as the sparks actually reach. See ClashFX.tsx for why that
+ * matters: a canvas spanning the whole lane was four times the pixels to clear
+ * and redraw every frame for exactly the same picture.
+ *
+ * It is taller than the lane at both ends because the sparks are thrown
+ * perpendicular, out of the bar top and bottom, and that overhang is the only
+ * part of the effect allowed outside the chassis.
+ */
+.clash {
+  position: absolute;
+  /*
+   * Centred on the contact point, wherever the bar is filled to — carried
+   * there by a TRANSFORM, not by `left`. --human changes on every frame of a
+   * roll, and an offset property moves the element by laying it out again;
+   * a transform moves it on the compositor and touches nothing. Same
+   * arithmetic either way: --human is a plain 0-100, so the share of the
+   * lane's own width is the distance.
+   */
+  left: 0;
+  width: 176px;
+  margin-left: -88px;
+  transform: translateX(calc(var(--human) * var(--lane-w) / 100));
+  /* Room above and below for what the contact point throws. */
+  top: -58px;
+  height: calc(var(--lane-h) + 116px);
+  pointer-events: none;
+  /* Its own layer: the bar underneath is repainted as the fills move, and the
+     canvas has no reason to be dragged into that repaint. It is also what
+     keeps the transform above off the main thread. */
+  will-change: transform;
+}

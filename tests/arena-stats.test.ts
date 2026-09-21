@@ -222,7 +222,7 @@ describe('Battle bar', () => {
   it('fills to the share its own labels print', () => {
     for (const [humanWins, aiWins] of COUNTS) {
       const share = battleShare(humanWins, aiWins);
-      const html = renderToStaticMarkup(createElement(BattleBar, { share, intro: null }));
+      const html = renderToStaticMarkup(createElement(BattleBar, { share, lead: leadOf(share), intro: null }));
       const { human, ai, fill } = readBar(html);
       expect(human).toBe(share.humanPct);
       expect(ai).toBe(share.aiPct);
@@ -233,13 +233,13 @@ describe('Battle bar', () => {
 
   it('opens level at 50/50, lane and labels alike', () => {
     const html = renderToStaticMarkup(
-      createElement(BattleBar, { share: battleShare(132, 68) }),
+      createElement(BattleBar, { share: battleShare(132, 68), lead: 'human' }),
     );
     expect(readBar(html)).toEqual({ human: 50, ai: 50, fill: 50 });
   });
 
   it('tells a screen reader the real share, mid-roll or not', () => {
-    const html = renderToStaticMarkup(createElement(BattleBar, { share: battleShare(132, 68) }));
+    const html = renderToStaticMarkup(createElement(BattleBar, { share: battleShare(132, 68), lead: 'human' }));
     expect(html).toContain('aria-label="Battle share: humans 66%, AI 34%"');
   });
 });

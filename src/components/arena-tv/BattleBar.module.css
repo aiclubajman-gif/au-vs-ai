@@ -433,84 +433,16 @@
 }
 
 /*
- * The seam: one white-hot line, running the height of the bar and a little
- * past it top and bottom. Its glow is a tight box-shadow rather than a blur,
- * so it stays a line and both fills keep their edges right up against it.
+ * The core, its bloom and the sparks are drawn by ClashFX on a canvas over the
+ * lane (see ClashFX.tsx). They used to live here as a flickering seam, a
+ * radial flare, a ring re-mounted on every new share and six spark spans on
+ * infinite CSS loops — animation this screen paid for continuously, and a node
+ * churned on every finished game, for a contact point that still read as a
+ * clean vertical light rather than two forces grinding.
+ *
+ * What stays in CSS is .gap above: the darkness the two colours meet across,
+ * which is structural and belongs with the fills that define it.
  */
-.seam {
-  position: absolute;
-  left: -1.5px;
-  top: -16px;
-  bottom: -12px;
-  width: 3px;
-  background: linear-gradient(
-    180deg,
-    rgb(190 235 255 / 0) 0%,
-    rgb(214 243 255 / 0.55) 14%,
-    #ffffff 20%,
-    #ffffff 84%,
-    rgb(214 243 255 / 0.5) 89%,
-    rgb(190 235 255 / 0) 100%
-  );
-  box-shadow:
-    0 0 5px 1px rgb(190 235 255 / 0.9),
-    0 0 13px 2px rgb(96 186 255 / 0.4);
-  animation: flicker 2.6s linear infinite;
-}
-
-/* A small flare where the seam breaks out over the top rail. */
-.flare {
-  position: absolute;
-  left: -27px;
-  top: -20px;
-  width: 54px;
-  height: 40px;
-  background:
-    radial-gradient(circle, #ffffff 0 7%, rgb(214 246 255 / 0.72) 17%, rgb(150 215 255 / 0.22) 34%, transparent 62%),
-    linear-gradient(90deg, transparent 4%, rgb(224 248 255 / 0.9) 50%, transparent 96%);
-  background-size: 100% 100%, 100% 2px;
-  background-position: center, center;
-  background-repeat: no-repeat;
-  mix-blend-mode: screen;
-  animation: flare 2.6s ease-in-out infinite alternate;
-}
-
-.burst {
-  position: absolute;
-  left: -20px;
-  top: 50%;
-  width: 40px;
-  height: 40px;
-  margin-top: -20px;
-  border-radius: 50%;
-  border: 2px solid rgb(225 247 255 / 0.85);
-  box-shadow:
-    0 0 12px rgb(130 205 255 / 0.8),
-    inset 0 0 8px rgb(130 205 255 / 0.55);
-  opacity: 0;
-  animation: burst 0.85s ease-out;
-}
-
-.spark {
-  position: absolute;
-  left: -2.5px;
-  top: calc(50% - 2.5px);
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  opacity: 0;
-  animation: spark 1.9s ease-out var(--delay) infinite;
-}
-
-.spark[data-side='human'] {
-  background: #ddf8ff;
-  box-shadow: 0 0 6px 2px rgb(90 180 255 / 0.8);
-}
-
-.spark[data-side='ai'] {
-  background: #fff1cc;
-  box-shadow: 0 0 6px 2px rgb(255 140 40 / 0.8);
-}
 
 /* ---- Keyframes ---------------------------------------------------------- */
 
@@ -541,60 +473,3 @@
   }
 }
 
-@keyframes flicker {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  8% {
-    opacity: 0.78;
-  }
-  12% {
-    opacity: 1;
-  }
-  46% {
-    opacity: 0.9;
-  }
-  50% {
-    opacity: 1;
-  }
-  81% {
-    opacity: 0.84;
-  }
-}
-
-@keyframes flare {
-  from {
-    transform: scale(0.85);
-    opacity: 0.72;
-  }
-  to {
-    transform: scale(1.06);
-    opacity: 1;
-  }
-}
-
-@keyframes burst {
-  from {
-    transform: scale(0.35);
-    opacity: 1;
-  }
-  to {
-    transform: scale(2.4);
-    opacity: 0;
-  }
-}
-
-@keyframes spark {
-  0% {
-    transform: translate(0, 0) scale(1);
-    opacity: 0;
-  }
-  12% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate(var(--dx), var(--dy)) scale(0.2);
-    opacity: 0;
-  }
-}

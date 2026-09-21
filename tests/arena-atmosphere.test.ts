@@ -252,9 +252,8 @@ describe('One lead rule, and only one', () => {
      * is producing one of the three values.
      *
      * So this is a ledger of every line in the arena that makes a 'human',
-     * 'ai' or 'tie' at all. Two of them are leadOf. The third is not a lead
-     * and is listed with the reason it is not. A fourth cannot appear without
-     * someone having to come here and argue for it.
+     * 'ai' or 'tie' at all. Both of them are leadOf. A third cannot appear
+     * without someone having to come here and argue for it.
      */
     const yieldsLead = /(\?|return|=>)\s*'(human|ai|tie)'/;
     const ledger = [...arena, ...tv].flatMap(([file, src]) =>
@@ -267,10 +266,6 @@ describe('One lead rule, and only one', () => {
       // leadOf itself: the one rule, both of its branches.
       "types.ts: if (Math.abs(humanPct - aiPct) <= TIE_MARGIN) return 'tie';",
       "types.ts: return humanPct > aiPct ? 'human' : 'ai';",
-      // Not a lead. dx is a spark's offset in pixels, so all this decides is
-      // which way a decorative spark flies out of the clash in the middle of
-      // the battle bar. It never sees a score.
-      "BattleBar.tsx: data-side={dx < 0 ? 'human' : 'ai'}",
     ]);
   });
 

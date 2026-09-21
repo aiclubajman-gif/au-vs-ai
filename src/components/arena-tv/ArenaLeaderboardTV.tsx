@@ -145,7 +145,7 @@ export function ArenaLeaderboardTV({ source, className }: { source: ArenaSource;
         <Callout side="ai" lead={lead} pct={share.aiPct} />
 
         <div className={styles.hud}>
-          <BattleBar share={share} />
+          <BattleBar share={share} lead={lead} />
           <SideColumn side="human" wins={shown.humanWins} slogan={['Real minds', 'Real impact']} />
           <Leaderboard players={shown.topPlayers} />
           <SideColumn side="ai" wins={shown.aiWins} slogan={['AI powers', 'possibilities']} />
