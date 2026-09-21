@@ -248,7 +248,7 @@ export function Round1({
           </div>
 
           <AnimatedSprite
-            name="boy"
+            name="emirati-boy"
             className="absolute bottom-2 left-0 h-[88px] drop-shadow-[0_4px_0_rgba(0,0,0,0.5)] sm:h-[100px] lg:hidden"
           />
           <AnimatedSprite

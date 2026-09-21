@@ -233,11 +233,16 @@ export const ANIMATED = [
   'mascot-boy-shrug',
   'mascot-girl-idk',
   'boy-sad',
+  'emirati-boy',
+  'girl-purple-hijab',
+  'girl-abaya',
+  'emirati-boy-sad',
+  'girl-abaya-sad',
 ] as const;
 
 export type AnimatedName = (typeof ANIMATED)[number];
 
-const ANIM_VERSION = '4';
+const ANIM_VERSION = '5';
 
 export function AnimatedSprite({
   name,

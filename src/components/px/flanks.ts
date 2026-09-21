@@ -28,8 +28,8 @@ export const FLANKS = {
     aspect: 1,
     plate: `${P}r1-left.webp`,
     actors: [
-      { name: 'boy', x: 9, y: 29, h: 27, motion: 'cheer', speed: '1.4s' },
-      { name: 'girl-cheering', x: 27, y: 29, h: 24, motion: 'cheer', speed: '1.3s', hop: '1.7s' },
+      { name: 'boy-cheer', x: 8, y: 29, h: 27, motion: 'cheer', speed: '1.4s' },
+      { name: 'girl-purple-hijab', x: 27, y: 29, h: 26, motion: 'cheer', speed: '1.3s', hop: '1.7s' },
     ],
   },
   'r1-right': {
@@ -46,8 +46,8 @@ export const FLANKS = {
     aspect: 520 / 944,
     plate: `${P}r2-left.webp`,
     actors: [
-      { name: 'boy', x: 26, y: 34, h: 30, motion: 'cheer', speed: '1.4s' },
-      { name: 'girl-cheering', x: 36, y: 8, h: 32, motion: 'cheer', speed: '1.3s', hop: '1.8s' },
+      { name: 'emirati-boy', x: 26, y: 34, h: 30, motion: 'cheer', speed: '1.4s' },
+      { name: 'girl-abaya', x: 38, y: 8, h: 31, motion: 'cheer', speed: '1.3s', hop: '1.8s' },
     ],
   },
   'r2-right': {
@@ -65,7 +65,7 @@ export const FLANKS = {
     plate: `${P}r3-left.webp`,
     actors: [
       { name: 'boy-confused', x: 26, y: 41, h: 21, motion: 'bob', speed: '2.7s' },
-      { name: 'girl-cheering', x: 10, y: 15, h: 21, motion: 'bob', speed: '4.0s' },
+      { name: 'girl-purple-hijab', x: 10, y: 15, h: 22, motion: 'bob', speed: '4.0s' },
     ],
   },
   'r3-right': {
@@ -82,8 +82,8 @@ export const FLANKS = {
     aspect: 430 / 944,
     plate: `${P}hw-left.webp`,
     actors: [
-      { name: 'boy-cheer', x: 6, y: 23, h: 30, motion: 'cheer', speed: '1.3s' },
-      { name: 'girl-cheering', x: 50, y: 23, h: 28, motion: 'cheer', speed: '1.4s', hop: '1.7s' },
+      { name: 'emirati-boy', x: 4, y: 23, h: 31, motion: 'cheer', speed: '1.3s' },
+      { name: 'girl-purple-hijab', x: 50, y: 23, h: 29, motion: 'cheer', speed: '1.4s', hop: '1.7s' },
     ],
   },
   'hw-right': {
@@ -100,8 +100,8 @@ export const FLANKS = {
     aspect: 400 / 944,
     plate: `${P}aw-left.webp`,
     actors: [
-      { name: 'boy-sad', x: 6, y: 28, h: 30, motion: 'slump', speed: '4.3s' },
-      { name: 'girl-sad', x: 42, y: 26, h: 22, motion: 'slump', speed: '5.0s' },
+      { name: 'emirati-boy-sad', x: 6, y: 28, h: 30, motion: 'slump', speed: '4.3s' },
+      { name: 'girl-abaya-sad', x: 44, y: 26, h: 24, motion: 'slump', speed: '5.0s' },
     ],
   },
   'aw-right': {
@@ -119,8 +119,8 @@ export const FLANKS = {
     aspect: 430 / 714,
     plate: `${P}lb-left.webp`,
     actors: [
-      { name: 'boy-cheer', x: 6, y: 30, h: 40, motion: 'cheer', speed: '1.3s' },
-      { name: 'girl-cheering', x: 50, y: 30, h: 37, motion: 'cheer', speed: '1.4s', hop: '1.7s' },
+      { name: 'emirati-boy', x: 4, y: 30, h: 41, motion: 'cheer', speed: '1.3s' },
+      { name: 'girl-purple-hijab', x: 50, y: 30, h: 38, motion: 'cheer', speed: '1.4s', hop: '1.7s' },
     ],
   },
   'lb-right': {
@@ -138,12 +138,11 @@ export const FLANKS = {
     plate: `${P}home-humans.webp`,
     actors: [
       { name: 'boy-cheer', x: 4, y: 52, h: 15, motion: 'cheer', speed: '1.4s', hop: '2.0s' },
-      { name: 'boy', x: 26, y: 62, h: 15, motion: 'cheer', speed: '1.3s' },
-      { name: 'boy-cheer', x: 29, y: 44, h: 15, motion: 'cheer', speed: '1.6s', hop: '1.7s' },
-      { name: 'boy', x: 47, y: 33, h: 15, motion: 'cheer', speed: '1.4s', hop: '2.1s' },
-      { name: 'girl-strawhat', x: 50, y: 68, h: 15, motion: 'cheer', speed: '1.6s', hop: '1.8s' },
-      { name: 'girl-cheering', x: 43, y: 45, h: 15, motion: 'cheer', speed: '1.5s', hop: '1.9s' },
-      { name: 'boy-cheer', x: 70, y: 25, h: 15, motion: 'cheer', speed: '1.4s', hop: '1.5s' },
+      { name: 'emirati-boy', x: 24, y: 63, h: 15, motion: 'cheer', speed: '1.3s' },
+      { name: 'girl-abaya', x: 27, y: 44, h: 15, motion: 'cheer', speed: '1.6s', hop: '1.7s' },
+      { name: 'girl-purple-hijab', x: 47, y: 35, h: 15, motion: 'cheer', speed: '1.4s', hop: '2.1s' },
+      { name: 'emirati-boy', x: 50, y: 70, h: 15, motion: 'cheer', speed: '1.6s', hop: '1.8s' },
+      { name: 'girl-purple-hijab', x: 8, y: 30, h: 15, motion: 'cheer', speed: '1.4s', hop: '1.5s' },
     ],
   },
   'home-robots': {
