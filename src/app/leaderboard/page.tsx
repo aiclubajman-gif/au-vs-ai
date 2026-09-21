@@ -1,6 +1,6 @@
 import { createAdminSupabase } from '@/lib/supabase/server';
 import { avatarFor, playerLabel } from '@/components/home/TopChallengers';
-import { PxChip, PxLink, PxPanel, Scene, Sprite, Wordmark } from '@/components/px';
+import { AnimatedSprite, PxChip, PxLink, PxPanel, Scene, Sprite, Wordmark } from '@/components/px';
 import type { LeaderboardDisplayMode } from '@/types';
 
 export const revalidate = 10;
@@ -57,7 +57,7 @@ export default async function LeaderboardPage() {
   const { rows, mode, isLive } = await getData();
 
   return (
-    <Scene left="/art/flanks/lb-left.webp" right="/art/flanks/lb-right.webp" leftWidth="24vw" rightWidth="24vw">
+    <Scene left="/art/flanks/lb-left.webp" right="/art/flanks/lb-right.webp" leftWidth="30vw" rightWidth="30vw">
       <div className="mx-auto flex w-full max-w-[560px] flex-1 flex-col px-4 pb-8 pt-5 sm:px-6 lg:max-w-[640px]">
         <header className="flex items-center justify-between gap-3">
           <div className="flex-1">
@@ -69,7 +69,7 @@ export default async function LeaderboardPage() {
             </p>
           </div>
           <div className="relative shrink-0">
-            <Sprite src="/sprites/mascot-girl-cheer.png" className="px-cheer h-32 w-auto sm:h-40" />
+            <AnimatedSprite name="mascot-girl-cheer" speed="0.8s" className="h-32 sm:h-40" />
             <Sprite src="/sprites/trophy.png" className="px-bob absolute -right-2 top-2 h-12 w-12" />
           </div>
         </header>
@@ -135,7 +135,7 @@ export default async function LeaderboardPage() {
           </PxLink>
         </div>
 
-        <p className="mt-6 text-center font-px text-[7px] text-[#9fb3e6]">HUMAN CREATIVITY ∞ AI POSSIBILITIES</p>
+        <p className="px-footer-note mt-6 text-center">HUMAN CREATIVITY ∞ AI POSSIBILITIES</p>
       </div>
     </Scene>
   );

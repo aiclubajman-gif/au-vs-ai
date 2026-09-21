@@ -207,12 +207,70 @@ export function Sprite({
   );
 }
 
+export const ANIMATED = [
+  'boy',
+  'girl-cheering',
+  'robot-1',
+  'mascot-boy-cheer',
+  'mascot-girl-cheer',
+  'boy-confused',
+  'robot-smirking',
+  'robot-peek',
+  'boy-cheer',
+  'robot-arms-raised',
+] as const;
+
+export type AnimatedName = (typeof ANIMATED)[number];
+
+export function AnimatedSprite({
+  name,
+  className = '',
+  style,
+  speed,
+}: {
+  name: AnimatedName;
+  className?: string;
+  style?: CSSProperties;
+  speed?: string;
+}) {
+  return (
+    <span
+      className={`px-anim select-none ${className}`}
+      style={{ ...style, ['--frame-speed' as string]: speed }}
+      aria-hidden="true"
+    >
+      <img src={`/sprites/anim/${name}-1.png`} alt="" draggable={false} className="px-anim__f1 pixelated" />
+      <img src={`/sprites/anim/${name}-2.png`} alt="" draggable={false} className="px-anim__f2 pixelated" />
+    </span>
+  );
+}
+
+const FLANK_ASPECT: Record<string, number> = {
+  '/sprites/round1-left-flank.png': 1,
+  '/art/flanks/r1-right.webp': 380 / 944,
+  '/art/flanks/r2-left.webp': 520 / 944,
+  '/art/flanks/r2-right.webp': 470 / 944,
+  '/art/flanks/r3-left.webp': 300 / 944,
+  '/art/flanks/r3-right.webp': 300 / 944,
+  '/art/flanks/hw-left.webp': 430 / 944,
+  '/art/flanks/hw-right.webp': 460 / 944,
+  '/art/flanks/aw-left.webp': 400 / 944,
+  '/art/flanks/aw-right.webp': 350 / 944,
+  '/art/flanks/lb-left.webp': 430 / 714,
+  '/art/flanks/lb-right.webp': 460 / 714,
+};
+
+function flankStyle(src: string, cap: string): CSSProperties {
+  const aspect = FLANK_ASPECT[src] ?? 0.45;
+  return { width: `min(calc(100dvh * ${aspect.toFixed(3)}), ${cap})`, backgroundImage: `url(${src})` };
+}
+
 export function Scene({
   children,
   left,
   right,
-  leftWidth = '22vw',
-  rightWidth = '22vw',
+  leftWidth = '26vw',
+  rightWidth = '26vw',
   className = '',
 }: {
   children: ReactNode;
@@ -224,20 +282,11 @@ export function Scene({
 }) {
   return (
     <main className={`px-scene flex flex-col ${className}`}>
-      {left && (
-        <div
-          className="px-flank px-flank--left"
-          style={{ width: leftWidth, backgroundImage: `url(${left})` }}
-          aria-hidden="true"
-        />
-      )}
-      {right && (
-        <div
-          className="px-flank px-flank--right"
-          style={{ width: rightWidth, backgroundImage: `url(${right})` }}
-          aria-hidden="true"
-        />
-      )}
+      {left && <div className="px-flank px-flank--left" style={flankStyle(left, leftWidth)} aria-hidden="true" />}
+      {right && <div className="px-flank px-flank--right" style={flankStyle(right, rightWidth)} aria-hidden="true" />}
+      <div className="px-ambient" aria-hidden="true">
+        <div className="px-sweep" />
+      </div>
       <div className="relative z-10 flex flex-1 flex-col">{children}</div>
     </main>
   );

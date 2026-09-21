@@ -1,5 +1,5 @@
 import { CLUB } from '@/lib/club';
-import { PxChip, PxLink, PxPanel, PxStar, Scene, Sprite, Wordmark } from '@/components/px';
+import { AnimatedSprite, PxChip, PxLink, PxPanel, PxStar, Scene, Wordmark } from '@/components/px';
 
 export const metadata = {
   title: 'Join AIDA — AI & Data Science Club',
@@ -8,19 +8,19 @@ export const metadata = {
 
 export default function ClubPage() {
   return (
-    <Scene left="/art/flanks/r2-left.webp" right="/art/flanks/lb-right.webp" leftWidth="24vw" rightWidth="24vw">
+    <Scene left="/art/flanks/r2-left.webp" right="/art/flanks/lb-right.webp" leftWidth="30vw" rightWidth="30vw">
       <div className="mx-auto flex w-full max-w-[560px] flex-1 flex-col px-4 pb-8 pt-5 sm:px-6">
         <header className="flex flex-col items-center text-center">
           <Wordmark name="humans-vs-ai" as="div" className="w-[72%] max-w-[300px]" />
           <PxChip className="mt-2 text-[7px] sm:text-[8px]">{CLUB.name.toUpperCase()}</PxChip>
 
           <div className="mt-5 flex items-end justify-center gap-3">
-            <Sprite src="/sprites/mascot-boy-cheer.png" className="px-cheer h-28 w-auto sm:h-36" />
+            <AnimatedSprite name="mascot-boy-cheer" speed="0.8s" className="h-28 sm:h-36" />
             <div className="pb-4">
               <h1 className="font-px text-[26px] text-[#ffe66a] px-text-outline sm:text-[32px]">JOIN</h1>
               <h1 className="font-px text-[26px] text-[#7ffafe] px-text-outline sm:text-[32px]">AIDA</h1>
             </div>
-            <Sprite src="/sprites/mascot-girl-cheer.png" className="px-cheer h-28 w-auto sm:h-36" style={{ animationDelay: '-0.35s' }} />
+            <AnimatedSprite name="mascot-girl-cheer" speed="0.9s" className="h-28 sm:h-36" />
           </div>
         </header>
 

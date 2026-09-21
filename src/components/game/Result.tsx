@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PxChip, PxLink, PxPanel, Scene, Sprite, Wordmark } from '@/components/px';
+import { AnimatedSprite, PxChip, PxLink, PxPanel, Scene, Sprite, Wordmark } from '@/components/px';
 import type { PublicAttemptResult } from '@/types';
 
 function useCountUp(target: number, skip: boolean) {
@@ -95,8 +95,8 @@ export function Result({ result, returning = false }: { result: PublicAttemptRes
     <Scene
       left={win ? '/art/flanks/hw-left.webp' : '/art/flanks/aw-left.webp'}
       right={win ? '/art/flanks/hw-right.webp' : '/art/flanks/aw-right.webp'}
-      leftWidth={win ? '24vw' : '22vw'}
-      rightWidth={win ? '26vw' : '20vw'}
+      leftWidth="30vw"
+      rightWidth="30vw"
     >
       <div className={`px-confetti ${win ? '' : 'px-confetti--cyan'}`} aria-hidden="true" />
 
@@ -121,7 +121,7 @@ export function Result({ result, returning = false }: { result: PublicAttemptRes
 
         {!win && (
           <div className="mt-2 flex justify-center lg:hidden">
-            <Sprite src="/sprites/robot-arms-raised.png" className="px-cheer h-28 w-auto drop-shadow-[0_0_16px_rgba(0,187,252,0.6)]" />
+            <AnimatedSprite name="robot-arms-raised" speed="0.7s" className="h-28 drop-shadow-[0_0_16px_rgba(0,187,252,0.6)]" />
           </div>
         )}
 
@@ -148,8 +148,8 @@ export function Result({ result, returning = false }: { result: PublicAttemptRes
 
         {win && (
           <div className="mt-3 flex items-end justify-center gap-4 lg:hidden">
-            <Sprite src="/sprites/mascot-boy-cheer.png" className="px-cheer h-28 w-auto" />
-            <Sprite src="/sprites/mascot-girl-cheer.png" className="px-cheer h-24 w-auto" style={{ animationDelay: '-0.35s' }} />
+            <AnimatedSprite name="mascot-boy-cheer" speed="0.7s" className="h-28" />
+            <AnimatedSprite name="mascot-girl-cheer" speed="0.8s" className="h-24" />
           </div>
         )}
 

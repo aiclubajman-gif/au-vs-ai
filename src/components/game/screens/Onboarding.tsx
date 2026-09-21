@@ -3,7 +3,7 @@
 import type { KeyboardEvent, ReactNode } from 'react';
 import Link from 'next/link';
 import { OtpInput } from '@/components/game/OtpInput';
-import { ErrorBanner, PxButton, PxChip, PxLink, PxPanel, PxStar, Scene, Sprite, Wordmark } from '@/components/px';
+import { AnimatedSprite, ErrorBanner, PxButton, PxChip, PxLink, PxPanel, PxStar, Scene, Sprite, Wordmark } from '@/components/px';
 import type { College } from '@/types';
 
 export interface ApiError {
@@ -58,7 +58,7 @@ export function OnboardingShell({
   wide?: boolean;
 }) {
   return (
-    <Scene left="/art/flanks/r2-left.webp" right="/art/flanks/r2-right.webp" leftWidth="24vw" rightWidth="22vw">
+    <Scene left="/art/flanks/r2-left.webp" right="/art/flanks/r2-right.webp" leftWidth="30vw" rightWidth="30vw">
       <div
         className={`mx-auto flex w-full flex-1 flex-col px-4 pb-6 pt-5 sm:px-6 ${wide ? 'max-w-[560px]' : 'max-w-[480px]'}`}
       >
@@ -72,7 +72,7 @@ export function OnboardingShell({
           </div>
         )}
         <div className="my-auto pt-5">{children}</div>
-        <p className="mt-6 text-center font-px text-[7px] text-[#9fb3e6]">AIDA CLUB FAIR CHALLENGE · AJMAN UNIVERSITY</p>
+        <p className="px-footer-note mt-6 text-center">AIDA CLUB FAIR CHALLENGE · AJMAN UNIVERSITY</p>
       </div>
     </Scene>
   );
@@ -599,11 +599,11 @@ export function LoadingScreen({ label = 'LOADING GAME…' }: { label?: string })
 
 export function ScoringScreen({ retrying }: { retrying: boolean }) {
   return (
-    <Scene left="/art/flanks/r2-left.webp" right="/art/flanks/r2-right.webp" leftWidth="24vw" rightWidth="22vw">
+    <Scene left="/art/flanks/r2-left.webp" right="/art/flanks/r2-right.webp" leftWidth="30vw" rightWidth="30vw">
       <div className="mx-auto flex w-full max-w-[480px] flex-1 flex-col items-center justify-center px-5 text-center">
         <div className="flex items-end gap-2">
-          <Sprite src="/sprites/mascot-boy-cheer.png" className="px-bob h-28 w-auto" />
-          <Sprite src="/sprites/robot-1.png" className="px-bob px-bob--delay h-24 w-auto" />
+          <AnimatedSprite name="mascot-boy-cheer" speed="0.8s" className="h-28" />
+          <AnimatedSprite name="robot-1" speed="1.2s" className="h-24" />
         </div>
         <PxPanel tone="cyan" className="mt-5 w-full p-5">
           <div className="mx-auto px-spinner" />
@@ -620,15 +620,18 @@ export function ScoringScreen({ retrying }: { retrying: boolean }) {
 export function TestModeBar({ onJump }: { onJump: (step: string) => void }) {
   if (process.env.NODE_ENV === 'production') return null;
   return (
-    <div className="fixed bottom-2 left-2 z-50 flex flex-wrap gap-1 opacity-60 hover:opacity-100">
-      {['email', 'otp', 'profile', 'device', 'ready', 'round1', 'outro1', 'round2', 'round3', 'result', 'blocked'].map((s) => (
-        <button key={s} onClick={() => onJump(s)} className="bg-black/70 px-2 py-1 font-px text-[7px] text-white">
-          {s}
-        </button>
-      ))}
-      <Link href="/leaderboard" className="bg-black/70 px-2 py-1 font-px text-[7px] text-white">
-        board
-      </Link>
-    </div>
+    <details className="fixed right-1 top-1 z-50 opacity-50 hover:opacity-100">
+      <summary className="cursor-pointer list-none bg-black/70 px-2 py-1 font-px text-[7px] text-white">dev</summary>
+      <div className="mt-1 flex w-40 flex-wrap justify-end gap-1">
+        {['email', 'otp', 'profile', 'device', 'ready', 'round1', 'outro1', 'round2', 'round3', 'result', 'blocked'].map((s) => (
+          <button key={s} onClick={() => onJump(s)} className="bg-black/70 px-2 py-1 font-px text-[7px] text-white">
+            {s}
+          </button>
+        ))}
+        <Link href="/leaderboard" className="bg-black/70 px-2 py-1 font-px text-[7px] text-white">
+          board
+        </Link>
+      </div>
+    </details>
   );
 }

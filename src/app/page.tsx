@@ -75,6 +75,10 @@ export default async function LandingPage() {
         aria-hidden="true"
       />
 
+      <div className="px-ambient" aria-hidden="true">
+        <div className="px-sweep" />
+      </div>
+
       <header className="relative z-20 flex items-center justify-between px-4 pt-4 sm:px-6">
         <PxChip className="text-[9px] sm:text-[10px]">AIDA</PxChip>
         <nav className="flex items-center gap-2" aria-label="Site">
@@ -119,9 +123,7 @@ export default async function LandingPage() {
         />
       </div>
 
-      <footer className="relative z-20 pb-4 text-center font-px text-[7px] text-[#9fb3e6] sm:text-[8px]">
-        AIDA CLUB FAIR CHALLENGE · AJMAN UNIVERSITY
-      </footer>
+      <footer className="px-footer-note relative z-20 pb-4 text-center">AIDA CLUB FAIR CHALLENGE · AJMAN UNIVERSITY</footer>
     </main>
   );
 }

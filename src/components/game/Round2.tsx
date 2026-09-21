@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { PxButton, PxPanel, PxStar, PxTimer, RetryNotice, Scene, Sprite, Wordmark } from '@/components/px';
+import { AnimatedSprite, PxButton, PxPanel, PxStar, PxTimer, RetryNotice, Scene, Wordmark } from '@/components/px';
 import { submitWithRetry, isRetryable, describeSaveFailure, localSave, type SubmitFailure } from '@/lib/client/submit';
 import { resolveClassifier, type Prediction } from '@/lib/ml/classifier';
 import type { Round2Assignment } from '@/types';
@@ -287,7 +287,7 @@ export function Round2({
   const drawingPhase = phase === 'drawing';
 
   return (
-    <Scene left="/art/flanks/r2-left.webp" right="/art/flanks/r2-right.webp" leftWidth="26vw" rightWidth="24vw">
+    <Scene left="/art/flanks/r2-left.webp" right="/art/flanks/r2-right.webp" leftWidth="30vw" rightWidth="30vw">
       <div className="mx-auto flex w-full max-w-[560px] flex-1 flex-col px-4 pb-5 pt-4 sm:px-6 lg:max-w-[600px]">
         <div className="flex items-center justify-center gap-3">
           <TickMarks />
@@ -379,9 +379,10 @@ export function Round2({
             </div>
           </div>
 
-          <Sprite
-            src="/sprites/robot-peek.png"
-            className="px-bob absolute -right-4 top-[14%] h-[120px] w-auto drop-shadow-[0_0_14px_rgba(0,187,252,0.6)] sm:h-[136px] lg:hidden"
+          <AnimatedSprite
+            name="robot-peek"
+            speed="1.6s"
+            className="absolute -right-4 top-[14%] h-[120px] drop-shadow-[0_0_14px_rgba(0,187,252,0.6)] sm:h-[136px] lg:hidden"
           />
         </div>
 
@@ -413,10 +414,7 @@ export function Round2({
           </PxButton>
         </div>
 
-        <Sprite
-          src="/sprites/boy-cheer.png"
-          className="px-cheer pointer-events-none absolute bottom-2 right-3 h-[84px] w-auto lg:hidden"
-        />
+        <AnimatedSprite name="boy-cheer" speed="0.7s" className="pointer-events-none absolute bottom-2 right-3 h-[84px] lg:hidden" />
       </div>
     </Scene>
   );

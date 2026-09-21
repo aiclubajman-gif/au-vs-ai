@@ -112,6 +112,7 @@
   border: 0;
 }
 
+@layer components {
 .px-scene {
   position: relative;
   min-height: 100dvh;
@@ -137,8 +138,70 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(1, 15, 56, 0.55);
+  background:
+    radial-gradient(60% 40% at 15% 100%, rgba(0, 187, 252, 0.16), transparent 70%),
+    radial-gradient(60% 40% at 85% 0%, rgba(0, 187, 252, 0.14), transparent 70%),
+    rgba(1, 15, 56, 0.22);
   pointer-events: none;
+}
+
+.px-ambient {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.px-ambient::before,
+.px-ambient::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 110%;
+  width: 4px;
+  height: 4px;
+  background: #7ffafe;
+  box-shadow:
+    5vw -10vh #7ffafe, 12vw -32vh #ffe66a, 19vw -55vh #7ffafe, 26vw -20vh #7ffafe,
+    33vw -70vh #ffe66a, 41vw -5vh #7ffafe, 48vw -45vh #7ffafe, 55vw -88vh #ffe66a,
+    62vw -28vh #7ffafe, 69vw -60vh #7ffafe, 76vw -15vh #ffe66a, 83vw -80vh #7ffafe,
+    90vw -38vh #7ffafe, 97vw -95vh #ffe66a;
+  opacity: 0.8;
+  animation: px-rise-motes 14s linear infinite;
+}
+
+.px-ambient::after {
+  width: 6px;
+  height: 6px;
+  animation-duration: 22s;
+  animation-delay: -9s;
+  opacity: 0.45;
+  box-shadow:
+    8vw -22vh #7ffafe, 22vw -66vh #7ffafe, 37vw -12vh #ffe66a, 52vw -50vh #7ffafe,
+    66vw -84vh #7ffafe, 80vw -30vh #ffe66a, 94vw -58vh #7ffafe;
+}
+
+@keyframes px-rise-motes {
+  to {
+    transform: translateY(-230vh);
+  }
+}
+
+.px-sweep {
+  position: absolute;
+  inset: -20% -40%;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 40%, rgba(127, 250, 254, 0.08) 50%, transparent 60%);
+  animation: px-sweep 9s ease-in-out infinite;
+}
+
+@keyframes px-sweep {
+  0% {
+    transform: translateX(-30%);
+  }
+  100% {
+    transform: translateX(30%);
+  }
 }
 
 .px-flank {
@@ -152,16 +215,29 @@
   image-rendering: pixelated;
   background-repeat: no-repeat;
   background-size: auto 100%;
+  animation: px-flank-float 7s ease-in-out infinite;
+}
+
+@keyframes px-flank-float {
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.px-flank--right {
+  animation-delay: -3.5s;
 }
 
 .px-flank--left {
   left: 0;
   background-position: left bottom;
+  mask-image: linear-gradient(to right, #000 62%, transparent 100%);
 }
 
 .px-flank--right {
   right: 0;
   background-position: right bottom;
+  mask-image: linear-gradient(to left, #000 62%, transparent 100%);
 }
 
 @media (min-width: 1024px) {
@@ -273,8 +349,45 @@
   text-align: center;
 }
 
+.px-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+.px-btn:hover:not(:disabled)::after {
+  transform: translateY(8px);
+}
+
+.px-btn__face::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -40%;
+  width: 24%;
+  background: linear-gradient(105deg, transparent 0%, rgba(255, 255, 255, 0.45) 50%, transparent 100%);
+  transform: skewX(-18deg);
+  opacity: 0;
+}
+
+.px-btn:hover:not(:disabled) .px-btn__face::after {
+  animation: px-shine 0.7s steps(8) forwards;
+}
+
+@keyframes px-shine {
+  from {
+    left: -40%;
+    opacity: 1;
+  }
+  to {
+    left: 120%;
+    opacity: 1;
+  }
+}
+
 .px-btn:active:not(:disabled) {
   transform: translateY(5px);
+  filter: none;
 }
 
 .px-btn:active:not(:disabled)::after {
@@ -671,6 +784,40 @@ input.px-slider::-moz-range-thumb {
   }
 }
 
+.px-anim {
+  position: relative;
+  display: inline-block;
+}
+
+.px-anim > img {
+  display: block;
+  height: 100%;
+  width: auto;
+}
+
+.px-anim__f1 {
+  animation: px-frame-a var(--frame-speed, 0.9s) steps(1) infinite;
+}
+
+.px-anim__f2 {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  animation: px-frame-b var(--frame-speed, 0.9s) steps(1) infinite;
+}
+
+@keyframes px-frame-a {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes px-frame-b {
+  50% {
+    opacity: 1;
+  }
+}
+
 .px-bob {
   animation: px-bob 1.1s steps(2) infinite;
 }
@@ -769,6 +916,16 @@ input.px-slider::-moz-range-thumb {
     conic-gradient(#00bbfc calc(var(--p) * 1%), #0a2a5e 0);
   mask: radial-gradient(circle, transparent 58%, black 59%);
   box-shadow: 0 0 20px rgba(0, 187, 252, 0.4);
+}
+
+.px-footer-note {
+  font-family: var(--font-px);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  color: #dff6ff;
+  text-shadow: 1px 1px 0 #041030, -1px 1px 0 #041030, 1px -1px 0 #041030, -1px -1px 0 #041030;
+}
+
 }
 
 @media (prefers-reduced-motion: reduce) {

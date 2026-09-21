@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { PxButton, PxChip, PxTimer, RetryNotice, Scene, Sprite, Wordmark } from '@/components/px';
+import { AnimatedSprite, PxButton, PxChip, PxTimer, RetryNotice, Scene, Wordmark } from '@/components/px';
 import { submitWithRetry, isRetryable, describeSaveFailure, localSave, type SubmitFailure } from '@/lib/client/submit';
 import { answerTimeRemaining } from '@/lib/client/answer-window';
 import type { Round1Slot } from '@/types';
@@ -179,7 +179,7 @@ export function Round1({
   const active = imageState === 'ready' && !locked;
 
   return (
-    <Scene left="/sprites/round1-left-flank.png" right="/art/flanks/r1-right.webp" leftWidth="26vw" rightWidth="20vw">
+    <Scene left="/sprites/round1-left-flank.png" right="/art/flanks/r1-right.webp" leftWidth="30vw" rightWidth="30vw">
       <div className="mx-auto flex w-full max-w-[560px] flex-1 flex-col px-4 pb-5 pt-4 sm:px-6 lg:max-w-[640px]">
         <div className="flex justify-center lg:hidden">
           <PxChip className="text-[9px]">ROUND 1</PxChip>
@@ -247,13 +247,14 @@ export function Round1({
             </div>
           </div>
 
-          <Sprite
-            src="/sprites/boy.png"
-            className="px-bob absolute bottom-2 left-0 h-[88px] w-auto drop-shadow-[0_4px_0_rgba(0,0,0,0.5)] sm:h-[100px] lg:hidden"
+          <AnimatedSprite
+            name="boy"
+            className="absolute bottom-2 left-0 h-[88px] drop-shadow-[0_4px_0_rgba(0,0,0,0.5)] sm:h-[100px] lg:hidden"
           />
-          <Sprite
-            src="/sprites/robot-1.png"
-            className="px-bob px-bob--delay absolute bottom-2 right-0 h-[84px] w-auto drop-shadow-[0_0_14px_rgba(0,187,252,0.6)] sm:h-[96px] lg:hidden"
+          <AnimatedSprite
+            name="robot-1"
+            speed="1.3s"
+            className="absolute bottom-2 right-0 h-[84px] drop-shadow-[0_0_14px_rgba(0,187,252,0.6)] sm:h-[96px] lg:hidden"
           />
         </div>
 
@@ -270,8 +271,8 @@ export function Round1({
             variant="cyan"
             onClick={() => answer('ai_generated')}
             disabled={locked || imageState !== 'ready'}
-            className="min-h-[96px] text-[14px] sm:min-h-[104px] sm:text-[16px] lg:min-h-[76px]"
-            labelClassName="flex-col gap-1 leading-relaxed text-[#032846]"
+            className="min-h-[96px] text-[13px] sm:min-h-[104px] sm:text-[15px] lg:min-h-[76px]"
+            labelClassName="flex-col gap-[3px] leading-none text-[#032846]"
           >
             <span>AI</span>
             <span>GENERATED</span>

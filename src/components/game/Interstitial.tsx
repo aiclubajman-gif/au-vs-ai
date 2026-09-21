@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PxButton, PxChip, PxPanel, Scene, Sprite, Wordmark } from '@/components/px';
+import { AnimatedSprite, PxButton, PxChip, PxPanel, Scene, Wordmark } from '@/components/px';
 
 export interface RoundIntro {
   eyebrow: string;
@@ -100,7 +100,7 @@ export function Interstitial({
   const art = ROUND_ART[round];
 
   return (
-    <Scene left={art.left} right={art.right} leftWidth="24vw" rightWidth="22vw">
+    <Scene left={art.left} right={art.right} leftWidth="30vw" rightWidth="30vw">
       <div className="mx-auto flex w-full max-w-[520px] flex-1 flex-col px-4 pb-6 pt-5 sm:px-6">
         <div className="flex justify-center">
           <PxChip className="text-[9px] sm:text-[10px]">{content.eyebrow}</PxChip>
@@ -111,8 +111,8 @@ export function Interstitial({
             <>
               <Wordmark name={art.wordmark} priority className="w-[86%] max-w-[420px]" />
               <div className="mt-4 flex items-end gap-3">
-                <Sprite src={art.human} className="px-bob h-24 w-auto sm:h-28" />
-                <Sprite src={art.robot} className="px-bob px-bob--delay h-24 w-auto drop-shadow-[0_0_14px_rgba(0,187,252,0.5)] sm:h-28" />
+                <AnimatedSprite name={art.human} className="h-24 sm:h-28" />
+                <AnimatedSprite name={art.robot} speed="1.3s" className="h-24 drop-shadow-[0_0_14px_rgba(0,187,252,0.5)] sm:h-28" />
               </div>
               <PxPanel tone="cyan" className="mt-4 w-full px-5 py-5 text-left">
                 <ul className="space-y-3">
@@ -131,10 +131,7 @@ export function Interstitial({
             <>
               <h2 className="font-px text-[22px] text-[#ffe66a] px-text-outline sm:text-[26px]">{outro.title ?? 'FUN FACT'}</h2>
               <div className="relative mt-4 w-full">
-                <Sprite
-                  src="/sprites/mascot-girl-cheer.png"
-                  className="px-bob absolute -top-10 left-2 z-10 h-32 w-auto sm:-left-2 sm:h-40"
-                />
+                <AnimatedSprite name="mascot-girl-cheer" speed="0.8s" className="absolute -top-10 left-2 z-10 h-32 sm:-left-2 sm:h-40" />
                 <PxPanel tone="gold" className="w-full py-5 pl-[38%] pr-5 text-left sm:pl-[36%]">
                   <p className="text-[17px] leading-snug text-[#f4f6ff] sm:text-[18px]">{outro.fact}</p>
                 </PxPanel>
@@ -162,7 +159,7 @@ const ROUND_BY_TITLE: Record<string, 1 | 2 | 3> = { 'Spot the Fake': 1, 'Draw vs
 const ROUND_BY_EYEBROW: Record<string, 1 | 2 | 3> = { 'ROUND 1 COMPLETE': 1, 'ROUND 2 COMPLETE': 2, 'ALL ROUNDS COMPLETE': 3 };
 
 const ROUND_ART = {
-  1: { wordmark: 'real-or-ai', left: '/sprites/round1-left-flank.png', right: '/art/flanks/r1-right.webp', human: '/sprites/boy.png', robot: '/sprites/robot-1.png' },
-  2: { wordmark: 'draw-vs-ai', left: '/art/flanks/r2-left.webp', right: '/art/flanks/r2-right.webp', human: '/sprites/girl-cheering.png', robot: '/sprites/robot-cat.png' },
-  3: { wordmark: 'ai-knowledge', left: '/art/flanks/r3-left.webp', right: '/art/flanks/r3-right.webp', human: '/sprites/boy-confused.png', robot: '/sprites/robot-smirking.png' },
+  1: { wordmark: 'real-or-ai', left: '/sprites/round1-left-flank.png', right: '/art/flanks/r1-right.webp', human: 'boy', robot: 'robot-1' },
+  2: { wordmark: 'draw-vs-ai', left: '/art/flanks/r2-left.webp', right: '/art/flanks/r2-right.webp', human: 'girl-cheering', robot: 'robot-arms-raised' },
+  3: { wordmark: 'ai-knowledge', left: '/art/flanks/r3-left.webp', right: '/art/flanks/r3-right.webp', human: 'boy-confused', robot: 'robot-smirking' },
 } as const;

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { PxButton, PxChip, PxPanel, PxTimer, RetryNotice, Scene, Sprite, Wordmark } from '@/components/px';
+import { AnimatedSprite, PxButton, PxChip, PxPanel, PxTimer, RetryNotice, Scene, Wordmark } from '@/components/px';
 import { submitWithRetry, isRetryable, describeSaveFailure, localSave, type SubmitFailure } from '@/lib/client/submit';
 import type { Round3Assignment } from '@/types';
 
@@ -106,7 +106,7 @@ export function Round3({
   const pct = span > 0 ? ((guess - assignment.minValue) / span) * 100 : 0;
 
   return (
-    <Scene left="/art/flanks/r3-left.webp" right="/art/flanks/r3-right.webp" leftWidth="18vw" rightWidth="18vw">
+    <Scene left="/art/flanks/r3-left.webp" right="/art/flanks/r3-right.webp" leftWidth="30vw" rightWidth="30vw">
       <div className="mx-auto flex w-full max-w-[560px] flex-1 flex-col px-4 pb-5 pt-4 sm:px-6 lg:max-w-[680px]">
         <div className="flex lg:justify-center">
           <PxChip className="text-[9px]">ROUND 3</PxChip>
@@ -137,8 +137,8 @@ export function Round3({
 
         <div className="relative">
           <div className="pointer-events-none absolute inset-x-0 -top-[84px] flex items-end justify-between px-1 lg:hidden">
-            <Sprite src="/sprites/boy-confused.png" className="px-bob h-[84px] w-auto" />
-            <Sprite src="/sprites/robot-smirking.png" className="px-bob px-bob--delay h-[84px] w-auto drop-shadow-[0_0_12px_rgba(0,187,252,0.5)]" />
+            <AnimatedSprite name="boy-confused" speed="1.4s" className="h-[84px]" />
+            <AnimatedSprite name="robot-smirking" speed="1.8s" className="h-[84px] drop-shadow-[0_0_12px_rgba(0,187,252,0.5)]" />
           </div>
 
           <div className="hidden justify-between px-1 font-px text-[12px] text-[#dff6ff] px-text-outline lg:flex">
