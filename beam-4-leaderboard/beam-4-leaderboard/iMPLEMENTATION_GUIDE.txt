@@ -1,0 +1,831 @@
+HUMANS VS AI - PIXEL BEAM ASSET PACK
+AI-READY IMPLEMENTATION GUIDE
+=====================================
+
+PURPOSE
+-------
+This file is the implementation contract for the animated Humans-vs-AI pixel beam asset pack.
+
+It is written so that a coding AI (ChatGPT, Claude, Kimi, etc.) or a human developer can read it and implement the effect without needing extra visual interpretation.
+
+CORE IDEA
+---------
+- ORANGE = Humans.
+- CYAN/BLUE = AI.
+- Humans push from LEFT -> RIGHT.
+- AI pushes from RIGHT -> LEFT.
+- The bright white impact/collision moves toward the LOSING side.
+- If Humans are winning, the impact moves RIGHT (toward AI).
+- If AI is winning, the impact moves LEFT (toward Humans).
+- At 50/50, the impact is centered.
+- The artwork is pixel art. Never blur or smooth it.
+
+IMPORTANT:
+The FULL collision animation is only a ready-made neutral/fixed clash.
+For a percentage-driven beam, use the THREE MODULAR spritesheets:
+1. beam-human-spritesheet.png
+2. beam-ai-spritesheet.png
+3. beam-impact-spritesheet.png
+
+Tiled can store and animate the sprite frames, but the actual Human/AI percentage calculation and movement of the collision point should be controlled by game code.
+
+
+============================================================
+1. FILE-BY-FILE DESCRIPTION
+============================================================
+
+A) beam-collision-spritesheet.png
+--------------------------------
+Purpose:
+- Ready-to-use complete beam animation.
+- Best for previews, mockups, or a fixed 50/50 clash.
+- Do NOT use this file as the primary asset for dynamic percentage movement.
+
+Format:
+- 8 frames.
+- Each frame: 320 x 96 px.
+- Total sheet: 2560 x 96 px.
+- One horizontal row.
+- Frame order: left -> right.
+- No spacing.
+- No margin.
+- Transparent background.
+- Neutral/fixed collision center: (160, 48).
+- Recommended frame duration: 100 ms per frame.
+- 80-100 ms is acceptable.
+
+Frame sequence:
+1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> back to 1.
+
+Frame 5 is the visual peak / strongest impact.
+
+Use when:
+- You just want a looping animated beam with the collision in the center.
+- You are testing the leaderboard layout before percentage logic exists.
+
+Do not use when:
+- The collision needs to move according to Human/AI percentages.
+
+
+B) beam-collision-01.png through I) beam-collision-08.png
+---------------------------------------------------------
+Purpose:
+- Individual full-beam animation frames.
+- Same animation as beam-collision-spritesheet.png, but exported separately.
+
+Format:
+- Each image: 320 x 96 px.
+- Transparent background.
+- Same alignment and canvas size in every frame.
+- Playback order is 01 -> 08.
+- Frame 5 is the peak.
+- Frame 8 transitions back into frame 1.
+
+Use when:
+- The target engine prefers separate frame files instead of one spritesheet.
+- Debugging or previewing individual frames.
+- Rebuilding the fixed neutral animation in an engine that does not support horizontal sprite sheets.
+
+These are still FIXED/NEUTRAL frames. They are not the dynamic percentage solution.
+
+
+J) beam-collision-preview.gif
+-----------------------------
+Purpose:
+- Human-friendly preview of the full neutral animation.
+- Useful for quickly checking how the beam should look when animated.
+
+Format:
+- 320 x 96 px.
+- Transparent.
+- 8 frames.
+- 100 ms per frame.
+- Loops forever.
+
+IMPORTANT:
+- Use this as a preview/reference.
+- Do not use the GIF as the primary production asset if the game needs dynamic collision movement.
+
+
+K) beam-human-spritesheet.png
+-----------------------------
+Purpose:
+- Modular ORANGE Human beam.
+- One of the three MAIN assets for the final percentage-driven effect.
+
+Format:
+- 4 frames.
+- Each frame: 200 x 64 px.
+- Total sheet: 800 x 64 px.
+- One horizontal row.
+- No spacing.
+- No margin.
+- Transparent background.
+- Points LEFT -> RIGHT.
+- Contact anchor inside each frame: (190, 32).
+- Recommended frame duration: 100 ms.
+
+Source rectangle for frame N:
+x = N * 200
+y = 0
+width = 200
+height = 64
+where N is 0,1,2,3.
+
+
+L) beam-ai-spritesheet.png
+--------------------------
+Purpose:
+- Modular CYAN/BLUE AI beam.
+- One of the three MAIN assets for the final percentage-driven effect.
+
+Format:
+- 4 frames.
+- Each frame: 200 x 64 px.
+- Total sheet: 800 x 64 px.
+- One horizontal row.
+- No spacing.
+- No margin.
+- Transparent background.
+- Points RIGHT -> LEFT.
+- Contact anchor inside each frame: (10, 32).
+- Recommended frame duration: 100 ms.
+
+Source rectangle for frame N:
+x = N * 200
+y = 0
+width = 200
+height = 64
+where N is 0,1,2,3.
+
+
+M) beam-impact-spritesheet.png
+------------------------------
+Purpose:
+- Modular animated center collision / explosion.
+- One of the three MAIN assets for the final percentage-driven effect.
+
+Format:
+- 6 frames.
+- Each frame: 72 x 72 px.
+- Total sheet: 432 x 72 px.
+- One horizontal row.
+- No spacing.
+- No margin.
+- Transparent background.
+- Center anchor inside each frame: (36, 36).
+- Recommended frame duration: 100 ms.
+
+Source rectangle for frame N:
+x = N * 72
+y = 0
+width = 72
+height = 72
+where N is 0,1,2,3,4,5.
+
+
+N) human-vs-ai-beam.piskel
+--------------------------
+Purpose:
+- Editable source project for Piskel.
+- Use only if the artwork itself needs editing.
+
+Project:
+- Canvas: 320 x 96 px.
+- 8 animation frames.
+- 10 FPS.
+- Layers:
+  1. Orange Beam
+  2. Blue Beam
+  3. Collision
+  4. Particles
+  5. Highlights
+
+It is not required for normal game playback.
+
+
+O) README.txt
+-------------
+Purpose:
+- Original compact asset-pack notes.
+- Contains dimensions, frame timing, anchors, Tiled import notes, and display rules.
+
+This AI-ready implementation guide expands on that README and explains the dynamic percentage behavior in detail.
+
+
+============================================================
+2. WHICH FILES TO USE
+============================================================
+
+FOR A QUICK FIXED DEMO:
+Use:
+- beam-collision-spritesheet.png
+
+Result:
+- Nice animated clash.
+- Collision stays at the center.
+- No score logic.
+
+FOR THE REAL PERCENTAGE-DRIVEN VERSION:
+Use:
+- beam-human-spritesheet.png
+- beam-ai-spritesheet.png
+- beam-impact-spritesheet.png
+
+The full collision spritesheet and GIF are NOT needed for the dynamic version except as visual references.
+
+
+============================================================
+3. TILED IMPORT SETUP
+============================================================
+
+Tiled does not automatically know that a spritesheet is animated.
+The animation frames must be defined.
+
+Create a separate tileset for each spritesheet.
+
+FULL COLLISION TILESET
+Image: beam-collision-spritesheet.png
+Tile width: 320
+Tile height: 96
+Margin: 0
+Spacing: 0
+Animation: frames 1-8, left to right, 100 ms each.
+
+HUMAN BEAM TILESET
+Image: beam-human-spritesheet.png
+Tile width: 200
+Tile height: 64
+Margin: 0
+Spacing: 0
+Animation: frames 1-4, left to right, 100 ms each.
+
+AI BEAM TILESET
+Image: beam-ai-spritesheet.png
+Tile width: 200
+Tile height: 64
+Margin: 0
+Spacing: 0
+Animation: frames 1-4, left to right, 100 ms each.
+
+IMPACT TILESET
+Image: beam-impact-spritesheet.png
+Tile width: 72
+Tile height: 72
+Margin: 0
+Spacing: 0
+Animation: frames 1-6, left to right, 100 ms each.
+
+IMPORTANT:
+Tiled is responsible for storing/placing the artwork and can define frame animation.
+Game code is responsible for reading the live percentages and moving/revealing the modular beam pieces accordingly.
+
+If the target engine cannot dynamically clip/reveal animated Tiled tile objects cleanly, keep the leaderboard scene in Tiled but render the three modular beam sprites in game code on top of that scene.
+
+
+============================================================
+4. AUTHORITATIVE SCORE INPUT
+============================================================
+
+Required inputs:
+- humanWins
+- aiWins
+
+Definitions:
+- Human wins = students counted by the game's Human-side rule.
+- AI wins = students counted by the game's AI-side rule.
+
+IMPORTANT THRESHOLD NOTE:
+The asset pack does not define what happens when a student's score is EXACTLY equal to the threshold.
+Use the game's authoritative scoring rule.
+Do not silently invent a new rule.
+
+total = humanWins + aiWins
+
+If total > 0:
+    humanRatio = humanWins / total
+    aiRatio = aiWins / total
+
+If total == 0:
+    humanRatio = 0.5
+    aiRatio = 0.5
+
+humanPercent = humanRatio * 100
+aiPercent = aiRatio * 100
+
+advantage = humanRatio - aiRatio
+
+Range:
+- advantage = -1.0 means complete AI domination.
+- advantage =  0.0 means 50/50.
+- advantage = +1.0 means complete Human domination.
+
+
+============================================================
+5. EXACT COLLISION POSITION FORMULA
+============================================================
+
+The modular artwork is designed around a 320 x 96 native beam area.
+
+beamAreaWidth  = 320
+beamAreaHeight = 96
+centerX = 160
+centerY = 48
+leftVisibleBound  = 10
+rightVisibleBound = 310
+maxShift = 40
+
+targetImpactX = clamp(160 + advantage * 40, 120, 200)
+impactY = 48
+
+Examples:
+
+Human / AI    Expected impactX
+--------------------------------
+0 / 100       120
+10 / 90       128
+25 / 75       140
+40 / 60       152
+50 / 50       160
+60 / 40       168
+75 / 25       180
+90 / 10       192
+100 / 0       200
+
+Direction rule:
+- Human advantage -> impact moves RIGHT.
+- AI advantage -> impact moves LEFT.
+- Tie -> impact stays centered.
+
+Why maxShift = 40?
+The current side sprites are 200 px wide, with contact anchors at:
+- Human x = 190
+- AI x = 10
+
+Keeping the collision between x=120 and x=200 gives a clear push effect without requiring horizontal distortion of the pixel art.
+
+
+============================================================
+6. HOW TO ASSEMBLE THE THREE MODULAR PIECES
+============================================================
+
+Everything shares the same vertical center:
+centerY = 48
+
+HUMAN BEAM
+Frame size: 200 x 64
+Contact anchor: (190, 32)
+
+humanSpriteX = impactX - 190
+humanSpriteY = centerY - 32
+
+AI BEAM
+Frame size: 200 x 64
+Contact anchor: (10, 32)
+
+aiSpriteX = impactX - 10
+aiSpriteY = centerY - 32
+
+IMPACT
+Frame size: 72 x 72
+Center anchor: (36, 36)
+
+impactSpriteX = impactX - 36
+impactSpriteY = centerY - 36
+
+At neutral impactX = 160:
+humanSpriteX = -30
+humanSpriteY = 16
+aiSpriteX = 150
+aiSpriteY = 16
+impactSpriteX = 124
+impactSpriteY = 12
+
+DRAW ORDER:
+1. Human beam
+2. AI beam
+3. Optional extra sparks
+4. Impact
+
+The impact must be drawn last/on top so it hides the seam where the two beam sprites meet.
+
+
+============================================================
+7. DO NOT STRETCH THE PIXEL ART
+============================================================
+
+Do NOT horizontally scale the Human or AI sprite according to percentage.
+
+Preferred:
+- Keep every frame at its original proportions.
+- Use CLIPPING / REVEALING.
+- Move the collision point.
+- Keep the artwork crisp.
+
+Recommended native clip areas:
+
+Human clip:
+x from 10 to impactX
+
+AI clip:
+x from impactX to 310
+
+Human drawing:
+x = impactX - 190
+y = 16
+
+AI drawing:
+x = impactX - 10
+y = 16
+
+If the renderer uses a different API, reproduce the same behavior using a scissor rectangle, mask, crop rectangle, clip-path, canvas clip, shader, or viewport system.
+
+
+============================================================
+8. ANIMATION LOGIC
+============================================================
+
+Recommended timing:
+100 ms per frame.
+
+humanFrame = floor(elapsedMs / 100) % 4
+aiFrame = floor(elapsedMs / 100) % 4
+impactFrame = floor(elapsedMs / 100) % 6
+
+Human source rect:
+srcX = humanFrame * 200
+srcY = 0
+srcW = 200
+srcH = 64
+
+AI source rect:
+srcX = aiFrame * 200
+srcY = 0
+srcW = 200
+srcH = 64
+
+Impact source rect:
+srcX = impactFrame * 72
+srcY = 0
+srcW = 72
+srcH = 72
+
+The three modular loops may run independently.
+They do not need to restart together.
+
+
+============================================================
+9. SMOOTH MOVEMENT WHEN PERCENTAGES CHANGE
+============================================================
+
+Do NOT teleport the collision instantly when live percentages change.
+
+Recommended transition:
+400-800 ms
+
+Good default:
+600 ms
+
+Use a controlled ease-in-out or ease-out.
+Do not use spring/bouncy motion.
+
+Concept:
+
+oldImpactX = currentImpactX
+newImpactX = calculateImpactX(newHumanRatio, newAiRatio)
+
+Over about 600 ms:
+currentImpactX = interpolate(oldImpactX, newImpactX, easedProgress)
+
+The Human beam, AI beam, clipping regions, impact sprite, and extra sparks must all use currentImpactX while the transition is happening.
+
+
+============================================================
+10. PERCENTAGE-DEPENDENT SPARKS
+============================================================
+
+The impact spritesheet already contains nearby animated sparks.
+
+For a clearer "who is winning" effect, optionally generate EXTRA procedural pixel sparks in game code.
+
+Do not replace the impact artwork.
+These are additional sparks.
+
+Human colors:
+#B83A00
+#F05A00
+#FF8C00
+#FFC928
+#FFF0A0
+
+AI colors:
+#004A9F
+#0079E8
+#00C4FF
+#62ECFF
+#DFFFFF
+
+Neutral:
+#FFFFFF
+
+Use hard pixel rectangles only.
+
+Good native sizes:
+1 x 1
+2 x 2
+3 x 3
+4 x 2
+2 x 4
+
+No circles.
+No border-radius.
+No blur.
+
+Recommended spark-rate mapping:
+
+humanSparkRate = 4 + 16 * humanRatio
+aiSparkRate    = 4 + 16 * aiRatio
+
+Examples:
+
+50/50:
+Human = 12
+AI = 12
+
+75/25:
+Human = 16
+AI = 8
+
+90/10:
+Human ≈ 18
+AI ≈ 6
+
+100/0:
+Human = 20
+AI = 4
+
+0/100:
+Human = 4
+AI = 20
+
+The losing side should still produce some sparks.
+
+Spawn near:
+(impactX, impactY)
+
+Human/orange sparks travel mostly:
+- left
+- upper-left
+- lower-left
+
+AI/cyan sparks travel mostly:
+- right
+- upper-right
+- lower-right
+
+White sparks may travel either direction very close to the impact.
+
+Recommended lifetime:
+150-350 ms.
+
+Keep travel short and punchy.
+Do not fill the whole screen with particles.
+
+
+============================================================
+11. PIXEL-PERFECT RENDERING RULES
+============================================================
+
+Mandatory:
+- Use nearest-neighbor / pixelated rendering.
+- Disable texture smoothing.
+- Use integer coordinates where practical.
+- Prefer integer display scaling: 2x, 3x, 4x, etc.
+- Never resize source PNGs with bilinear filtering.
+- Never add blur.
+- Never add soft glow that destroys pixel edges.
+
+Browser/CSS:
+image-rendering: pixelated;
+
+Canvas:
+ctx.imageSmoothingEnabled = false;
+
+Other engines:
+Use nearest/point texture filtering.
+
+
+============================================================
+12. RECOMMENDED TILED ORGANIZATION
+============================================================
+
+Suggested group/object layer:
+HumanVsAIBeam
+
+Children:
+- HumanBeam
+- AIBeam
+- Impact
+- OptionalSparkLayer
+
+Suggested custom properties:
+beamWidth = 320
+beamHeight = 96
+centerX = 160
+centerY = 48
+maxShift = 40
+leftVisibleBound = 10
+rightVisibleBound = 310
+
+The group world position becomes the origin of the effect.
+
+worldImpactX = beamGroupWorldX + localImpactX
+worldImpactY = beamGroupWorldY + 48
+
+This lets the designer move the complete beam around the leaderboard in Tiled without changing the percentage logic.
+
+
+============================================================
+13. GENERIC IMPLEMENTATION PSEUDOCODE
+============================================================
+
+STATE:
+humanWins
+aiWins
+humanRatio = 0.5
+aiRatio = 0.5
+currentImpactX = 160
+targetImpactX = 160
+centerY = 48
+
+SET SCORE:
+
+function setScore(humanWins, aiWins):
+    total = humanWins + aiWins
+
+    if total <= 0:
+        humanRatio = 0.5
+        aiRatio = 0.5
+    else:
+        humanRatio = humanWins / total
+        aiRatio = aiWins / total
+
+    advantage = humanRatio - aiRatio
+
+    targetImpactX = clamp(
+        160 + advantage * 40,
+        120,
+        200
+    )
+
+    smoothlyMoveImpactTo(targetImpactX, 600ms)
+
+
+EACH RENDER FRAME:
+
+humanFrame = floor(timeMs / 100) % 4
+aiFrame = floor(timeMs / 100) % 4
+impactFrame = floor(timeMs / 100) % 6
+
+impactX = currentImpactX
+impactY = 48
+
+humanX = impactX - 190
+humanY = impactY - 32
+
+aiX = impactX - 10
+aiY = impactY - 32
+
+impactXDraw = impactX - 36
+impactYDraw = impactY - 36
+
+1. Clip to Human region [10 .. impactX]
+2. Draw current Human frame at (humanX, humanY)
+3. End Human clip
+
+4. Clip to AI region [impactX .. 310]
+5. Draw current AI frame at (aiX, aiY)
+6. End AI clip
+
+7. Spawn/update optional percentage-weighted sparks
+
+8. Draw current Impact frame at:
+   (impactXDraw, impactYDraw)
+
+
+EXPECTED RESULT:
+
+Humans winning:
+impactX > 160
+collision moves right
+orange side pushes farther
+orange sparks occur more often
+
+AI winning:
+impactX < 160
+collision moves left
+blue side pushes farther
+blue sparks occur more often
+
+Tie:
+impactX = 160
+both sides balanced
+
+
+============================================================
+14. LIVE LEADERBOARD UPDATE BEHAVIOR
+============================================================
+
+Recommended sequence when new scores arrive:
+
+1. Recalculate humanWins and aiWins.
+2. Recalculate humanRatio and aiRatio.
+3. Calculate targetImpactX.
+4. Move currentImpactX toward targetImpactX over about 600 ms.
+5. Keep all sprite animations playing continuously.
+6. Increase extra spark activity on the winning side.
+7. Optionally emit one short winning-color spark burst when the update happens.
+8. Settle into the normal looping clash.
+
+This should feel like one side physically pushed the other.
+
+
+============================================================
+15. TV / LARGE DISPLAY RECOMMENDATION
+============================================================
+
+Render the source effect at native 320 x 96 internally and scale the assembled result with nearest-neighbor.
+
+Examples:
+2x -> 640 x 192
+3x -> 960 x 288
+4x -> 1280 x 384
+
+Choose the largest integer scale that fits the leaderboard layout.
+
+Do not redraw or smooth-resize the source artwork.
+
+
+============================================================
+16. COMMON IMPLEMENTATION MISTAKES
+============================================================
+
+DO NOT:
+- Import a spritesheet and assume Tiled knows the animation timing automatically.
+- Use the GIF for the final dynamic score-driven version.
+- Use the full baked collision spritesheet for percentage movement.
+- Stretch the Human beam based on score.
+- Stretch the AI beam based on score.
+- Blur or smooth the pixel art.
+- Make the collision jump instantly.
+- Move the collision toward the WINNING side. It must move toward the LOSING side.
+- Hide the losing beam entirely.
+- Draw the impact underneath the side beams.
+- Forget to clip/mask the side beams.
+- Invent a new scoring source instead of using the game's authoritative one.
+- Invent a threshold-equality rule if the project has not defined one.
+
+
+============================================================
+17. MINIMUM ACCEPTANCE TEST
+============================================================
+
+[ ] Orange beam animates.
+[ ] Cyan beam animates.
+[ ] Impact animates.
+[ ] Impact is centered at 50/50.
+[ ] Human advantage moves impact right.
+[ ] AI advantage moves impact left.
+[ ] Movement is smooth.
+[ ] Orange spark activity increases with Human advantage.
+[ ] Blue spark activity increases with AI advantage.
+[ ] Losing side still has visible energy/sparks.
+[ ] Beam ends meet under the impact.
+[ ] Impact renders on top.
+[ ] Pixel art stays crisp.
+[ ] No blur/smoothing is applied.
+[ ] 0/100 does not break layout.
+[ ] 100/0 does not break layout.
+[ ] 50/50 looks balanced.
+[ ] Animation continues during percentage transitions.
+[ ] TV scaling uses nearest-neighbor / integer scaling where possible.
+
+
+============================================================
+18. SHORT AI IMPLEMENTATION COMMAND
+============================================================
+
+If an AI model is implementing this pack, give it this instruction:
+
+"Read this entire HUMAN_VS_AI_BEAM_IMPLEMENTATION_GUIDE.txt before editing code.
+Use beam-human-spritesheet.png, beam-ai-spritesheet.png, and
+beam-impact-spritesheet.png for the dynamic beam. Do not use the full collision
+spritesheet for score-driven movement. Preserve the exact frame dimensions,
+anchors, 100 ms timing, clipping logic, impact-position formula, nearest-neighbor
+rendering, and draw order described here. First inspect the existing project's
+authoritative Human/AI scoring logic and renderer, then adapt this implementation
+to that architecture without duplicating score state or redesigning unrelated UI."
+
+
+END OF GUIDE
+============

@@ -66,17 +66,17 @@ export default async function LandingPage() {
   const displayRows = board.rows.length > 0
     ? board.rows
     : [
-        { rank: 1, display_name: 'PixelRanger', masked_id_suffix: '4821', total_score: 950 },
-        { rank: 2, display_name: 'StarGazer', masked_id_suffix: '1903', total_score: 890 },
-        { rank: 3, display_name: 'LeafWalker', masked_id_suffix: '7724', total_score: 840 },
-        { rank: 4, display_name: 'OceanDream', masked_id_suffix: '3310', total_score: 790 },
-      ];
+      { rank: 1, display_name: 'PixelRanger', masked_id_suffix: '4821', total_score: 950 },
+      { rank: 2, display_name: 'StarGazer', masked_id_suffix: '1903', total_score: 890 },
+      { rank: 3, display_name: 'LeafWalker', masked_id_suffix: '7724', total_score: 840 },
+      { rank: 4, display_name: 'OceanDream', masked_id_suffix: '3310', total_score: 790 },
+    ];
 
   return (
     <main className="relative min-h-dvh w-full overflow-x-hidden bg-[var(--color-px-bg)] text-[var(--color-ink)] flex flex-col justify-between">
       {/* Background with clean meadow on left and circuit on right */}
       <div
-        className="absolute inset-0 z-0 bg-cover bg-center opacity-40 pointer-events-none"
+        className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none"
         style={{ backgroundImage: "url('/backgrounds/homepage-clean.png')" }}
         aria-hidden="true"
       />
@@ -235,11 +235,10 @@ export default async function LandingPage() {
               return (
                 <div
                   key={`${row.rank}-${row.masked_id_suffix}`}
-                  className={`flex items-center justify-between px-3 py-2 border-2 ${
-                    isRank1
-                      ? 'bg-[#ffc21b] border-[#472200] text-[#472200] font-bold shadow-[0_2px_0_#472200]'
-                      : 'bg-[#131c4e] border-[#070c26] text-slate-100'
-                  }`}
+                  className={`flex items-center justify-between px-3 py-2 border-2 ${isRank1
+                    ? 'bg-[#ffc21b] border-[#472200] text-[#472200] font-bold shadow-[0_2px_0_#472200]'
+                    : 'bg-[#131c4e] border-[#070c26] text-slate-100'
+                    }`}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     {isRank1 ? (

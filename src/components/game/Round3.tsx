@@ -54,16 +54,6 @@ export function Round3({
       setSaving(true);
       setFailure(null);
 
-      if (attemptId.startsWith('local-')) {
-        inFlight.current = false;
-        setSaving(false);
-        const wait = Math.max(0, LOCK_MS - (Date.now() - lockedAt.current));
-        setTimeout(() => {
-          if (!unmounted.current) onComplete();
-        }, wait);
-        return;
-      }
-
       const result = await submitWithRetry('/api/round3/answer', body, {
         isCancelled: () => unmounted.current,
         onRetry: () => setReconnecting(true),
