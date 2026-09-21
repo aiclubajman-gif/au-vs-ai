@@ -64,7 +64,7 @@ export const FLANKS = {
     aspect: 300 / 944,
     plate: `${P}r3-left.webp`,
     actors: [
-      { name: 'boy-confused', x: 26, y: 41, h: 21, motion: 'bob', speed: '2.7s' },
+      { name: 'emirati-boy-confused', x: 24, y: 41, h: 22, motion: 'bob', speed: '2.7s' },
       { name: 'girl-purple-hijab', x: 10, y: 15, h: 22, motion: 'bob', speed: '4.0s' },
     ],
   },
@@ -83,7 +83,7 @@ export const FLANKS = {
     plate: `${P}hw-left.webp`,
     actors: [
       { name: 'emirati-boy', x: 4, y: 23, h: 31, motion: 'cheer', speed: '1.3s' },
-      { name: 'girl-purple-hijab', x: 50, y: 23, h: 29, motion: 'cheer', speed: '1.4s', hop: '1.7s' },
+      { name: 'girl-purple-hijab-up', x: 50, y: 23, h: 29, motion: 'cheer', speed: '1.4s', hop: '1.7s' },
     ],
   },
   'hw-right': {
@@ -120,7 +120,7 @@ export const FLANKS = {
     plate: `${P}lb-left.webp`,
     actors: [
       { name: 'emirati-boy', x: 4, y: 30, h: 41, motion: 'cheer', speed: '1.3s' },
-      { name: 'girl-purple-hijab', x: 50, y: 30, h: 38, motion: 'cheer', speed: '1.4s', hop: '1.7s' },
+      { name: 'girl-purple-hijab-up', x: 50, y: 30, h: 38, motion: 'cheer', speed: '1.4s', hop: '1.7s' },
     ],
   },
   'lb-right': {
@@ -140,7 +140,7 @@ export const FLANKS = {
       { name: 'boy-cheer', x: 4, y: 52, h: 15, motion: 'cheer', speed: '1.4s', hop: '2.0s' },
       { name: 'emirati-boy', x: 24, y: 63, h: 15, motion: 'cheer', speed: '1.3s' },
       { name: 'girl-abaya', x: 27, y: 44, h: 15, motion: 'cheer', speed: '1.6s', hop: '1.7s' },
-      { name: 'girl-purple-hijab', x: 47, y: 35, h: 15, motion: 'cheer', speed: '1.4s', hop: '2.1s' },
+      { name: 'girl-purple-hijab-up', x: 47, y: 35, h: 15, motion: 'cheer', speed: '1.4s', hop: '2.1s' },
       { name: 'emirati-boy', x: 50, y: 70, h: 15, motion: 'cheer', speed: '1.6s', hop: '1.8s' },
       { name: 'girl-purple-hijab', x: 8, y: 30, h: 15, motion: 'cheer', speed: '1.4s', hop: '1.5s' },
     ],

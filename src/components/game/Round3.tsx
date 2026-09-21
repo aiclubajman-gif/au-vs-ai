@@ -146,7 +146,7 @@ export function Round3({
 
         <div className="relative">
           <div className="pointer-events-none absolute inset-x-0 -top-[84px] flex items-end justify-between px-1 lg:hidden">
-            <AnimatedSprite name="boy-confused" speed="1.4s" className="h-[84px]" />
+            <AnimatedSprite name="emirati-boy-confused" speed="1.4s" className="h-[84px]" />
             <AnimatedSprite name="robot-smirking" speed="1.8s" className="h-[84px] drop-shadow-[0_0_12px_rgba(0,187,252,0.5)]" />
           </div>
 

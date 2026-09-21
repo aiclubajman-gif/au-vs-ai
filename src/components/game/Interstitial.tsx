@@ -161,5 +161,5 @@ const ROUND_BY_EYEBROW: Record<string, 1 | 2 | 3> = { 'ROUND 1 COMPLETE': 1, 'RO
 const ROUND_ART = {
   1: { wordmark: 'real-or-ai', left: 'r1-left', right: 'r1-right', human: 'emirati-boy', robot: 'robot-1' },
   2: { wordmark: 'draw-vs-ai', left: 'r2-left', right: 'r2-right', human: 'girl-purple-hijab', robot: 'robot-arms-raised' },
-  3: { wordmark: 'ai-knowledge', left: 'r3-left', right: 'r3-right', human: 'boy-confused', robot: 'robot-smirking' },
+  3: { wordmark: 'ai-knowledge', left: 'r3-left', right: 'r3-right', human: 'emirati-boy-confused', robot: 'robot-smirking' },
 } as const;
