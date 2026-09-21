@@ -249,14 +249,17 @@ export function OtpScreen({
   );
 }
 
-const GENDERS = ['Male', 'Female', 'Prefer not to say'] as const;
-export type Gender = (typeof GENDERS)[number];
+import { AVATAR_OPTIONS, type Gender } from '@/lib/avatars';
+export type { Gender };
+const GENDERS: Gender[] = ['Male', 'Female'];
 
 export function ProfileScreen({
   fullName,
   onFullName,
   gender,
   onGender,
+  avatar,
+  onAvatar,
   collegeId,
   onCollege,
   colleges,
@@ -268,6 +271,8 @@ export function ProfileScreen({
   onFullName: (v: string) => void;
   gender: Gender;
   onGender: (g: Gender) => void;
+  avatar: string;
+  onAvatar: (a: string) => void;
   collegeId: string;
   onCollege: (id: string) => void;
   colleges: College[];
@@ -275,6 +280,8 @@ export function ProfileScreen({
   error: ApiError | null;
   onContinue: () => void;
 }) {
+  const currentSlots = AVATAR_OPTIONS[gender] ?? AVATAR_OPTIONS.Male;
+
   return (
     <OnboardingShell step={3}>
       <PxPanel tone="cyan" className="p-5 sm:p-6">
@@ -310,18 +317,73 @@ export function ProfileScreen({
             <PixelIcon kind="people" />
             <div className="flex-1">
               <p className="font-px text-[8px] text-[#ffe66a]">GENDER</p>
-              <div className="mt-2 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Gender">
+              <div className="mt-2 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Gender">
                 {GENDERS.map((g) => (
                   <PxButton
                     key={g}
                     variant={gender === g ? 'cyan' : 'navy'}
                     onClick={() => onGender(g)}
-                    className="min-h-[48px] text-[8px]"
+                    className="min-h-[48px] text-[9px]"
                     ariaLabel={g}
                   >
-                    {g === 'Prefer not to say' ? 'OTHER' : g.toUpperCase()}
+                    {g.toUpperCase()}
                   </PxButton>
                 ))}
+              </div>
+            </div>
+          </div>
+
+          {/* 3 Avatar Slots based on Gender */}
+          <div className="flex items-start gap-3">
+            <PixelIcon kind="user" />
+            <div className="flex-1">
+              <div className="flex items-center justify-between">
+                <p className="font-px text-[8px] text-[#ffe66a]">CHOOSE YOUR AVATAR</p>
+                <span className="font-px text-[7px] text-[#9fb3e6]">3 CHOICES</span>
+              </div>
+              <div className="mt-2 grid grid-cols-3 gap-2" role="radiogroup" aria-label="Avatar Choice">
+                {currentSlots.map((av, index) => {
+                  const isSelected = avatar === av.id;
+                  return (
+                    <button
+                      key={av.id}
+                      type="button"
+                      onClick={() => onAvatar(av.id)}
+                      className={`group relative flex flex-col items-center justify-center rounded-xl border p-2 transition-all duration-150 ${
+                        isSelected
+                          ? 'border-[#ffe66a] bg-[#0c2a66] shadow-[0_0_12px_rgba(255,230,106,0.35)] ring-2 ring-[#ffe66a]'
+                          : 'border-[#1e4ea8] bg-[#07163a]/80 hover:border-[#7ffafe] hover:bg-[#0c2357]'
+                      }`}
+                      aria-label={`${gender} avatar option ${index + 1}`}
+                      aria-checked={isSelected}
+                      role="radio"
+                    >
+                      <div className="relative flex h-16 w-16 items-center justify-center sm:h-20 sm:w-20">
+                        <img
+                          src={av.src}
+                          alt={av.label}
+                          className={`h-full w-full object-contain transition-transform duration-150 ${
+                            isSelected ? 'scale-105' : 'group-hover:scale-105 opacity-85 group-hover:opacity-100'
+                          }`}
+                        />
+                      </div>
+                      <span
+                        className={`mt-1 font-px text-[7px] ${
+                          isSelected ? 'text-[#ffe66a] font-bold' : 'text-[#9fb3e6] group-hover:text-white'
+                        }`}
+                      >
+                        {isSelected ? 'SELECTED' : `STYLE ${index + 1}`}
+                      </span>
+                      {isSelected && (
+                        <div className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#ffe66a] text-[#041030] shadow">
+                          <svg className="h-2.5 w-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
