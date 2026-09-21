@@ -1117,22 +1117,15 @@ input.px-slider::-moz-range-thumb {
   right: -12%;
   width: 34%;
   height: auto;
-  opacity: 0;
-  animation: px-marks var(--frame-speed, 0.9s) steps(1) infinite;
+  animation: px-frame-a var(--frame-speed, 0.9s) steps(1) infinite;
 }
 
-@keyframes px-marks {
-  0%,
-  49.9% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  50%,
-  100% {
-    opacity: 0;
-    transform: translateY(3px);
-  }
+.px-anim__marks--left {
+  right: auto;
+  left: -12%;
+  transform: scaleX(-1);
 }
+
 
 @keyframes px-frame-a {
   50% {

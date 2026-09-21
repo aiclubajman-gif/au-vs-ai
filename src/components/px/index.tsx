@@ -246,21 +246,22 @@ export type AnimatedName = (typeof ANIMATED)[number];
 
 const ANIM_VERSION = '6';
 
-const CHEERING: ReadonlySet<string> = new Set([
-  'emirati-boy',
-  'girl-purple-hijab',
-  'girl-purple-hijab-up',
-  'girl-abaya',
-  'boy-cheer',
-  'mascot-boy-cheer',
-  'mascot-girl-cheer',
-  'robot-arms-raised',
-  'robot-happy-cheering',
-  'robot-cheering',
-]);
+const CHEER_MARKS: Record<string, 'right' | 'left'> = {
+  'emirati-boy': 'right',
+  'robot-arms-raised': 'right',
+  'robot-happy-cheering': 'right',
+  'robot-cheering': 'left',
+};
 
-function CheerMarks() {
-  return <img src="/sprites/cheer-marks.png" alt="" draggable={false} className="px-anim__marks pixelated" />;
+function CheerMarks({ side }: { side: 'right' | 'left' }) {
+  return (
+    <img
+      src="/sprites/cheer-marks.png"
+      alt=""
+      draggable={false}
+      className={`px-anim__marks pixelated ${side === 'left' ? 'px-anim__marks--left' : ''}`}
+    />
+  );
 }
 
 export function AnimatedSprite({
@@ -274,9 +275,9 @@ export function AnimatedSprite({
   className?: string;
   style?: CSSProperties;
   speed?: string;
-  marks?: boolean;
+  marks?: 'right' | 'left' | false;
 }) {
-  const showMarks = marks ?? CHEERING.has(name);
+  const side = marks === undefined ? CHEER_MARKS[name] : marks || undefined;
   return (
     <span
       className={`px-anim select-none ${className}`}
@@ -285,7 +286,7 @@ export function AnimatedSprite({
     >
       <img src={`/sprites/anim/${name}-1.png?v=${ANIM_VERSION}`} alt="" draggable={false} className="px-anim__f1 pixelated" />
       <img src={`/sprites/anim/${name}-2.png?v=${ANIM_VERSION}`} alt="" draggable={false} className="px-anim__f2 pixelated" />
-      {showMarks && <CheerMarks />}
+      {side && <CheerMarks side={side} />}
     </span>
   );
 }
