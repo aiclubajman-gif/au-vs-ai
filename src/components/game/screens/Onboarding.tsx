@@ -91,32 +91,14 @@ export function Body({ children, className = '' }: { children: ReactNode; classN
   return <p className={`text-center text-[16px] leading-snug text-[#dff6ff] ${className}`}>{children}</p>;
 }
 
-function PixelIcon({ kind }: { kind: 'cap' | 'shield' | 'lock' | 'bulb' | 'user' | 'people' | 'college' | 'star' | 'clock' }) {
-  const paths: Record<typeof kind, string> = {
-    cap: 'M1 4h1v-1h1v-1h6v1h1v1h1v1h-1v1h-1v2h-1v1h-4v-1h-1v-2h-1v-1h-1zM9 5h1v3h-1z',
-    shield: 'M2 1h7v5h-1v1h-1v1h-1v1h-1v-1h-1v-1h-1v-1h-1zM4 4h1v1h1v-1h1v1h-1v1h-1v-1h-1z',
-    lock: 'M3 1h5v3h1v6h-7v-6h1zM4 2v2h3v-2zM5 6h1v2h-1z',
-    bulb: 'M4 0h3v1h1v1h1v3h-1v1h-1v1h-3v-1h-1v-1h-1v-3h1v-1h1zM4 8h3v1h-3zM5 9h1v1h-1z',
-    user: 'M4 1h3v3h-3zM2 5h7v4h-7z',
-    people: 'M1 2h2v2h-2zM5 1h2v2h-2zM9 2h2v2h-2zM0 5h4v3h-4zM4 4h4v4h-4zM8 5h4v3h-4z',
-    college: 'M1 4h9v6h-9zM5 1h1v1h1v1h1v1h-5v-1h1v-1h1zM2 6h1v2h-1zM4 6h1v2h-1zM6 6h1v2h-1zM8 6h1v2h-1z',
-    star: 'M5 0h1v2h1v1h2v1h-1v1h-1v1h1v2h-1v-1h-1v-1h-1v1h-1v1h-1v-2h1v-1h-1v-1h-1v-1h2v-1h1z',
-    clock: 'M3 0h5v1h1v1h1v5h-1v1h-1v1h-5v-1h-1v-1h-1v-5h1v-1h1zM5 2h1v3h2v1h-3z',
-  };
-  if (kind === 'clock') {
-    return (
-      <svg viewBox="0 0 12 12" className="h-6 w-6 shrink-0" aria-hidden="true" shapeRendering="crispEdges">
-        <path fill="#7ffafe" d="M4 0h4v1h2v1h1v2h1v4h-1v2h-1v1h-2v1H4v-1H2v-1H1V8H0V4h1V2h1V1h2z" />
-        <path fill="#041030" d="M4 2h4v1h1v1h1v4H9v1H8v1H4V9H3V8H2V4h1V3h1z" />
-        <path fill="#7ffafe" d="M5 3h2v3h2v2H5z" />
-      </svg>
-    );
-  }
-  return (
-    <svg viewBox="0 0 12 10" className="h-7 w-7 shrink-0 text-[#7ffafe]" aria-hidden="true" shapeRendering="crispEdges">
-      <path fill="currentColor" d={paths[kind]} />
-    </svg>
-  );
+export function PixelIcon({
+  kind,
+  className = 'h-8 w-8',
+}: {
+  kind: 'cap' | 'shield' | 'lock' | 'bulb' | 'user' | 'people' | 'college' | 'star' | 'clock';
+  className?: string;
+}) {
+  return <Sprite src={`/icons/${kind}.png`} className={`shrink-0 ${className}`} />;
 }
 
 function InfoRow({ icon, title, children }: { icon: 'cap' | 'shield' | 'star'; title: string; children: ReactNode }) {
@@ -185,7 +167,7 @@ export function EmailScreen({
         </div>
 
         <p className="mt-4 flex items-center justify-center gap-2 text-center text-[13px] text-[#9fb3e6]">
-          <PixelIcon kind="lock" />
+          <PixelIcon kind="lock" className="h-6 w-6" />
           Your information is secure and will only be used for this event.
         </p>
       </PxPanel>
@@ -373,7 +355,7 @@ export function ProfileScreen({
         </form>
 
         <p className="mt-4 flex items-center justify-center gap-2 text-center text-[13px] text-[#9fb3e6]">
-          <PixelIcon kind="lock" />
+          <PixelIcon kind="lock" className="h-6 w-6" />
           Your information will be used for the leaderboard and nothing else.
         </p>
       </PxPanel>
@@ -496,7 +478,7 @@ function RoundCard({
           <p className="mt-1 text-[14px] leading-snug text-[#dff6ff] sm:text-[15px]">{desc}</p>
         </div>
         <div className="flex w-14 shrink-0 flex-col items-center border-l-[3px] border-[#1e4ea8] pl-2">
-          <PixelIcon kind="clock" />
+          <PixelIcon kind="clock" className="h-7 w-7" />
           <span className="font-px text-[13px] text-[#7ffafe]">{seconds}</span>
           <span className="font-px text-[6px] text-[#c7d6ff]">SECONDS</span>
         </div>

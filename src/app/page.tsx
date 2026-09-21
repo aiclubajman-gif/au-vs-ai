@@ -69,7 +69,7 @@ export default async function LandingPage() {
 
       <Backdrop leaves />
 
-      <header className="relative z-20 flex items-center justify-between px-4 pt-4 sm:px-6">
+      <header className="relative z-20 flex items-center justify-between px-4 pt-3 sm:px-6">
         <PxChip className="text-[9px] sm:text-[10px]">AIDA</PxChip>
         <nav className="flex items-center gap-2" aria-label="Site">
           <Link href="/leaderboard" className="px-chip text-[8px] sm:text-[9px]">
@@ -85,7 +85,7 @@ export default async function LandingPage() {
         <Wordmark
           name="humans-vs-ai"
           priority
-          className="mx-auto w-[92%] max-w-[420px] drop-shadow-[0_6px_0_rgba(0,0,0,0.35)] sm:max-w-[560px] lg:-mt-2 lg:max-w-[640px]"
+          className="mx-auto mt-1 w-[92%] max-w-[420px] drop-shadow-[0_6px_0_rgba(0,0,0,0.35)] sm:max-w-[560px] lg:max-w-[640px]"
         />
 
         <div className="mt-4 flex items-end gap-3 sm:mt-5">

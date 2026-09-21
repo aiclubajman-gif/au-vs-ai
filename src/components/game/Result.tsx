@@ -30,11 +30,7 @@ function TrophyIcon({ silver }: { silver?: boolean }) {
 }
 
 function PeopleIcon() {
-  return (
-    <svg viewBox="0 0 12 8" className="h-7 w-9 shrink-0" aria-hidden="true" shapeRendering="crispEdges">
-      <path fill="#7ffafe" d="M1 1h2v2H1zM5 0h2v2H5zM9 1h2v2H9zM0 4h4v3H0zM4 3h4v4H4zM8 4h4v3H8z" />
-    </svg>
-  );
+  return <Sprite src="/icons/people.png" className="h-8 w-8 shrink-0" />;
 }
 
 export function Result({ result, returning = false }: { result: PublicAttemptResult; returning?: boolean }) {
