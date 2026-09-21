@@ -26,35 +26,78 @@ const FALLBACK_ROWS: Row[] = [
 
 async function getData() {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return { rows: FALLBACK_ROWS, isLive: false, mode: 'name_only' as LeaderboardDisplayMode };
+    return {
+      rows: FALLBACK_ROWS,
+      isLive: false,
+      mode: 'name_only' as LeaderboardDisplayMode,
+      avatarMap: {} as Record<string, string>,
+    };
   }
   try {
     const supabase = createAdminSupabase();
-    const [{ data: rows }, { data: settings }] = await Promise.all([
+
+    const [
+      { data: rows },
+      { data: settings },
+      { data: avatarEvents },
+    ] = await Promise.all([
       supabase.from('leaderboard_public').select('*').order('rank').limit(50),
       supabase.from('event_settings').select('leaderboard_display').eq('id', 1).single(),
+      supabase
+        .from('app_events')
+        .select('details')
+        .eq('event', 'avatar_selected')
+        .order('created_at', { ascending: false })
+        .limit(200),
     ]);
+
+    const avatarMap: Record<string, string> = {};
+    if (avatarEvents) {
+      for (const ev of avatarEvents) {
+        const d = ev.details as {
+          avatarId?: string;
+          displayName?: string;
+          maskedIdSuffix?: string;
+        } | null;
+        if (!d?.avatarId) continue;
+        if (d.maskedIdSuffix && d.displayName) {
+          const fullKey = d.maskedIdSuffix + d.displayName;
+          if (!avatarMap[fullKey]) avatarMap[fullKey] = d.avatarId;
+        }
+        if (d.displayName && !avatarMap[d.displayName]) {
+          avatarMap[d.displayName] = d.avatarId;
+        }
+      }
+    }
+
     const fetched = (rows ?? []) as Row[];
     return {
       rows: fetched,
       isLive: true,
       mode: (settings?.leaderboard_display ?? 'name_only') as LeaderboardDisplayMode,
+      avatarMap,
     };
   } catch {
-    return { rows: FALLBACK_ROWS, isLive: false, mode: 'name_only' as LeaderboardDisplayMode };
+    return {
+      rows: FALLBACK_ROWS,
+      isLive: false,
+      mode: 'name_only' as LeaderboardDisplayMode,
+      avatarMap: {} as Record<string, string>,
+    };
   }
 }
 
 import { LeaderboardView, type LeaderboardRow } from '@/components/leaderboard/LeaderboardView';
 
 export default async function LeaderboardPage() {
-  const { rows, mode, isLive } = await getData();
+  const { rows, mode, isLive, avatarMap } = await getData();
 
   return (
     <LeaderboardView
       rows={rows as LeaderboardRow[]}
       mode={mode}
       isLive={isLive}
+      avatarMap={avatarMap}
     />
   );
 }

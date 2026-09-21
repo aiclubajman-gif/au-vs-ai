@@ -26,10 +26,12 @@ const NAME_TONES = ['text-[#ffe66a]', 'text-[#7ffafe]', 'text-[#7ffafe]', 'text-
 export function TopChallengers({
   rows,
   mode,
+  avatarMap,
   className = '',
 }: {
   rows: TopRow[];
   mode: LeaderboardDisplayMode;
+  avatarMap?: Record<string, string>;
   className?: string;
 }) {
   return (
@@ -47,6 +49,10 @@ export function TopChallengers({
         <ol className="mt-3 space-y-1.5">
           {rows.map((row) => {
             const first = row.rank === 1;
+            const fullKey = row.masked_id_suffix + row.display_name;
+            const avId = avatarMap?.[fullKey] || avatarMap?.[row.display_name];
+            const rowAvatarSrc = avId ? resolveAvatar(avId) : avatarFor(fullKey);
+
             return (
               <li
                 key={`${row.rank}-${row.masked_id_suffix}`}
@@ -67,7 +73,7 @@ export function TopChallengers({
                   )}
                 </span>
                 <Sprite
-                  src={avatarFor(row.masked_id_suffix + row.display_name)}
+                  src={rowAvatarSrc}
                   className="h-7 w-7 shrink-0 sm:h-8 sm:w-8"
                 />
                 <span

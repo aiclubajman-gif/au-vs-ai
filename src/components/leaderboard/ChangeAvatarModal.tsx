@@ -46,6 +46,13 @@ export function ChangeAvatarModal({ isOpen, onClose, onSave }: ChangeAvatarModal
     setStoredGender(gender);
     setStoredAvatar(avatar);
     onSave?.(avatar, gender);
+    fetch('/api/avatar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ avatarId: avatar, gender }),
+    }).catch(() => {
+      // safe offline
+    });
     onClose();
   };
 

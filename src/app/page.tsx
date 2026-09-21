@@ -32,22 +32,40 @@ async function getStats(): Promise<EventStats | null> {
   }
 }
 
-async function getTopChallengers(): Promise<{ rows: TopRow[]; mode: LeaderboardDisplayMode }> {
+async function getTopChallengers(): Promise<{ rows: TopRow[]; mode: LeaderboardDisplayMode; avatarMap: Record<string, string> }> {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    return { rows: [], mode: 'name_and_masked_id' };
+    return { rows: [], mode: 'name_and_masked_id', avatarMap: {} };
   }
   try {
     const s = createAdminSupabase();
-    const [{ data: rows }, { data: settings }] = await Promise.all([
+    const [{ data: rows }, { data: settings }, { data: avatarEvents }] = await Promise.all([
       s.from('leaderboard_public').select('rank, display_name, masked_id_suffix, total_score').order('rank').limit(4),
       s.from('event_settings').select('leaderboard_display').eq('id', 1).single(),
+      s.from('app_events').select('details').eq('event', 'avatar_selected').order('created_at', { ascending: false }).limit(50),
     ]);
+
+    const avatarMap: Record<string, string> = {};
+    if (avatarEvents) {
+      for (const ev of avatarEvents) {
+        const d = ev.details as { avatarId?: string; displayName?: string; maskedIdSuffix?: string } | null;
+        if (!d?.avatarId) continue;
+        if (d.maskedIdSuffix && d.displayName) {
+          const fullKey = d.maskedIdSuffix + d.displayName;
+          if (!avatarMap[fullKey]) avatarMap[fullKey] = d.avatarId;
+        }
+        if (d.displayName && !avatarMap[d.displayName]) {
+          avatarMap[d.displayName] = d.avatarId;
+        }
+      }
+    }
+
     return {
       rows: (rows ?? []) as TopRow[],
       mode: (settings?.leaderboard_display ?? 'name_and_masked_id') as LeaderboardDisplayMode,
+      avatarMap,
     };
   } catch {
-    return { rows: [], mode: 'name_and_masked_id' };
+    return { rows: [], mode: 'name_and_masked_id', avatarMap: {} };
   }
 }
 
@@ -111,6 +129,7 @@ export default async function LandingPage() {
         <TopChallengers
           rows={rows}
           mode={board.mode}
+          avatarMap={board.avatarMap}
           className="mt-3 w-full max-w-[520px] lg:mt-3"
         />
       </div>
