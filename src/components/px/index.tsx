@@ -297,6 +297,7 @@ function ActorSprite({ actor }: { actor: Actor }) {
     <AnimatedSprite
       name={actor.name}
       speed={actor.speed}
+      marks={actor.marks}
       className={`px-actor ${motion} ${actor.flip ? '-scale-x-100' : ''}`}
       style={{ left: `${actor.x}%`, bottom: `${actor.y}%`, height: `${actor.h}%`, ['--hop' as string]: actor.hop }}
     />

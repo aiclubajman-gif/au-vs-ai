@@ -11,6 +11,7 @@ export interface Actor {
   speed?: string;
   hop?: string;
   flip?: boolean;
+  marks?: false;
 }
 
 export interface FlankSpec {
@@ -137,12 +138,12 @@ export const FLANKS = {
     aspect: 1024 / 1600,
     plate: `${P}home-humans.webp`,
     actors: [
-      { name: 'boy-cheer', x: 4, y: 52, h: 15, motion: 'cheer', speed: '1.4s', hop: '2.0s' },
-      { name: 'emirati-boy', x: 24, y: 63, h: 15, motion: 'cheer', speed: '1.3s' },
-      { name: 'girl-abaya', x: 27, y: 44, h: 15, motion: 'cheer', speed: '1.6s', hop: '1.7s' },
-      { name: 'girl-purple-hijab-up', x: 47, y: 35, h: 15, motion: 'cheer', speed: '1.4s', hop: '2.1s' },
-      { name: 'emirati-boy', x: 50, y: 70, h: 15, motion: 'cheer', speed: '1.6s', hop: '1.8s' },
-      { name: 'girl-purple-hijab', x: 8, y: 30, h: 15, motion: 'cheer', speed: '1.4s', hop: '1.5s' },
+      { name: 'boy-cheer', x: 4, y: 52, h: 15, motion: 'cheer', marks: false, speed: '1.4s', hop: '2.0s' },
+      { name: 'emirati-boy', x: 24, y: 63, h: 15, motion: 'cheer', marks: false, speed: '1.3s' },
+      { name: 'girl-abaya', x: 27, y: 44, h: 15, motion: 'cheer', marks: false, speed: '1.6s', hop: '1.7s' },
+      { name: 'girl-purple-hijab-up', x: 47, y: 35, h: 15, motion: 'cheer', marks: false, speed: '1.4s', hop: '2.1s' },
+      { name: 'emirati-boy', x: 50, y: 70, h: 15, motion: 'cheer', marks: false, speed: '1.6s', hop: '1.8s' },
+      { name: 'girl-purple-hijab', x: 8, y: 30, h: 15, motion: 'cheer', marks: false, speed: '1.4s', hop: '1.5s' },
     ],
   },
   'home-robots': {
@@ -150,12 +151,12 @@ export const FLANKS = {
     aspect: 960 / 1616,
     plate: `${P}home-robots.webp`,
     actors: [
-      { name: 'robot-1', x: 5, y: 57, h: 13, motion: 'bob', speed: '2.5s' },
-      { name: 'robot-cheering', x: 12, y: 11, h: 17, motion: 'cheer', speed: '1.8s', hop: '2.2s' },
+      { name: 'robot-1', x: 30, y: 46, h: 13, motion: 'bob', speed: '2.5s' },
+      { name: 'robot-cheering', x: 12, y: 11, h: 17, motion: 'cheer', marks: false, speed: '1.8s', hop: '2.2s' },
       { name: 'robot-chunky', x: 18, y: 71, h: 16, motion: 'bob', speed: '3.2s' },
-      { name: 'robot-happy-cheering', x: 25, y: 31, h: 16, motion: 'cheer', speed: '1.6s', hop: '2.0s' },
+      { name: 'robot-happy-cheering', x: 25, y: 31, h: 16, motion: 'cheer', marks: false, speed: '1.6s', hop: '2.0s' },
       { name: 'robot-1', x: 38, y: 53, h: 16, motion: 'bob', speed: '2.2s' },
-      { name: 'robot-cheering', x: 52, y: 9, h: 18, motion: 'cheer', speed: '2.0s', hop: '2.4s' },
+      { name: 'robot-cheering', x: 52, y: 9, h: 18, motion: 'cheer', marks: false, speed: '2.0s', hop: '2.4s' },
       { name: 'robot-chunky', x: 62, y: 66, h: 16, motion: 'bob', speed: '3.6s' },
       { name: 'robot-cat', x: 70, y: 78, h: 14, motion: 'hover', speed: '2.3s' },
       { name: 'robot-1', x: 64, y: 40, h: 14, motion: 'bob', speed: '2.9s' },
