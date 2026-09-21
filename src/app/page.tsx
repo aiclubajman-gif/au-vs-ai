@@ -87,96 +87,96 @@ export default async function LandingPage() {
       {/* DESKTOP FLANKS — Humans on left, Robots on right                 */}
       {/* ================================================================ */}
 
-      {/* LEFT FLANK — Human Sprites (6 characters including Abaya/Emarati) */}
+      {/* LEFT FLANK — Human Sprites absolutely positioned on the meadow ground */}
       <aside
-        className="pointer-events-none absolute bottom-0 left-0 z-10 hidden select-none lg:flex flex-col items-start pb-6 pl-4 xl:pl-10 2xl:pl-16"
+        className="pointer-events-none absolute inset-0 z-10 hidden select-none lg:block"
         aria-hidden="true"
       >
-        {/* Top row */}
-        <div className="flex items-end gap-2 mb-1">
-          <img
-            src="/sprites/boy.png"
-            alt=""
-            className="pixelated h-24 w-auto drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] xl:h-28 sprite-float"
-          />
-          <img
-            src="/sprites/char-girl-strawhat.png"
-            alt=""
-            className="pixelated h-20 w-auto drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] xl:h-24 sprite-float sprite-float-delay-1"
-          />
-        </div>
-        {/* Middle row — includes Abaya and Emarati */}
-        <div className="flex items-end gap-2 ml-4 mb-1">
-          <img
-            src="/sprites/abaya.png"
-            alt=""
-            className="pixelated h-24 w-auto drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] xl:h-28 sprite-float sprite-float-delay-2"
-          />
-          <img
-            src="/sprites/emarati.png"
-            alt=""
-            className="pixelated h-24 w-auto drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] xl:h-28 sprite-float sprite-float-delay-3"
-          />
-        </div>
-        {/* Bottom row */}
-        <div className="flex items-end gap-3 ml-2">
-          <img
-            src="/sprites/boy-cheer.png"
-            alt=""
-            className="pixelated h-28 w-auto drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] xl:h-32 sprite-float sprite-float-delay-4"
-          />
-          <img
-            src="/sprites/girl-cheering.png"
-            alt=""
-            className="pixelated h-24 w-auto drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] xl:h-28 sprite-float sprite-float-delay-5"
-          />
-        </div>
+        {/* Top pair — boy with cap + girl strawhat (upper meadow) */}
+        <img
+          src="/sprites/boy.png"
+          alt=""
+          className="pixelated absolute drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] sprite-float"
+          style={{ left: '4%', top: '12%', height: '13%', width: 'auto' }}
+        />
+        <img
+          src="/sprites/char-girl-strawhat.png"
+          alt=""
+          className="pixelated absolute drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] sprite-float sprite-float-delay-1"
+          style={{ left: '12%', top: '8%', height: '12%', width: 'auto' }}
+        />
+        {/* Middle pair — Emarati + blonde girl (mid meadow) */}
+        <img
+          src="/sprites/emarati.png"
+          alt=""
+          className="pixelated absolute drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] sprite-float sprite-float-delay-2"
+          style={{ left: '2%', top: '32%', height: '13%', width: 'auto' }}
+        />
+        <img
+          src="/sprites/girl-cheering.png"
+          alt=""
+          className="pixelated absolute drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] sprite-float sprite-float-delay-3"
+          style={{ left: '12%', top: '28%', height: '12%', width: 'auto' }}
+        />
+        {/* Bottom pair — Abaya + boy cheer (lower meadow, above water) */}
+        <img
+          src="/sprites/abaya.png"
+          alt=""
+          className="pixelated absolute drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] sprite-float sprite-float-delay-4"
+          style={{ left: '6%', top: '50%', height: '13%', width: 'auto' }}
+        />
+        <img
+          src="/sprites/boy-cheer.png"
+          alt=""
+          className="pixelated absolute drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] sprite-float sprite-float-delay-5"
+          style={{ left: '14%', top: '46%', height: '14%', width: 'auto' }}
+        />
       </aside>
 
-      {/* RIGHT FLANK — Robot Sprites (6 robots) */}
+      {/* RIGHT FLANK — Robot Sprites absolutely positioned across right side */}
       <aside
-        className="pointer-events-none absolute bottom-0 right-0 z-10 hidden select-none lg:flex flex-col items-end pb-6 pr-4 xl:pr-10 2xl:pr-16"
+        className="pointer-events-none absolute inset-0 z-10 hidden select-none lg:block"
         aria-hidden="true"
       >
-        {/* Top row */}
-        <div className="flex items-end gap-2 mb-1">
-          <img
-            src="/sprites/robot-1.png"
-            alt=""
-            className="pixelated h-24 w-auto drop-shadow-[0_0_16px_rgba(53,224,255,0.6)] xl:h-28 sprite-float"
-          />
-          <img
-            src="/sprites/robot-cat.png"
-            alt=""
-            className="pixelated h-20 w-auto drop-shadow-[0_0_16px_rgba(53,224,255,0.6)] xl:h-24 sprite-float sprite-float-delay-1"
-          />
-        </div>
-        {/* Middle row */}
-        <div className="flex items-end gap-2 mr-4 mb-1">
-          <img
-            src="/sprites/robot-smirking.png"
-            alt=""
-            className="pixelated h-24 w-auto drop-shadow-[0_0_16px_rgba(53,224,255,0.6)] xl:h-28 sprite-float sprite-float-delay-2"
-          />
-          <img
-            src="/sprites/robot-arms-raised.png"
-            alt=""
-            className="pixelated h-24 w-auto drop-shadow-[0_0_16px_rgba(53,224,255,0.6)] xl:h-28 sprite-float sprite-float-delay-3"
-          />
-        </div>
-        {/* Bottom row */}
-        <div className="flex items-end gap-3 mr-2">
-          <img
-            src="/sprites/robot-happy-cheering.png"
-            alt=""
-            className="pixelated h-28 w-auto drop-shadow-[0_0_16px_rgba(53,224,255,0.6)] xl:h-32 sprite-float sprite-float-delay-4"
-          />
-          <img
-            src="/sprites/robot-chunky.png"
-            alt=""
-            className="pixelated h-24 w-auto drop-shadow-[0_0_16px_rgba(53,224,255,0.6)] xl:h-28 sprite-float sprite-float-delay-5"
-          />
-        </div>
+        {/* Top pair (upper right) */}
+        <img
+          src="/sprites/robot-1.png"
+          alt=""
+          className="pixelated absolute drop-shadow-[0_0_16px_rgba(53,224,255,0.6)] sprite-float"
+          style={{ right: '10%', top: '8%', height: '14%', width: 'auto' }}
+        />
+        <img
+          src="/sprites/robot-cat.png"
+          alt=""
+          className="pixelated absolute drop-shadow-[0_0_16px_rgba(53,224,255,0.6)] sprite-float sprite-float-delay-1"
+          style={{ right: '2%', top: '12%', height: '12%', width: 'auto' }}
+        />
+        {/* Middle pair */}
+        <img
+          src="/sprites/robot-smirking.png"
+          alt=""
+          className="pixelated absolute drop-shadow-[0_0_16px_rgba(53,224,255,0.6)] sprite-float sprite-float-delay-2"
+          style={{ right: '6%', top: '32%', height: '13%', width: 'auto' }}
+        />
+        <img
+          src="/sprites/robot-arms-raised.png"
+          alt=""
+          className="pixelated absolute drop-shadow-[0_0_16px_rgba(53,224,255,0.6)] sprite-float sprite-float-delay-3"
+          style={{ right: '14%', top: '28%', height: '14%', width: 'auto' }}
+        />
+        {/* Bottom pair */}
+        <img
+          src="/sprites/robot-happy-cheering.png"
+          alt=""
+          className="pixelated absolute drop-shadow-[0_0_16px_rgba(53,224,255,0.6)] sprite-float sprite-float-delay-4"
+          style={{ right: '3%', top: '52%', height: '14%', width: 'auto' }}
+        />
+        <img
+          src="/sprites/robot-chunky.png"
+          alt=""
+          className="pixelated absolute drop-shadow-[0_0_16px_rgba(53,224,255,0.6)] sprite-float sprite-float-delay-5"
+          style={{ right: '12%', top: '58%', height: '13%', width: 'auto' }}
+        />
       </aside>
 
       {/* ================================================================ */}
@@ -204,20 +204,22 @@ export default async function LandingPage() {
       {/* HEADER BAR                                                       */}
       {/* ================================================================ */}
       <header className="relative z-20 flex w-full items-center justify-between px-4 py-3 sm:px-8">
-        {/* AIDA Plaque with mascot avatars */}
-        <div className="flex items-center gap-2">
-          <img
-            src="/sprites/f-mascot-avatar.png"
-            alt="AIDA Mascot"
-            className="pixelated h-8 w-8 sm:h-10 sm:w-10 rounded-sm border-2 border-[#2c4ba8] shadow-[2px_2px_0_#070c26]"
-          />
-          <span className="px-chip text-[9px] sm:text-[10px]">AIDA</span>
-          <img
-            src="/sprites/m-mascot-avatar.png"
-            alt="AIDA Mascot"
-            className="pixelated h-8 w-8 sm:h-10 sm:w-10 rounded-sm border-2 border-[#2c4ba8] shadow-[2px_2px_0_#070c26]"
-          />
-          <span className="text-[11px] font-medium text-slate-300 tracking-wide hidden sm:inline ml-1">
+        {/* AIDA Plaque — M avatar left, F avatar right, on extended blue platform */}
+        <div className="flex items-center gap-0">
+          <div className="flex items-center bg-[#0b1236] border-2 border-[var(--color-px-frame)] shadow-[2px_2px_0_var(--color-px-ink)] px-1.5 py-1 sm:px-2 gap-1.5 sm:gap-2">
+            <img
+              src="/sprites/m-mascot-avatar.png"
+              alt="AIDA Mascot"
+              className="pixelated h-7 w-7 sm:h-9 sm:w-9"
+            />
+            <span className="font-px text-[9px] sm:text-[10px] text-[#dce7ff] tracking-[.06em] uppercase">AIDA</span>
+            <img
+              src="/sprites/f-mascot-avatar.png"
+              alt="AIDA Mascot"
+              className="pixelated h-7 w-7 sm:h-9 sm:w-9"
+            />
+          </div>
+          <span className="text-[11px] font-medium text-slate-300 tracking-wide hidden sm:inline ml-2">
             AJMAN UNIVERSITY
           </span>
         </div>
@@ -243,7 +245,7 @@ export default async function LandingPage() {
       <div className="relative z-20 mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-center px-4 py-2">
         {/* Title */}
         <div className="text-center">
-          <h1 className="px-title-yellow text-3xl sm:text-4xl md:text-5xl tracking-wide leading-tight">
+          <h1 className="px-title-yellow text-3xl sm:text-4xl md:text-5xl tracking-wide leading-tight whitespace-nowrap">
             HUMANS vs AI
           </h1>
           <p className="mt-2 text-xs sm:text-sm text-slate-300 font-semibold tracking-wider">
