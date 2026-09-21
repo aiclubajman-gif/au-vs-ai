@@ -10,10 +10,10 @@ const HUMAN_FRAME = { width: 200, height: 64, contactX: 190, contactY: 32 };
 const AI_FRAME = { width: 200, height: 64, contactX: 10, contactY: 32 };
 const IMPACT_FRAME = { width: 72, height: 72, centerX: 36, centerY: 36 };
 // Base anchors on the 320px canvas (matching original pixel art: Human base at x=25, AI base at x=295)
-const HUMAN_ORIGIN_X = 24;
-const AI_ORIGIN_X = 296;
+const HUMAN_ORIGIN_X = 22;
+const AI_ORIGIN_X = 298;
 const IGNITE_AT_MS = 1350;
-const IGNITE_MS = 140;
+const IGNITE_MS = 240;
 
 const HUMAN_SPARK_COLORS = ['#B83A00', '#F05A00', '#FF8C00', '#FFC928', '#FFF0A0'];
 const AI_SPARK_COLORS = ['#004A9F', '#0079E8', '#00C4FF', '#62ECFF', '#DFFFFF'];
@@ -79,6 +79,8 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
   const isVisibleRef = useRef(true);
   const surgeRef = useRef(0);
   const [surge, setSurge] = useState(0);
+  const litRef = useRef(false);
+  const [lit, setLit] = useState(false);
 
   // Allow live polling and URL override (?h=80&a=20) for easy visual testing
   const scoreRef = useRef({ humanWins: propHumanWins, aiWins: propAiWins });
@@ -198,19 +200,31 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
         ctx.clearRect(0, 0, WIDTH, HEIGHT);
         return;
       }
+      if (ignite >= 1 && !litRef.current) {
+        litRef.current = true;
+        setLit(true);
+      }
       if (ignite < 1) {
         ctx.clearRect(0, 0, WIDTH, HEIGHT);
-        const r = 6 + ignite * 22;
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(HUMAN_ORIGIN_X - r / 2, CENTER_Y - r / 2, r, r);
-        ctx.fillRect(AI_ORIGIN_X - r / 2, CENTER_Y - r / 2, r, r);
-        ctx.fillStyle = '#FFC928';
-        ctx.fillRect(HUMAN_ORIGIN_X - r / 4, CENTER_Y - r / 4, r / 2, r / 2);
-        ctx.fillStyle = '#62ECFF';
-        ctx.fillRect(AI_ORIGIN_X - r / 4, CENTER_Y - r / 4, r / 2, r / 2);
+        if (impactImg.complete && impactImg.naturalWidth > 0) {
+          const f = Math.min(5, Math.floor(ignite * 6));
+          const sz = 28 + ignite * 20;
+          for (const ox of [HUMAN_ORIGIN_X, AI_ORIGIN_X]) {
+            ctx.drawImage(
+              impactImg,
+              f * IMPACT_FRAME.width,
+              0,
+              IMPACT_FRAME.width,
+              IMPACT_FRAME.height,
+              ox - sz / 2,
+              CENTER_Y - sz / 2,
+              sz,
+              sz
+            );
+          }
+        }
         return;
       }
-
       const scores = scoreRef.current;
       const baseImpactX = calculateImpactPosition(scores.humanWins, scores.aiWins);
 
@@ -278,11 +292,11 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
         ctx.clip();
         ctx.drawImage(
           humanImg,
-          humanFrame * HUMAN_FRAME.width + 8,
+          humanFrame * HUMAN_FRAME.width + 14,
           0,
-          HUMAN_FRAME.width - 8,
+          HUMAN_FRAME.width - 14,
           HUMAN_FRAME.height,
-          humanStart,
+          humanStart - 6,
           CENTER_Y - HUMAN_FRAME.contactY,
           humanLen,
           HUMAN_FRAME.height,
@@ -301,9 +315,9 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
           aiImg,
           aiFrame * AI_FRAME.width,
           0,
-          AI_FRAME.width - 8,
+          AI_FRAME.width - 14,
           AI_FRAME.height,
-          aiEnd - aiLen,
+          aiEnd + 6 - aiLen,
           CENTER_Y - AI_FRAME.contactY,
           aiLen,
           AI_FRAME.height,
@@ -399,7 +413,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
           className="pixelated block h-full w-full"
         />
         {showLabels && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-between font-px text-[3.2cqw] text-white px-text-outline">
+          <div className={`px-beam-labels pointer-events-none absolute inset-0 flex items-center justify-between font-px text-[3.2cqw] text-white px-text-outline ${lit ? 'px-beam-labels--on' : ''}`}>
             <span className="ml-[22%]">HUMANS</span>
             <span className="mr-[18%]">AI</span>
           </div>

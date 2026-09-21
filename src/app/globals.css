@@ -1239,6 +1239,43 @@ input.px-slider::-moz-range-thumb {
   box-shadow: 0 0 20px rgba(0, 187, 252, 0.4);
 }
 
+.px-beam-labels {
+  opacity: 0;
+}
+
+.px-beam-labels--on {
+  animation: px-label-in 360ms steps(4) both;
+  animation-delay: 120ms;
+}
+
+.px-beam-labels--on span:first-child {
+  animation: px-label-slide-l 360ms steps(4) both;
+  animation-delay: 120ms;
+}
+
+.px-beam-labels--on span:last-child {
+  animation: px-label-slide-r 360ms steps(4) both;
+  animation-delay: 120ms;
+}
+
+@keyframes px-label-in {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes px-label-slide-l {
+  from {
+    transform: translateX(-18px);
+  }
+}
+
+@keyframes px-label-slide-r {
+  from {
+    transform: translateX(18px);
+  }
+}
+
 .px-fighter {
   --fh: clamp(96px, 26cqw, 250px);
   position: absolute;
@@ -1252,11 +1289,11 @@ input.px-slider::-moz-range-thumb {
 }
 
 .px-fighter--bird {
-  left: 7.5%;
+  left: 6.9%;
 }
 
 .px-fighter--cell {
-  right: 7.5%;
+  right: 6.9%;
 }
 
 .px-fighter--in {
