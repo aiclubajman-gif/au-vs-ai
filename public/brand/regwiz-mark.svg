@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="12.5 38 229 180">
+  <defs>
+    <clipPath id="back-inner">
+      <rect x="104.5" y="86.5" width="107" height="107" rx="16.5" transform="rotate(8 158 140)"/>
+    </clipPath>
+  </defs>
+  <g transform="translate(14.5 9)">
+    <g transform="rotate(8 158 140)">
+    <rect x="99" y="81" width="118" height="118" rx="22" fill="var(--rw-fill, #554EEF)" stroke="var(--rw-line, #FFFFFF)" stroke-width="11"/>
+    </g>
+    <g transform="translate(-9 -11) rotate(-12 84 117)">
+    <rect x="20" y="53" width="128" height="128" rx="24.5" fill="var(--rw-fill, #554EEF)" stroke="var(--rw-line, #FFFFFF)" stroke-width="11"/>
+    <g transform="translate(84 117) scale(0.941) translate(-84 -117) translate(92.5 99.25) scale(0.95) translate(-92.5 -99.25)">
+      <circle cx="68.5" cy="99.5" r="22" fill="var(--rw-sclera, #FFFFFF)" stroke="var(--rw-ring, #1A1259)" stroke-width="4.5"/>
+      <circle cx="116.5" cy="99" r="22" fill="var(--rw-sclera, #FFFFFF)" stroke="var(--rw-ring, #1A1259)" stroke-width="4.5"/>
+      <circle cx="74.5" cy="99.5" r="8.5" fill="var(--rw-pupil, #08053F)"/>
+      <circle cx="122.5" cy="99" r="8.5" fill="var(--rw-pupil, #08053F)"/>
+    </g>
+    </g>
+    <g clip-path="url(#back-inner)" opacity="var(--rw-shadow-opacity, 1)">
+    <g transform="translate(-9 -11) rotate(-12 84 117)">
+      <rect x="20" y="53" width="128" height="128" rx="24.5" fill="none" stroke="var(--rw-shadow, #08053F)" stroke-width="11"/>
+    </g>
+    </g>
+</g>
+</svg>

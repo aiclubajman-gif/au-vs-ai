@@ -406,17 +406,24 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 40px;
+  gap: 26px;
   padding: 0 44px;
   background: var(--k-paper);
   color: var(--k-navy);
   border-top: 1px solid rgba(28, 43, 75, 0.1);
 }
 
+.k-strip__mark {
+  height: 72px;
+  width: auto;
+  flex: none;
+}
+
 .k-strip__copy {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  flex: 1;
 }
 
 .k-strip__title {

@@ -338,6 +338,7 @@ function VideoPanel({ videoRef, qrWhatsapp }: { videoRef: React.RefObject<HTMLVi
         <video ref={videoRef} src="/kiosk/regwiz.mp4" muted playsInline preload="auto" loop={false} />
       </div>
       <div className="k-strip">
+        <img src="/brand/regwiz-mark.svg" alt="RegWiz" className="k-strip__mark k-fade" style={{ ['--i' as string]: 0 }} />
         <div className="k-strip__copy">
           <span className="k-strip__title">
             <Reveal text="RegWiz — course registration, without the headache." />
