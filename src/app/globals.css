@@ -1247,11 +1247,22 @@ input.px-slider::-moz-range-thumb {
   opacity: 1;
 }
 
-.px-beam-labels--on span {
+.px-beam-label {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+}
+
+.px-beam-label > span {
+  display: inline-block;
+}
+
+.px-beam-labels--on .px-beam-label > span {
   animation: px-label-pop 260ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
 }
 
-.px-beam-labels--on span:last-child {
+.px-beam-labels--on .px-beam-label:last-child > span {
   animation-delay: 60ms;
 }
 
@@ -1262,11 +1273,18 @@ input.px-slider::-moz-range-thumb {
   }
 }
 
+.px-clash__beam {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 10 / 3;
+  overflow: visible;
+}
+
 .px-fighter {
   position: absolute;
-  bottom: -6%;
+  bottom: 7%;
   width: 0;
-  height: 100%;
+  height: 80%;
   opacity: 0;
   z-index: 3;
   pointer-events: none;
@@ -1283,6 +1301,11 @@ input.px-slider::-moz-range-thumb {
 
 .px-fighter--in {
   opacity: 1;
+  animation: px-teleport-in 420ms steps(6) both;
+}
+
+.px-fighter--cell.px-fighter--in {
+  animation-name: px-teleport-in-r;
 }
 
 .px-fighter__shadow,
@@ -1428,90 +1451,7 @@ input.px-slider::-moz-range-thumb {
   opacity: 0;
 }
 
-.px-fighter--in .px-fighter__body {
-  position: absolute;
-  inset: 0;
-  animation: px-hover 3.2s ease-in-out infinite;
-}
-
-.px-fighter--cell .px-fighter__body {
-  animation-delay: -1.6s;
-}
-
-@keyframes px-hover {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-9%);
-  }
-}
-
-.px-fighter__shadow {
-  position: absolute;
-  bottom: -3%;
-  width: 70%;
-  height: 8%;
-  border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(2, 10, 30, 0.55), rgba(2, 10, 30, 0) 70%);
-  animation: px-hover-shadow 3.2s ease-in-out infinite;
-}
-
-.px-fighter--bird .px-fighter__shadow {
-  right: 20%;
-}
-
-.px-fighter--cell .px-fighter__shadow {
-  left: 20%;
-  animation-delay: -1.6s;
-}
-
-@keyframes px-hover-shadow {
-  0%,
-  100% {
-    transform: scaleX(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scaleX(0.72);
-    opacity: 0.45;
-  }
-}
-
-.px-fighter__aura {
-  position: absolute;
-  bottom: 2%;
-  width: 60%;
-  height: 22%;
-  border-radius: 50%;
-  filter: blur(6px);
-  opacity: 0;
-  animation: px-hover 3.2s ease-in-out infinite, px-aura 0.5s steps(2) infinite;
-}
-
-.px-fighter--bird .px-fighter__aura {
-  right: 22%;
-  background: radial-gradient(ellipse, rgba(255, 201, 40, 0.55), rgba(255, 140, 0, 0) 70%);
-}
-
-.px-fighter--cell .px-fighter__aura {
-  left: 22%;
-  background: radial-gradient(ellipse, rgba(98, 236, 255, 0.55), rgba(0, 121, 232, 0) 70%);
-  animation-delay: -1.6s, 0s;
-}
-
-@keyframes px-aura {
-  50% {
-    opacity: 0.35;
-  }
-  0%,
-  100% {
-    opacity: 0.6;
-  }
-}
-
-.px-fighter__flash {
+.px-fighter--in .px-fighter__flash {
   animation: px-teleport-flash 520ms steps(5) both;
 }
 
@@ -1555,27 +1495,27 @@ input.px-slider::-moz-range-thumb {
 }
 
 .px-fighter--push .px-fighter__pose--push {
-  animation: px-teleport-in 420ms steps(6) both, px-fighter-push 0.7s steps(2) 420ms infinite;
+  animation: px-fighter-push 0.7s steps(2) infinite;
 }
 
 .px-fighter--strain .px-fighter__pose--strain {
-  animation: px-teleport-in 420ms steps(6) both, px-fighter-strain 0.32s steps(2) 420ms infinite;
+  animation: px-fighter-strain 0.32s steps(2) infinite;
 }
 
 .px-fighter--charge.px-fighter--in .px-fighter__pose--charge {
-  animation: px-teleport-in 420ms steps(6) both, px-fighter-charge 0.5s steps(2) 420ms infinite;
+  animation: px-fighter-charge 0.5s steps(2) infinite;
 }
 
 .px-fighter--cell.px-fighter--push .px-fighter__pose--push {
-  animation: px-teleport-in-r 420ms steps(6) both, px-fighter-push-r 0.7s steps(2) 420ms infinite;
+  animation: px-fighter-push-r 0.7s steps(2) infinite;
 }
 
 .px-fighter--cell.px-fighter--strain .px-fighter__pose--strain {
-  animation: px-teleport-in-r 420ms steps(6) both, px-fighter-strain-r 0.32s steps(2) 420ms infinite;
+  animation: px-fighter-strain-r 0.32s steps(2) infinite;
 }
 
 .px-fighter--cell.px-fighter--charge.px-fighter--in .px-fighter__pose--charge {
-  animation: px-teleport-in-r 420ms steps(6) both, px-fighter-charge 0.5s steps(2) 420ms infinite;
+  animation: px-fighter-charge 0.5s steps(2) infinite;
 }
 
 @keyframes px-fighter-push {
@@ -1611,16 +1551,16 @@ input.px-slider::-moz-range-thumb {
 
 @media (max-width: 640px) {
   .px-fighter {
-    height: 78%;
-    bottom: 0;
+    height: 80%;
+    bottom: 4%;
   }
 
   .px-fighter--bird {
-    left: 9%;
+    left: 12%;
   }
 
   .px-fighter--cell {
-    right: 9%;
+    right: 12%;
   }
 }
 

@@ -10,11 +10,14 @@ const HUMAN_FRAME = { width: 200, height: 64, contactX: 190, contactY: 32 };
 const AI_FRAME = { width: 200, height: 64, contactX: 10, contactY: 32 };
 const IMPACT_FRAME = { width: 72, height: 72, centerX: 36, centerY: 36 };
 // Base anchors on the 320px canvas (matching original pixel art: Human base at x=25, AI base at x=295)
-const HUMAN_ORIGIN_X = 24;
-const AI_ORIGIN_X = 296;
+const HUMAN_ORIGIN_X = 36;
+const AI_ORIGIN_X = 284;
 const IGNITE_AT_MS = 1350;
 const IGNITE_MS = 300;
 const GROW_MS = 220;
+const BURST_CORE = 16;
+const HUMAN_LABEL_Y = '52%';
+const AI_LABEL_Y = '49%';
 
 const HUMAN_SPARK_COLORS = ['#B83A00', '#F05A00', '#FF8C00', '#FFC928', '#FFF0A0'];
 const AI_SPARK_COLORS = ['#004A9F', '#0079E8', '#00C4FF', '#62ECFF', '#DFFFFF'];
@@ -82,6 +85,8 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
   const [surge, setSurge] = useState(0);
   const litRef = useRef(false);
   const [lit, setLit] = useState(false);
+  const humanLabelRef = useRef<HTMLSpanElement>(null);
+  const aiLabelRef = useRef<HTMLSpanElement>(null);
 
   // Allow live polling and URL override (?h=80&a=20) for easy visual testing
   const scoreRef = useRef({ humanWins: propHumanWins, aiWins: propAiWins });
@@ -285,6 +290,8 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
 
       const roundedImpactX = Math.round(currentImpactX);
       if (process.env.NODE_ENV !== 'production') canvas.dataset.impact = String(roundedImpactX);
+      if (humanLabelRef.current) humanLabelRef.current.style.left = `${(((HUMAN_ORIGIN_X + roundedImpactX - BURST_CORE) / 2) / WIDTH) * 100}%`;
+      if (aiLabelRef.current) aiLabelRef.current.style.left = `${(((roundedImpactX + BURST_CORE + AI_ORIGIN_X) / 2) / WIDTH) * 100}%`;
 
       const humanStart = HUMAN_ORIGIN_X;
       const humanLen = Math.max(24, (roundedImpactX + 12 - humanStart) * reach);
@@ -408,7 +415,7 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
 
   return (
     <div ref={containerRef} className={`relative mx-auto select-none ${className}`} style={{ containerType: 'inline-size' }}>
-      <div className="relative aspect-[10/3] w-full overflow-visible">
+      <div className="px-clash__beam">
         <canvas
           ref={canvasRef}
           width={WIDTH}
@@ -416,9 +423,13 @@ export function ClashBeam({ humanWins: propHumanWins, aiWins: propAiWins, classN
           className="pixelated block h-full w-full"
         />
         {showLabels && (
-          <div className={`px-beam-labels pointer-events-none absolute inset-0 flex items-center justify-between font-px text-[3.2cqw] text-white px-text-outline ${lit ? 'px-beam-labels--on' : ''}`}>
-            <span className="ml-[22%]">HUMANS</span>
-            <span className="mr-[18%]">AI</span>
+          <div className={`px-beam-labels pointer-events-none absolute inset-0 font-px text-[3.2cqw] text-white sm:text-[2.8cqw] px-text-outline ${lit ? 'px-beam-labels--on' : ''}`}>
+            <span ref={humanLabelRef} className="px-beam-label" style={{ left: '30%', top: HUMAN_LABEL_Y }}>
+              <span>HUMANS</span>
+            </span>
+            <span ref={aiLabelRef} className="px-beam-label" style={{ left: '70%', top: AI_LABEL_Y }}>
+              <span>AI</span>
+            </span>
           </div>
         )}
         {fighters && (

@@ -105,13 +105,13 @@ export default async function LandingPage() {
         <ClashBeam
           humanWins={humanWins}
           aiWins={aiWins}
-          className="mt-3 w-[88%] max-w-[440px] sm:max-w-[700px] lg:mt-5 lg:max-w-[960px]"
+          className="mt-3 w-[88%] max-w-[440px] sm:max-w-[700px] lg:-mt-7 lg:w-[57vw] lg:max-w-[912px]"
         />
 
         <TopChallengers
           rows={rows}
           mode={board.mode}
-          className="mt-3 w-full max-w-[520px] lg:-mt-2"
+          className="mt-3 w-full max-w-[520px] lg:mt-3"
         />
       </div>
 
