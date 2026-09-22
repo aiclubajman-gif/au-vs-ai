@@ -2,23 +2,21 @@
 
 import { z } from 'zod';
 import { ROUND1_SLOTS } from '@/lib/scoring';
-import { AU_EMAIL_DOMAIN } from '@/types';
+import { isAuEmail } from '@/lib/client/email';
 
 // ---------------------------------------------------------------------------
 // AU email (§3)
 // ---------------------------------------------------------------------------
 
-const AU_EMAIL_PATTERN = new RegExp(
-  `^[^@\\s]+@${AU_EMAIL_DOMAIN.replace(/\./g, '\\.')}$`,
-);
+/**
+ * One implementation, shared with the browser. Every AU-issued domain lives in
+ * AU_EMAIL_DOMAINS in @/types; adding one there is the only change needed.
+ */
+export { isAuEmail };
 
 /** Lowercase and trim. Always call before validating or storing. */
 export function normalizeEmail(raw: string): string {
   return raw.trim().toLowerCase();
-}
-
-export function isAuEmail(raw: string): boolean {
-  return AU_EMAIL_PATTERN.test(normalizeEmail(raw));
 }
 
 /**
@@ -40,7 +38,7 @@ export const auEmailSchema = z
   .toLowerCase()
   .min(5)
   .max(120)
-  .refine((v) => AU_EMAIL_PATTERN.test(v), {
+  .refine((v) => isAuEmail(v), {
     message: 'Use your Ajman University email address to play.',
   });
 

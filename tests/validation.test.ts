@@ -12,29 +12,36 @@ import {
 } from '@/lib/validation';
 
 describe('AU email restriction (§3)', () => {
-  it('accepts a valid AU student email', () => {
+  it('accepts a valid AU student email on either AU domain', () => {
     expect(isAuEmail('202310421@ajmanuni.ac.ae')).toBe(true);
+    expect(isAuEmail('202310421@ajman.ac.ae')).toBe(true);
   });
 
   it('accepts staff-style AU addresses', () => {
     expect(isAuEmail('a.hassan@ajmanuni.ac.ae')).toBe(true);
+    expect(isAuEmail('a.hassan@ajman.ac.ae')).toBe(true);
   });
 
   it('normalizes case and whitespace before checking', () => {
     expect(isAuEmail('  202310421@AJMANUNI.AC.AE  ')).toBe(true);
+    expect(isAuEmail('  202310421@AJMAN.AC.AE  ')).toBe(true);
     expect(normalizeEmail('  A.B@Ajmanuni.AC.ae ')).toBe('a.b@ajmanuni.ac.ae');
   });
 
   it('rejects external domains', () => {
     expect(isAuEmail('student@gmail.com')).toBe(false);
     expect(isAuEmail('student@outlook.com')).toBe(false);
-    expect(isAuEmail('student@ajman.ac.ae')).toBe(false);
+    expect(isAuEmail('student@ajmanuni.com')).toBe(false);
+    expect(isAuEmail('student@ajman.ae')).toBe(false);
   });
 
-  it('rejects lookalike domains that merely contain the AU domain', () => {
+  it('rejects lookalike domains that merely contain an AU domain', () => {
     expect(isAuEmail('a@ajmanuni.ac.ae.evil.com')).toBe(false);
     expect(isAuEmail('a@notajmanuni.ac.ae')).toBe(false);
     expect(isAuEmail('a@sub.ajmanuni.ac.ae')).toBe(false);
+    expect(isAuEmail('a@ajman.ac.ae.evil.com')).toBe(false);
+    expect(isAuEmail('a@notajman.ac.ae')).toBe(false);
+    expect(isAuEmail('a@sub.ajman.ac.ae')).toBe(false);
   });
 
   it('rejects malformed addresses', () => {
@@ -47,6 +54,7 @@ describe('AU email restriction (§3)', () => {
 
   it('the zod schema agrees with the helper', () => {
     expect(auEmailSchema.safeParse('202310421@ajmanuni.ac.ae').success).toBe(true);
+    expect(auEmailSchema.safeParse('202310421@ajman.ac.ae').success).toBe(true);
     expect(auEmailSchema.safeParse('x@gmail.com').success).toBe(false);
   });
 });

@@ -14,7 +14,14 @@ export type ImageLabel = 'real' | 'ai_generated';
 
 export type LeaderboardDisplayMode = 'name_only' | 'masked_id_only' | 'name_and_masked_id';
 
-export const AU_EMAIL_DOMAIN = 'ajmanuni.ac.ae';
+/**
+ * Every email domain Ajman University issues to students. Both are accepted at
+ * sign-in; the first is the one shown in placeholders and hints.
+ */
+export const AU_EMAIL_DOMAINS = ['ajmanuni.ac.ae', 'ajman.ac.ae'] as const;
+
+/** The domain used in examples and placeholder text. */
+export const AU_EMAIL_DOMAIN = AU_EMAIL_DOMAINS[0];
 
 // ---------------------------------------------------------------------------
 // Event settings

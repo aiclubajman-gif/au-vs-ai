@@ -117,8 +117,14 @@ Note that failed attempts consume quota even when no email is sent.
 ### 7. Lock signups to AU emails
 
 **Authentication → Hooks → Before User Created →** select the Postgres function
-`hook_restrict_au_domain` (created by migration 0003). This blocks non-AU
-signups at the auth layer, independently of the frontend.
+`hook_restrict_au_domain` (created by migration 0003, widened to both AU
+domains by 0017). This blocks non-AU signups at the auth layer,
+independently of the frontend.
+
+Both `@ajmanuni.ac.ae` and `@ajman.ac.ae` are accepted. The app reads the
+list from `AU_EMAIL_DOMAINS` in `src/types/index.ts`; the database reads it
+from migration `0017_second_au_email_domain.sql`. The two must agree, or
+students on the missing domain pass validation and then never get a code.
 
 ### 8. Local development
 

@@ -22,10 +22,10 @@ if (!email) {
   process.exit(1);
 }
 
-if (!/^[^@\s]+@ajmanuni\.ac\.ae$/.test(email)) {
+if (!/^[^@\s]+@(?:ajmanuni|ajman)\.ac\.ae$/.test(email)) {
   console.error(`\n${RED}Not an Ajman University address.${RESET}`);
-  console.error(`This test must use a real @ajmanuni.ac.ae inbox — university mail`);
-  console.error(`filters are exactly what we are testing.\n`);
+  console.error(`This test must use a real @ajmanuni.ac.ae or @ajman.ac.ae inbox —`);
+  console.error(`university mail filters are exactly what we are testing.\n`);
   process.exit(1);
 }
 
@@ -67,8 +67,9 @@ if (error) {
     console.log(`  And confirm the domain is Verified in the Resend dashboard.\n`);
   } else if (m.includes('hook') || m.includes('403') || m.includes('denied')) {
     console.log(`  ${YELLOW}The Before User Created hook may be rejecting this.${RESET}`);
-    console.log(`  It should allow @ajmanuni.ac.ae. Check the function is selected`);
-    console.log(`  under Authentication -> Hooks.\n`);
+    console.log(`  It should allow @ajmanuni.ac.ae and @ajman.ac.ae. Check the function`);
+    console.log(`  is selected under Authentication -> Hooks, and that migration 0017`);
+    console.log(`  has been run.\n`);
   }
   process.exit(1);
 }

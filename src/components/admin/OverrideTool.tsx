@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+import { AU_DOMAIN_HINT, AU_DOMAIN_LIST, isAuEmail } from '@/lib/client/email';
+
 /**
  * Booth tool for the student whose code never arrived (§38).
  *
@@ -22,7 +24,7 @@ export function OverrideTool() {
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const valid = /^[^@\s]+@ajmanuni\.ac\.ae$/.test(email.trim().toLowerCase());
+  const valid = isAuEmail(email);
 
   async function issue() {
     setBusy(true);
@@ -113,13 +115,13 @@ export function OverrideTool() {
           autoCapitalize="off"
           autoCorrect="off"
           spellCheck={false}
-          placeholder="202312345@ajmanuni.ac.ae"
+          placeholder={AU_DOMAIN_HINT}
           aria-label="Student AU email"
           className="w-full rounded-xl border border-[var(--color-edge)] bg-[var(--color-navy)] px-4 py-4 placeholder:text-[var(--color-muted)]/60 focus:border-[var(--color-cyan)]"
         />
 
         {email.length > 3 && !valid && (
-          <p className="text-xs text-[var(--color-muted)]">Must end in @ajmanuni.ac.ae</p>
+          <p className="text-xs text-[var(--color-muted)]">Must end in {AU_DOMAIN_LIST}</p>
         )}
 
         <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-[var(--color-edge)] bg-[var(--color-navy)] px-4 py-4">

@@ -33,7 +33,7 @@ if (arg === '--list') {
   process.exit(0);
 }
 
-if (!arg || !/^[^@\s]+@ajmanuni\.ac\.ae$/.test(arg)) {
+if (!arg || !/^[^@\s]+@(?:ajmanuni|ajman)\.ac\.ae$/.test(arg)) {
   console.error(`\n${RED}Give an Ajman University email.${RESET}`);
   console.error(`Usage: node --env-file=.env.local scripts/make-admin.mjs you@ajmanuni.ac.ae\n`);
   process.exit(1);

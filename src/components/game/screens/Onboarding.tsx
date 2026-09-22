@@ -4,6 +4,7 @@ import type { KeyboardEvent, ReactNode } from 'react';
 import Link from 'next/link';
 import { OtpInput } from '@/components/game/OtpInput';
 import { AnimatedSprite, ErrorBanner, PxButton, PxChip, PxLink, PxPanel, PxStar, Scene, Sprite, Wordmark } from '@/components/px';
+import { AU_DOMAIN_HINT, AU_DOMAIN_LIST } from '@/lib/client/email';
 import type { College } from '@/types';
 
 export interface ApiError {
@@ -148,7 +149,7 @@ export function EmailScreen({
             type="email"
             inputMode="email"
             autoComplete="email"
-            placeholder="202312345@ajmanuni.ac.ae"
+            placeholder={AU_DOMAIN_HINT}
             className="px-input"
           />
           <ErrorBanner message={error?.message ?? ''} refCode={error?.ref} />
@@ -159,7 +160,7 @@ export function EmailScreen({
 
         <div className="mt-5 space-y-4 border-t-[3px] border-[#1e4ea8] pt-4">
           <InfoRow icon="cap" title="AU STUDENTS ONLY">
-            Please use your official Ajman University email address.
+            Please use your official Ajman University email address ({AU_DOMAIN_LIST}).
           </InfoRow>
           <InfoRow icon="shield" title="ONE OFFICIAL ATTEMPT">
             Each student is allowed one official attempt during the event.
